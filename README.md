@@ -2,7 +2,7 @@
 
 **Terminal File eXplorer**  
 Pronunciation: **Tafix**  
-Version: **0.1.0**
+Version: **0.2.0**
 
 English | [日本語](README.ja.md)
 
@@ -13,6 +13,7 @@ English | [日本語](README.ja.md)
 - Terminal-style file list UI
 - Single folder tree rooted at `/`
 - Persistent pinned folders section
+- Drag reordering for pinned folders
 - Single-pane and split-pane modes
 - Drag and drop between left and right file panes
 - Visual highlighting for the active view
@@ -66,6 +67,9 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
 - `tools/generate_app_icon.swift`: App icon regeneration script
 - `docs/file-manager-implementation-plan.md`: Implementation plan and progress notes
+- `docs/development-roadmap.md`: Future development roadmap
+- `docs/detailed-design.md`: Detailed design document
+- `CHANGELOG.md`: Release history
 
 ## Notes
 

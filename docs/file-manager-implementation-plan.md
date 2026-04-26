@@ -22,6 +22,9 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - Toolbar actions, search, sorting, preview, Terminal.app opening, and the folder tree follow the active file pane.
 - The folder tree highlights and expands the active pane's current folder.
 - Folders can be pinned and are shown in a persistent `PINNED` section at the top of the folder tree.
+- Pinned folders can be reordered by dragging within the `PINNED` section.
+- Pinned folder rows act as shortcuts and do not expand child folders in the `PINNED` section.
+- The folder tree is display/navigation only; dropping or pasting items into folders from the tree is not supported.
 - The regular folder tree is a single hierarchy starting at `/`; Home, Documents, Downloads, and similar folders are not duplicated as separate tree roots.
 - The app restores the previous window frame, visible panes, active pane, opened folders, and pane widths on launch.
 - Preview pane supports:
@@ -275,6 +278,168 @@ Finish behavior and visual consistency.
 - Validate preview for images, PDFs, videos, Markdown, text files, and folders.
 - Validate permission-denied errors.
 - Validate behavior with large directories.
+
+## Future Plan: Customization and Extensibility
+
+Track larger customization and extension work as separate follow-up phases.
+
+### Future Phase A: Configuration Foundation
+
+- User-editable configuration files are stored under `~/Library/Application Support/tfx/`.
+- Declarative configuration, themes, filetype rules, and shortcut definitions use TOML.
+- Dynamic extension behavior uses Lua.
+- Transient UI state remains in `UserDefaults`.
+
+Initial file layout:
+
+- `config.toml`: Main user configuration.
+- `themes/*.toml`: User-defined color schemes.
+- `filetypes.toml`: Extension-based behavior rules.
+- `shortcuts.toml`: Shortcut definitions.
+- `scripts/*.lua`: Lua extension scripts.
+- `markdown/preview.css`: Markdown preview CSS.
+
+Acceptance criteria:
+
+- The app creates the configuration directory when needed.
+- Missing configuration files fall back to built-in defaults.
+- Invalid TOML shows a readable error without preventing the app from launching.
+- UI state such as window frame, pane widths, and last folders remains in `UserDefaults`.
+
+### Future Phase B: Color Schemes
+
+- Color scheme selection.
+- User-defined color scheme files.
+
+Planned scope:
+
+- Built-in color schemes.
+- User-created TOML theme files.
+- Theme selection from app settings.
+- Theme reload without rebuilding the app.
+
+Acceptance criteria:
+
+- File panes, folder tree, selection colors, active borders, status text, and preview backgrounds can be themed.
+- Invalid theme keys fall back to defaults.
+- Theme changes are applied consistently across split panes and preview state.
+
+### Future Phase C: Markdown Preview Extensions
+
+- Extensible Markdown preview rendering.
+- Markdown preview settings include KaTeX, MathJax, Mermaid, and custom CSS configuration.
+
+Planned scope:
+
+- Ruby text rendering.
+- Math rendering through KaTeX or MathJax settings.
+- Mermaid diagram rendering.
+- Custom Markdown preview CSS.
+- Custom inline or block syntax through a constrained extension pipeline.
+
+Example TOML shape:
+
+```toml
+[markdown.katex]
+macros = {}
+
+[markdown.mathjax.tex]
+
+[markdown.mathjax.options]
+
+[markdown.mathjax.loader]
+
+[markdown.mermaid]
+startOnLoad = false
+
+[markdown.css]
+files = ["markdown/preview.css"]
+inline = ""
+```
+
+Acceptance criteria:
+
+- Markdown preview can load configured CSS.
+- Ruby notation can render as `<ruby>` without breaking normal Markdown.
+- Math and Mermaid settings are loaded from TOML.
+- Unsafe HTML/script behavior is explicitly controlled.
+
+### Future Phase D: Extension-Based Behavior
+
+- Extension-based behavior customization.
+
+Planned scope:
+
+- Extension-based open behavior.
+- Extension-based preview behavior.
+- Extension-based context menu additions.
+- Rule priority between built-in behavior, TOML rules, and Lua hooks.
+
+Acceptance criteria:
+
+- A file extension can map to a built-in preview mode or default app behavior.
+- Built-in behavior remains available when no rule matches.
+- Conflicting rules resolve predictably.
+
+### Future Phase E: Shortcuts
+
+- Shortcut feature cleanup and expansion.
+
+Planned scope:
+
+- Central shortcut registry.
+- TOML-defined shortcut overrides.
+- Conflict detection.
+- Menu item synchronization where practical.
+
+Acceptance criteria:
+
+- Existing shortcuts are represented in one registry.
+- User-defined shortcuts can override supported actions.
+- Conflicts are reported clearly.
+
+### Future Phase F: Lua Extension API
+
+- Lua scripting for extension-based actions and shortcut actions.
+
+Initial policy:
+
+- Lua runs in a restricted sandbox.
+- Initial APIs are read-oriented and tfx-controlled.
+- File mutation is not allowed in the first implementation.
+- External command execution is not allowed in the first implementation.
+- Markdown filters may transform Markdown text or produce sanitized HTML fragments.
+
+Planned scope:
+
+- Lua hooks for extension-based behavior.
+- Lua hooks for shortcut actions.
+- Lua filters for Markdown preview extensions.
+- tfx-provided APIs for selected files, current folder, preview selection, and status messages.
+
+Acceptance criteria:
+
+- Lua scripts cannot mutate files unless a future explicit API is added.
+- Script errors are shown without crashing the app.
+- Long-running scripts cannot block the UI indefinitely.
+
+### Future Phase G: Responsiveness
+
+- Responsiveness and latency improvements.
+
+Planned scope:
+
+- Faster large-directory loading.
+- Background metadata loading.
+- Preview loading cancellation.
+- Folder tree refresh throttling.
+- Search and filter responsiveness.
+
+Acceptance criteria:
+
+- Large folders remain scrollable while metadata is loading.
+- Preview requests cancel when selection changes.
+- Search input remains responsive during filtering.
 
 ## Recommended Implementation Order
 

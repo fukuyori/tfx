@@ -2,7 +2,7 @@
 
 **Terminal File eXplorer**  
 読み方: **タフィックス**  
-Version: **0.1.0**
+Version: **0.2.0**
 
 [English](README.md) | 日本語
 
@@ -13,6 +13,7 @@ Version: **0.1.0**
 - ターミナル風のファイル一覧 UI
 - `/` から始まる単一フォルダツリー
 - ピン留めフォルダの常時表示
+- ピン留めフォルダのドラッグ並べ替え
 - 単独ビュー / スプリットビュー切り替え
 - 左右ペイン間のドラッグアンドドロップ
 - アクティブビューのハイライト表示
@@ -66,6 +67,9 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
 - `tools/generate_app_icon.swift`: アプリアイコン再生成スクリプト
 - `docs/file-manager-implementation-plan.md`: 実装計画と進捗
+- `docs/development-roadmap.md`: 今後の開発計画
+- `docs/detailed-design.md`: 詳細設計書
+- `CHANGELOG.md`: 変更履歴
 
 ## 注意事項
 
