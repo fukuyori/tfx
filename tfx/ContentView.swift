@@ -1,24 +1,17 @@
-//
-//  ContentView.swift
-//  tfx
-//
-//  Created by 福寄典明 on 2026/04/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
+#if os(macOS)
+        TerminalFileManagerView()
+            .frame(minWidth: 980, minHeight: 640)
+#else
+        ContentUnavailableView(
+            "tfx is a macOS file manager",
+            systemImage: "terminal",
+            description: Text("Drag and drop, preview, and terminal integration require macOS.")
+        )
         .padding()
+#endif
     }
-}
-
-#Preview {
-    ContentView()
 }
