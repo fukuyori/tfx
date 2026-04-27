@@ -1,12 +1,16 @@
 # tfx
 
-**Terminal File eXplorer**  
-Pronunciation: **Tafix**  
+**Terminal-inspired interface File eXplorer**<br>
+Pronunciation: **Tafix**<br>
 Version: **0.2.1**
 
 English | [日本語](README.ja.md)
 
 `tfx` is a macOS file manager with a terminal-inspired interface and keyboard-first workflow. It combines a folder tree, split file panes, rich previews, drag and drop, and Terminal.app integration.
+
+## Screenshot
+
+![tfx screenshot](images/screenshot.png)
 
 ## Features
 

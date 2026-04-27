@@ -1,12 +1,16 @@
 # tfx
 
-**Terminal File eXplorer**  
-読み方: **タフィックス**  
+**Terminal-inspired interface File eXplorer**<br>
+読み方: **タフィックス**<br>
 Version: **0.2.1**
 
 [English](README.md) | 日本語
 
 `tfx` は、ターミナル風の見た目とキーボード操作を中心にした macOS 向けファイルマネージャーです。フォルダツリー、スプリット表示、プレビュー、ドラッグアンドドロップ、Terminal.app 連携を備えています。
+
+## スクリーンショット
+
+![tfx スクリーンショット](images/screenshot.png)
 
 ## 機能
 

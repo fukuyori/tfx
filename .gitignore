@@ -29,6 +29,8 @@ Package.resolved
 # App packaging
 *.app
 *.xcarchive
+*.pkg
+artifacts/
 
 # Logs and temporary files
 *.log
