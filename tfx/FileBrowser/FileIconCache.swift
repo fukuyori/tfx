@@ -10,9 +10,10 @@ final class FileIconCache {
 
     private init() {}
 
-    func icon(for url: URL, cacheKey: String?, size: CGFloat = 18) -> NSImage {
+    func icon(for url: URL, cacheKey _: String?, size: CGFloat = 18) -> NSImage {
         let resolvedSize = max(size, 1)
-        let key = NSString(string: "\(cacheKey ?? "path:\(url.standardizedFileURL.path)"):\(Int(resolvedSize))")
+        let pathCacheKey = "path:\(url.standardizedFileURL.path)"
+        let key = NSString(string: "\(pathCacheKey):\(Int(resolvedSize))")
         if let cachedIcon = cache.object(forKey: key) {
             return cachedIcon
         }
@@ -39,6 +40,7 @@ struct FileIcon: View {
 
     var body: some View {
         Image(nsImage: FileIconCache.shared.icon(for: url, cacheKey: cacheKey))
+            .renderingMode(.original)
             .resizable()
             .frame(width: 18, height: 18)
             .accessibilityHidden(true)

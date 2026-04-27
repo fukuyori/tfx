@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.2.1**
+Version: **0.2.2**
 
 [English](README.md) | 日本語
 
@@ -64,6 +64,12 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -destination 'platform=macOS' -der
 xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
 ```
 
+署名済みリリース pkg:
+
+```sh
+./scripts/build_release_pkg.sh
+```
+
 ## プロジェクト構成
 
 - `tfx/App`: アプリのエントリーポイントとルート View
@@ -75,6 +81,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Infrastructure`: 小さな AppKit / SwiftUI 共通補助
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
 - `tools/generate_app_icon.swift`: アプリアイコン再生成スクリプト
+- `scripts/build_release_pkg.sh`: Developer ID 署名済みリリース pkg 作成スクリプト
 - `docs/code-organization.md`: ソース配置と命名規則
 - `docs/file-manager-implementation-plan.md`: 実装計画と進捗
 - `docs/development-roadmap.md`: 今後の開発計画
@@ -86,4 +93,4 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - 削除操作は完全削除ではなく、macOS の Trash を使用します。
 - プレビューは PDFKit、AVKit、WebKit、Quick Look を使います。
 - 日付表示は `yyyy-MM-dd HH:mm:ss` 形式です。
-- `CODE_SIGNING_ALLOWED=NO` で作成した Release ビルドは、Developer ID 署名や notarization は未実施です。
+- `scripts/build_release_pkg.sh` は Developer ID 署名済み app と pkg を作成します。notarization は実施しません。

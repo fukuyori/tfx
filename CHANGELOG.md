@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.2] - 2026-04-27
+
+### Added
+
+- Added `scripts/build_release_pkg.sh` for Developer ID signed release pkg builds.
+
+### Fixed
+
+- Fixed file-view icons by caching AppKit file icons per path and rendering them as original images.
+
+### Changed
+
+- Updated the version to `0.2.2` and the build number to `4`.
+
 ## [0.2.1] - 2026-04-27
 
 ### Changed

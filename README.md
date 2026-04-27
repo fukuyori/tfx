@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.2.1**
+Version: **0.2.2**
 
 English | [日本語](README.ja.md)
 
@@ -64,6 +64,12 @@ Release build:
 xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
 ```
 
+Signed release package:
+
+```sh
+./scripts/build_release_pkg.sh
+```
+
 ## Project Structure
 
 - `tfx/App`: App entry points and root view wiring
@@ -75,6 +81,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Infrastructure`: Small reusable AppKit and SwiftUI helpers
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
 - `tools/generate_app_icon.swift`: App icon regeneration script
+- `scripts/build_release_pkg.sh`: Developer ID signed release package build script
 - `docs/code-organization.md`: Source layout and naming rules
 - `docs/file-manager-implementation-plan.md`: Implementation plan and progress notes
 - `docs/development-roadmap.md`: Future development roadmap
@@ -86,4 +93,4 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - Delete-like operations use the macOS Trash instead of permanent deletion.
 - Previews use PDFKit, AVKit, WebKit, and Quick Look.
 - Date display uses `yyyy-MM-dd HH:mm:ss`.
-- Release builds created with `CODE_SIGNING_ALLOWED=NO` are not Developer ID signed or notarized.
+- `scripts/build_release_pkg.sh` creates a Developer ID signed app and pkg. Notarization is not performed by this script.
