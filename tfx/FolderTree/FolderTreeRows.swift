@@ -94,7 +94,10 @@ struct FolderTreeRow: View {
         .id(FolderTreeRowID(url: url, section: selectionSection))
         .contentShape(Rectangle())
         .onTapGesture {
-            handleTap()
+            handleSingleClick()
+        }
+        .onTapGesture(count: 2) {
+            handleDoubleClick()
         }
         .contextMenu {
             FolderTreeRowContextMenu(
@@ -123,14 +126,17 @@ struct FolderTreeRow: View {
         FolderDisplayNameCache.shared.displayName(for: url)
     }
 
-    private func handleTap() {
-        let shouldCollapse = showsExpansionControl && isExpanded
+    private func handleSingleClick() {
         activateTree()
         model.selectFolderTree(url, in: selectionSection)
-        model.navigate(to: url)
-        if shouldCollapse {
-            model.toggleFolderExpansion(url)
-        }
+        model.navigate(to: url, expandsTarget: false)
+    }
+
+    private func handleDoubleClick() {
+        activateTree()
+        model.selectFolderTree(url, in: selectionSection)
+        guard showsExpansionControl else { return }
+        model.toggleFolderExpansion(url)
     }
 
     private var rowBackground: Color {

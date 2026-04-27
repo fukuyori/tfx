@@ -14,7 +14,7 @@ extension FileBrowserModel {
         currentDirectory.deletingLastPathComponent() != currentDirectory
     }
 
-    func navigate(to directory: URL, recordsHistory: Bool = true) {
+    func navigate(to directory: URL, recordsHistory: Bool = true, expandsTarget: Bool = true) {
         let target = directory.standardizedFileURL
         guard target != currentDirectory.standardizedFileURL else { return }
 
@@ -28,7 +28,9 @@ extension FileBrowserModel {
         clearDropTargetDirectory(nil)
         clearSelection()
         expandAncestors(of: target)
-        expandFolder(target)
+        if expandsTarget {
+            expandFolder(target)
+        }
         reload()
     }
 

@@ -55,6 +55,7 @@ extension FileBrowserModel {
             delta: delta
         ) {
             selectFolderTree(target.url, in: target.section)
+            navigate(to: target.url, expandsTarget: false)
         }
     }
 
@@ -90,9 +91,9 @@ extension FileBrowserModel {
     func activateFolderTreeSelection() {
         let selectedURL = selectedFolderTreeURL.standardizedFileURL
         guard FileBrowserExternalActions.isDirectory(selectedURL) else { return }
-        navigate(to: selectedURL)
+        navigate(to: selectedURL, expandsTarget: false)
         if folderTreeSelectionSection == .tree {
-            expandFolder(selectedURL)
+            toggleFolderExpansion(selectedURL)
         }
     }
 

@@ -4,6 +4,12 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.3] - 2026-04-27
+
+### Changed
+
+- Updated the version to `0.2.3` and the build number to `5`.
+
 ## [0.2.2] - 2026-04-27
 
 ### Added
