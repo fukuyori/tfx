@@ -1,70 +1,84 @@
 # Changelog
 
-このファイルは `tfx` の主な変更点を記録する。
+This file records notable changes to `tfx`.
+
+Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
+
+## [0.2.1] - 2026-04-27
+
+### Changed
+
+- Updated the version to `0.2.1` and the build number to `3`.
+- Reorganized Swift sources into feature directories: `App`, `TerminalFileManager`, `FileBrowser`, `FilePane`, `FolderTree`, `Preview`, and `Infrastructure`.
+- Renamed files to better match their primary types and responsibilities.
+- Added `docs/code-organization.md` with source layout and naming rules.
+- Converted project documentation to English by default.
+- Kept `README.ja.md` as the Japanese README.
+- Updated README project structure sections for the new source layout.
 
 ## [0.2.0] - 2026-04-27
 
 ### Added
 
-- ピン留めフォルダのドラッグ並べ替えを追加。
-- ピン留めフォルダのドラッグ中に挿入位置を広げ、ドロップしやすくする表示を追加。
-- ファイルビューからフォルダツリーへのドラッグアンドドロップ移動を追加。
-- ドロップ先フォルダのハイライト表示を追加。
-- ファイルビューの空白部分のコンテキストメニューを追加。
-- 複数選択時のプレビュー並列表示を追加。
-- プレビュー内の項目選択とドラッグ操作を追加。
-- フォルダツリーとファイルビューのキーボード選択スクロールを追加。
-- ファイル一覧の横スクロールバー表示を追加。
-- `TFX_PERFORMANCE_LOGS=1` による処理時間ログを追加。
-- 詳細設計書 `docs/detailed-design.md` を追加。
-- 今後の開発計画 `docs/development-roadmap.md` を追加。
+- Added drag reordering for pinned folders.
+- Added an expanded insertion target while dragging pinned folders to make drops easier.
+- Added file drag-and-drop from the file view to the folder tree.
+- Added drop-target highlighting for folders.
+- Added a context menu for blank space in the file view.
+- Added side-by-side previews for multiple selected files.
+- Added preview-item selection and drag support.
+- Added keyboard-selection scrolling for the folder tree and file view.
+- Added horizontal scrolling for the file list.
+- Added `TFX_PERFORMANCE_LOGS=1` timing logs.
+- Added `docs/detailed-design.md`.
+- Added `docs/development-roadmap.md`.
 
 ### Changed
 
-- バージョンを `0.2.0`、ビルド番号を `2` に更新。
-- クリック、ダブルクリック、ホバー表示の反応速度を改善。
-- ダブルクリック時に、対象の選択表示を更新してから開くように変更。
-- ツールバーのヘルプ表示を即時表示寄りに変更。
-- ディレクトリ読み込み、検索、ソート、メタデータ取得を UI 操作から分離。
-- 大きなフォルダの読み込みを段階的に表示するように変更。
-- 検索、ソート、プレビュー、メタデータ先読みをキャンセル可能に変更。
-- 名前ソートの既定を高速な `Name` に変更し、自然順ソートを `Name (Natural)` として保持。
-- フォルダツリーの子フォルダ読み込みをキュー化し、同時実行数を制限。
-- フォルダ名クリックで展開と折りたたみの両方を行うように変更。
-- ピン留めフォルダは `PINNED` セクション内では展開しないように変更。
-- ファイル操作後の一覧更新を、可能な範囲で差分更新に変更。
-- README の機能説明とプロジェクト構成を更新。
-- 実装計画を現在の実装状況に合わせて更新。
+- Updated the version to `0.2.0` and the build number to `2`.
+- Improved click, double-click, and hover responsiveness.
+- Changed double-click behavior so the target selection updates before opening.
+- Made toolbar help display more immediate.
+- Moved directory loading, filtering, sorting, and metadata loading away from the UI path.
+- Changed large-directory loading to display results incrementally.
+- Made filtering, sorting, preview loading, and metadata prefetching cancellable.
+- Changed the default name sort to the fast `Name` sort while keeping natural sorting as `Name (Natural)`.
+- Queued folder-tree child loading and limited concurrency.
+- Changed folder-name clicks to both expand and collapse folders.
+- Changed pinned folders so they do not expand in the `PINNED` section.
+- Changed file operation refreshes to use incremental updates where practical.
+- Updated README feature descriptions and project structure.
+- Updated the implementation plan to match the current implementation.
 
 ### Fixed
 
-- ピン留めフォルダのドロップ後に順番が入れ替わらない問題を修正。
-- ピン留めフォルダのドラッグ中に表示がちらつく問題を軽減。
-- フォルダ選択時に前の選択ハイライトが残ることがある問題を修正。
-- サブフォルダがないフォルダにも展開マークが表示される問題を修正。
-- ファイルビューの項目をドラッグできないことがある問題を修正。
-- ファイルビューの選択位置が表示外に移動してもスクロールしない問題を修正。
-- プレビュー読み込みが選択変更後も残り続ける問題を軽減。
+- Fixed pinned-folder drops not updating the order.
+- Reduced flickering while dragging pinned folders.
+- Fixed stale folder selection highlights that could remain after selecting another folder.
+- Fixed expansion indicators appearing on folders without subfolders.
+- Fixed cases where files in the file view could not be dragged.
+- Fixed file-view keyboard selection moving outside the visible area without scrolling.
+- Reduced stale preview work after selection changes.
 
 ### Planned
 
-- サブフォルダ検索。
-- 設定基盤。
-- カラースキーマ。
-- ショートカット整理。
-- Markdown プレビュー拡張。
-- 拡張子別動作。
-- Lua 拡張 API。
+- Subfolder search.
+- Configuration foundation.
+- Color schemes.
+- Shortcut organization.
+- Markdown preview extensions.
+- Extension-based behavior.
+- Lua extension API.
 
 ## [0.1.0] - Initial
 
 ### Added
 
-- ターミナル風の macOS ファイルマネージャー初期実装。
-- フォルダツリー、左右分割ファイルビュー、プレビューペインを追加。
-- PDF、動画、Markdown、Quick Look プレビューを追加。
-- New Folder、Rename、Move to Trash、Reveal in Finder、Copy Path を追加。
-- Copy、Cut、Paste と同名ファイル競合ダイアログを追加。
-- 検索、隠しファイル表示、ソートを追加。
-- 複数選択、範囲選択、キーボード操作を追加。
-- Terminal.app を現在フォルダで開く機能を追加。
+- Added the initial terminal-style macOS file manager.
+- Added folder tree, split file panes, and preview pane.
+- Added PDF, video, Markdown, and Quick Look previews.
+- Added New Folder, Rename, Move to Trash, Reveal in Finder, and Copy Path.
+- Added Copy, Cut, Paste, and same-name conflict handling.
+- Added search, hidden-file display, and sorting.
+- Added multiple selection, range selection, and keyboard operations.
+- Added opening Terminal.app at the current folder.

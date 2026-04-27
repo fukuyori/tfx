@@ -2,7 +2,7 @@
 
 **Terminal File eXplorer**  
 Pronunciation: **Tafix**  
-Version: **0.2.0**
+Version: **0.2.1**
 
 English | [日本語](README.ja.md)
 
@@ -62,10 +62,16 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 ## Project Structure
 
-- `tfx/TerminalFileManagerView.swift`: Main file manager implementation
-- `tfx/ContentView.swift`: Presents `TerminalFileManagerView` on macOS
+- `tfx/App`: App entry points and root view wiring
+- `tfx/TerminalFileManager`: Top-level file manager screen, controls, keyboard routing, and layout state
+- `tfx/FileBrowser`: File browser model, directory loading, selection, file operations, metadata, and drag/drop behavior
+- `tfx/FilePane`: File list panes, rows, headers, menus, settings, and status line
+- `tfx/FolderTree`: Folder tree and pinned-folder UI
+- `tfx/Preview`: Preview pane, Markdown/PDF/video/Quick Look previews, and preview type selection
+- `tfx/Infrastructure`: Small reusable AppKit and SwiftUI helpers
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
 - `tools/generate_app_icon.swift`: App icon regeneration script
+- `docs/code-organization.md`: Source layout and naming rules
 - `docs/file-manager-implementation-plan.md`: Implementation plan and progress notes
 - `docs/development-roadmap.md`: Future development roadmap
 - `docs/detailed-design.md`: Detailed design document

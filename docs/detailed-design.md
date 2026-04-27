@@ -1,376 +1,349 @@
-# tfx 詳細設計書
+# tfx Detailed Design
 
-## 1. 概要
+## 1. Overview
 
-`tfx` は macOS 向けの SwiftUI アプリケーションであり、ターミナル風の外観とキーボード中心の操作体系を持つファイルマネージャーである。主要画面は、左のフォルダツリー、中央のファイルペイン、右のプレビューペインで構成する。中央のファイルペインは単一表示と左右分割表示を切り替えられる。
+`tfx` is a SwiftUI macOS file manager with a terminal-inspired appearance and keyboard-first workflow. The main screen is composed of a folder tree on the left, one or two file panes in the center, and a preview pane on the right.
 
-本書は現行実装を基準に、画面構成、状態管理、ファイル操作、プレビュー、永続化、エラー処理の詳細を定義する。
+This document describes the current design for layout, state management, file operations, previews, persistence, error handling, and future extension points.
 
-## 2. 対象範囲
+Project documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
-### 2.1 対象機能
+## 2. Scope
 
-- フォルダツリーによるディレクトリ移動
-- 左右ファイルペインによるファイル一覧表示
-- 単一ペイン / 分割ペイン切り替え
-- ファイル選択、複数選択、範囲選択
-- 戻る / 進む / 親フォルダ移動
-- 新規フォルダ作成、リネーム、ゴミ箱移動
-- コピー、カット、ペースト、ドラッグアンドドロップ移動
-- 同名ファイル競合時の解決
-- Finder 表示、パスコピー、Terminal.app 連携
-- 検索、隠しファイル表示、ソート
-- PDF、動画、Markdown、Quick Look プレビュー
-- ピン留めフォルダ
-- ピン留めフォルダのドラッグ並べ替え
-- レイアウト、カラム設定、ウィンドウ状態の永続化
+### 2.1 In Scope
 
-### 2.2 対象外
+- Directory navigation from the folder tree.
+- File listing in left and right file panes.
+- Single-pane and split-pane display modes.
+- Single selection, multiple selection, and range selection.
+- Back, forward, and parent-folder navigation.
+- New folder, rename, and move to Trash.
+- Copy, cut, paste, and drag-and-drop move operations.
+- Same-name conflict resolution.
+- Reveal in Finder, copy path, and Terminal.app integration.
+- Search, hidden-file display, and sorting.
+- PDF, video, Markdown, and Quick Look previews.
+- Pinned folders and pinned-folder drag reordering.
+- Persistent layout, column settings, window state, and folder state.
 
-- iOS / iPadOS 向けのファイル管理機能
-- Developer ID 署名、notarization、配布インストーラ
-- Finder 拡張、Spotlight インデックス連携
-- ネットワーク越しのファイル操作専用処理
-- 権限昇格を伴う管理者操作
+### 2.2 Out of Scope
 
-## 3. システム構成
+- iOS and iPadOS file management.
+- Developer ID signing, notarization, and installer packaging.
+- Finder extensions and Spotlight indexing.
+- Special network-file operation handling.
+- Administrative operations that require privilege escalation.
 
-### 3.1 アプリ構成
+## 3. Source Layout
 
-| ファイル | 役割 |
+The Swift sources are organized by feature responsibility:
+
+| Directory | Responsibility |
 | --- | --- |
-| `tfx/tfxApp.swift` | アプリケーションのエントリーポイント。`WindowGroup` に `ContentView` を表示する。 |
-| `tfx/ContentView.swift` | macOS では `TerminalFileManagerView` を表示する。非 macOS では未対応表示を行う。 |
-| `tfx/TerminalFileManagerView.swift` | メイン画面、状態モデル、ファイル操作、プレビュー、補助 View を含む中心実装。 |
-| `docs/file-manager-implementation-plan.md` | 実装計画と進捗管理。 |
+| `tfx/App` | App entry points and root view wiring. |
+| `tfx/TerminalFileManager` | Main screen composition, header controls, keyboard routing, and top-level layout state. |
+| `tfx/FileBrowser` | File browser model, directory loading, selection, file operations, folder-tree data, pinned folders, metadata, icon caching, and drag/drop model behavior. |
+| `tfx/FilePane` | File list UI, rows, headers, menus, status line, and file-list display settings. |
+| `tfx/FolderTree` | Folder tree UI and pinned-folder UI. |
+| `tfx/Preview` | Preview pane, preview type selection, Markdown/PDF/video/Quick Look previews, and multi-preview UI. |
+| `tfx/Infrastructure` | Small reusable SwiftUI and AppKit helpers. |
 
-### 3.2 技術スタック
+See `docs/code-organization.md` for file naming and placement rules.
 
-| 分類 | 使用技術 |
+## 4. Technology Stack
+
+| Area | Technology |
 | --- | --- |
 | UI | SwiftUI |
-| macOS 連携 | AppKit、NSWorkspace、NSOpenPanel、NSAlert、NSPasteboard |
-| PDF プレビュー | PDFKit |
-| 動画プレビュー | AVKit |
-| Markdown プレビュー | WebKit |
-| 汎用プレビュー | QuickLookUI |
-| ファイル種別 | UniformTypeIdentifiers |
-| 状態永続化 | `UserDefaults` / `@AppStorage` |
+| macOS integration | AppKit, NSWorkspace, NSOpenPanel, NSAlert, NSPasteboard |
+| PDF preview | PDFKit |
+| Video preview | AVKit |
+| Markdown preview | WebKit |
+| Generic preview | QuickLookUI |
+| File type detection | UniformTypeIdentifiers |
+| Persistence | `UserDefaults` / `@AppStorage` |
 
-## 4. 画面設計
+## 5. Screen Design
 
-### 4.1 全体レイアウト
+### 5.1 Overall Layout
 
-`TerminalFileManagerView` は次の階層で画面を構成する。
+`TerminalFileManagerView` composes the screen from:
 
-1. ヘッダー
-2. フォルダツリーペイン
-3. ファイル表示エリア
-4. プレビューペイン
+1. Header
+2. Folder tree pane
+3. File display area
+4. Preview pane
 
-ヘッダーにはナビゲーション、検索、ソート、ファイル操作、表示切り替え、Terminal.app 起動、パスコピーの操作を配置する。フォルダツリー、ファイルペイン、プレビューの幅はドラッグ操作で変更できる。
+The header contains navigation, search, sorting, file operations, pane visibility toggles, Terminal.app launch, and path copy actions. Folder tree width, preview width, and split-pane ratio can be changed by dragging.
 
-### 4.2 フォルダツリーペイン
+### 5.2 Folder Tree Pane
 
-`FolderTreePane` は `/` をルートとする単一ツリーを表示する。ピン留めフォルダが存在する場合は `PINNED` セクションを先頭に表示し、その後に通常の `FOLDERS` セクションを表示する。ピン留めフォルダは `PINNED` セクション内でドラッグして順番を変更できる。この並べ替えはアプリ内の表示順だけを変更し、実際のフォルダは移動しない。`PINNED` セクションの行はショートカットとして扱い、子フォルダは展開しない。
+`FolderTreePane` displays a single tree rooted at `/`. If pinned folders exist, a `PINNED` section is shown before the normal `FOLDERS` tree.
 
-フォルダツリーは表示とナビゲーション専用とする。フォルダツリーへのドロップや、フォルダツリー行のコンテキストメニューからのペーストは提供しない。
+Pinned folders are shortcuts. They can be reordered inside the `PINNED` section, but that only changes the app's display order and never moves real folders. Pinned-folder rows do not expand child folders.
 
-フォルダ行は `FolderTreeRow` が担当する。各行は展開 / 折りたたみ、ディレクトリ移動、ドラッグアンドドロップ受け入れ、コンテキストメニューを持つ。
+The regular folder tree is used for display, navigation, expansion/collapse, context menus, and file drop targets. Moving real folders within the folder tree is not allowed. Dropping files from the file view onto a folder tree row is allowed and moves those files into the target folder.
 
-### 4.3 ファイルペイン
+### 5.3 File Pane
 
-`FilePane` はファイル一覧をターミナル風のテーブルとして表示する。分割表示では左ペインと右ペインがそれぞれ独立した `FileBrowserModel` を持つ。単一表示ではアクティブペインのみ表示する。
+`FilePane` renders a terminal-style file table. In split mode, the left and right panes each own an independent `FileBrowserModel`. In single-pane mode, only the active pane is visible.
 
-ファイル一覧の先頭には、親フォルダ移動用の `..` 行を表示する。ファイル行は `FileRow` が担当し、ファイル種別アイコン、モード、名前、サイズ、種類、更新日時、作成日時、権限をカラムとして表示する。
+The file list begins with a `..` parent-directory row. `FileRow` renders file type icon, mode, name, size, kind, modified date, created date, and permissions. The name column is always visible; other columns can be shown, hidden, and reordered.
 
-### 4.4 プレビューペイン
+### 5.4 Preview Pane
 
-`PreviewPane` はアクティブペインの `primarySelectedItem` を対象にプレビューを表示する。選択がない場合は `No preview` を表示する。プレビュー種別は `PreviewKind` が URL の content type と拡張子から判定する。
+`PreviewPane` displays the active pane's selected item. When multiple files are selected, the preview pane can show multiple preview cards with a limit on active preview loading.
 
-| 種別 | View | 判定 |
+Preview type is selected by `PreviewKind` from the URL extension and content type:
+
+| Type | View | Detection |
 | --- | --- | --- |
-| PDF | `PDFPreview` | UTType が `.pdf` に準拠 |
-| 動画 | `VideoPreview` | UTType が `.movie` に準拠 |
-| Markdown | `MarkdownPreview` | 拡張子が `md`、`markdown`、`mdown`、`mkd` |
-| その他 | `QuickLookPreview` | 上記以外 |
+| PDF | `PDFPreview` | UTType conforms to `.pdf` |
+| Video | `VideoPreview` | UTType conforms to `.movie` |
+| Markdown | `MarkdownPreview` | Extension is `md`, `markdown`, `mdown`, or `mkd` |
+| Other | `QuickLookPreview` | Fallback |
 
-## 5. 状態管理設計
+## 6. State Management
 
-### 5.1 ルート状態
+### 6.1 Root State
 
-`TerminalFileManagerView` は次の状態を保持する。
+`TerminalFileManagerView` owns the two file browser models and top-level UI state:
 
-| 状態 | 種別 | 内容 |
+| State | Storage | Meaning |
 | --- | --- | --- |
-| `leftModel` | `@StateObject` | 左ファイルペインの状態モデル |
-| `rightModel` | `@StateObject` | 右ファイルペインの状態モデル |
-| `isPreviewVisible` | `@AppStorage` | プレビュー表示状態 |
-| `isSplitViewVisible` | `@AppStorage` | 分割表示状態 |
-| `activePaneRawValue` | `@AppStorage` | アクティブなファイルペイン |
-| `activeAreaRawValue` | `@AppStorage` | キーボード操作対象領域 |
-| `folderTreeWidth` | `@AppStorage` | フォルダツリー幅 |
-| `previewWidth` | `@AppStorage` | プレビュー幅 |
-| `fileSplitRatio` | `@AppStorage` | 左右ファイルペイン比率 |
-| `fileNameColumnWidth` | `@AppStorage` | ファイル名カラム幅 |
-| `fileColumnConfigurationRaw` | `@AppStorage` | ファイル一覧カラム設定 |
+| `leftModel` | `@StateObject` | Left file pane model. |
+| `rightModel` | `@StateObject` | Right file pane model. |
+| `isPreviewVisible` | `@AppStorage` | Preview pane visibility. |
+| `isSplitViewVisible` | `@AppStorage` | Split-pane visibility. |
+| `activePaneRawValue` | `@AppStorage` | Active file pane. |
+| `activeAreaRawValue` | `@AppStorage` | Active keyboard target. |
+| `folderTreeWidth` | `@AppStorage` | Folder tree width. |
+| `previewWidth` | `@AppStorage` | Preview pane width. |
+| `fileSplitRatio` | `@AppStorage` | Left/right file pane ratio. |
+| `fileNameColumnWidth` | `@AppStorage` | File name column width. |
+| `fileColumnConfigurationRaw` | `@AppStorage` | File list column configuration. |
 
-アクティブモデルは `activePane` により `leftModel` または `rightModel` から選択する。フォルダツリーとプレビューはアクティブモデルを参照する。
+The active model is selected from `leftModel` or `rightModel` through `activePane`. The folder tree and preview pane follow the active model.
 
-### 5.2 ファイルブラウザ状態
+### 6.2 File Browser State
 
-`FileBrowserModel` はディレクトリ単位の状態と操作を集約する。
+`FileBrowserModel` owns directory-level state and operations:
 
-| 状態 | 内容 |
+| State | Meaning |
 | --- | --- |
-| `currentDirectory` | 現在表示中のディレクトリ |
-| `items` | 検索、隠しファイル設定、ソート適用後の表示項目 |
-| `allItems` | 現在ディレクトリ内の全項目 |
-| `selectedItemIDs` | 選択中ファイルの URL セット |
-| `primarySelectedItemID` | プレビューや主要操作の対象 |
-| `isParentDirectorySelected` | `..` 行が選択中かどうか |
-| `folderTreeSelection` | フォルダツリー上の選択 URL |
-| `expandedFolders` | 展開中フォルダ |
-| `folderChildrenCache` | フォルダツリーの子フォルダキャッシュ |
-| `backStack` / `forwardStack` | ナビゲーション履歴 |
-| `clipboard` | アプリ内コピー / 移動用クリップボード |
-| `pinnedFolders` | ピン留めフォルダ |
-| `availableCapacityText` | 現在ボリュームの空き容量表示 |
+| `currentDirectory` | Directory currently displayed by the pane. |
+| `items` | Visible items after filtering and sorting. |
+| `allItems` | All loaded items in the current directory. |
+| `selectedItemIDs` | Selected file URLs. |
+| `primarySelectedItemID` | Main target for preview and primary operations. |
+| `isParentDirectorySelected` | Whether the `..` row is selected. |
+| `folderTreeSelection` | Selected folder tree URL. |
+| `expandedFolders` | Expanded folder tree URLs. |
+| `folderChildrenCache` | Cached child folders for the folder tree. |
+| `backStack` / `forwardStack` | Navigation history. |
+| `clipboard` | App-local copy/move clipboard. |
+| `pinnedFolders` | Pinned folder URLs in display order. |
+| `availableCapacityText` | Free-space text for the current volume. |
 
-## 6. データモデル設計
+## 7. Data Model
 
-### 6.1 FileItem
+`FileItem` represents one file-list row. Its identity is the file URL.
 
-`FileItem` はファイル一覧の 1 行を表す値型である。識別子は URL とする。
-
-| プロパティ | 内容 |
+| Property | Meaning |
 | --- | --- |
-| `url` | ファイルまたはフォルダの URL |
-| `isDirectory` | ディレクトリ判定 |
-| `isHidden` | 隠しファイル判定 |
-| `size` | ファイルサイズ |
-| `modified` | 更新日時 |
-| `created` | 作成日時 |
-| `kind` | ローカライズ済み種別説明 |
-| `permissions` | POSIX 権限 |
+| `url` | File or folder URL. |
+| `isDirectory` | Directory flag. |
+| `isHidden` | Hidden-file flag. |
+| `size` | File size. |
+| `modified` | Modified date. |
+| `created` | Created date. |
+| `kind` | Localized kind description. |
+| `permissions` | POSIX permissions. |
 
-表示用プロパティとして `name`、`mode`、`sizeText`、`kindText`、`modifiedText`、`createdText`、`permissionsText` を提供する。日付は `yyyy-MM-dd HH:mm:ss` 形式で表示する。
+Display properties include `name`, `mode`, `sizeText`, `kindText`, `modifiedText`, `createdText`, and `permissionsText`. Dates are displayed as `yyyy-MM-dd HH:mm:ss`.
 
-### 6.2 カラム設定
+`FileListColumnConfiguration` serializes column visibility and order to a `UserDefaults`-safe raw value. Invalid or incomplete values are repaired by filling in defaults.
 
-`FileListColumn` はファイル一覧のカラム種別を定義する。`name` カラムは常に表示し、その他のカラムは表示 / 非表示と順序変更を許可する。
+## 8. Processing Design
 
-`FileListColumnConfiguration` は `column:visible` 形式の文字列を `UserDefaults` に保存可能な設定として扱う。不正な値や不足したカラムがある場合は既定カラムを補完する。
+### 8.1 Launch
 
-## 7. 処理設計
+1. `tfxApp` presents `ContentView`.
+2. On macOS, `ContentView` creates `TerminalFileManagerView`.
+3. `TerminalFileManagerView.init()` restores the last left and right directories from `UserDefaults`.
+4. If the restored directories no longer exist, the left pane starts at Home and the right pane starts at Downloads.
+5. Each `FileBrowserModel` runs `reload()` and expands the current folder's ancestor chain in the folder tree.
 
-### 7.1 起動処理
+### 8.2 Directory Loading
 
-1. `tfxApp` が `ContentView` を表示する。
-2. macOS では `TerminalFileManagerView` を生成する。
-3. `TerminalFileManagerView.init()` が `UserDefaults` から左右ペインの最終ディレクトリを復元する。
-4. 復元先が存在しない場合は、左ペインはホーム、右ペインは Downloads を初期値にする。
-5. 各 `FileBrowserModel` が `reload()` を実行し、フォルダツリーの祖先と現在フォルダを展開する。
+`FileBrowserModel.reload()` reads the current directory, builds `FileItem` values, updates free-space text, and applies filtering and sorting. Expensive work is kept away from the UI path and guarded by cancellation tokens so stale results are ignored.
 
-### 7.2 ディレクトリ読み込み
+Directory read failures are reported through `show(_:)`, which updates model error state for display by the screen alert.
 
-`FileBrowserModel.reload()` は `FileManager.default.contentsOfDirectory` により現在ディレクトリの内容を読み込む。読み込み時に `FileItem` を生成し、空き容量を更新した後、`applyFiltersAndSort()` を実行する。
+### 8.3 Filtering and Sorting
 
-読み込みに失敗した場合は `show(_:)` によりエラーメッセージを設定し、画面側の alert で表示する。
+Filtering and sorting run when `searchText`, `showHiddenFiles`, `sortKey`, or `sortAscending` changes.
 
-### 7.3 検索・フィルタ・ソート
+Rules:
 
-`searchText`、`showHiddenFiles`、`sortKey`、`sortAscending` の変更時に `applyFiltersAndSort()` を実行する。
+- Hidden files are excluded when hidden-file display is off.
+- Non-empty search text filters by case-insensitive file name containment.
+- Directories are sorted before files.
+- Ties fall back to name comparison.
 
-フィルタ条件は次の通り。
+### 8.4 Navigation
 
-- 隠しファイル非表示時は `isHidden == true` の項目を除外する。
-- 検索文字列が空でない場合は、ファイル名に対する大文字小文字を区別しない部分一致で絞り込む。
+`navigate(to:recordsHistory:)` is the central directory navigation operation. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation clears selection, expands ancestors in the folder tree, and reloads the target directory.
 
-ソートではディレクトリを常にファイルより前に置く。同一キーの場合は名前で昇順比較する。
+Back and forward are handled by `goBack()` and `goForward()`. Parent-folder navigation is handled by `goUp()` and does nothing at the root directory.
 
-### 7.4 ナビゲーション
+### 8.5 Selection
 
-`navigate(to:recordsHistory:)` がディレクトリ移動の中心処理である。履歴記録ありの場合は現在ディレクトリを `backStack` に追加し、`forwardStack` をクリアする。移動後は選択状態をクリアし、移動先の祖先フォルダと移動先フォルダを展開してから `reload()` を実行する。
+Single selection, Command-click extension, Shift-click range selection, and Shift-arrow range selection are handled by `FileBrowserSelectionSupport` and `FileBrowserModel` selection methods.
 
-戻る / 進むは `goBack()` / `goForward()` が担当する。親フォルダ移動は `goUp()` が担当し、ルートでは何もしない。
+The `..` row is tracked separately through `isParentDirectorySelected`. Pressing Enter while `..` is selected runs `goUp()`.
 
-### 7.5 選択操作
+### 8.6 File Operations
 
-単一選択は `select(_:)` が担当する。Command-click による追加 / 解除選択では `extending` を `true` にする。
-
-範囲選択は `selectRange(to:)` および `selectRange(toRow:fallbackCurrentRow:)` が担当する。範囲の基準には `selectionAnchorItemID` を使用する。
-
-`..` 行は通常ファイルとは別に `isParentDirectorySelected` で管理する。`..` 選択中に Enter を押すと `goUp()` を実行する。
-
-### 7.6 ファイル操作
-
-| 操作 | メソッド | 概要 |
-| --- | --- | --- |
-| 新規フォルダ | `createFolder()` | 名前入力後、同名があれば連番付きの一意名で作成する。 |
-| リネーム | `renameSelectedItem()` | 単一選択時のみ実行し、同名があれば一意名へ変更する。 |
-| ゴミ箱移動 | `moveSelectedItemsToTrash()` | `FileManager.default.trashItem` を使い完全削除しない。 |
-| Finder 表示 | `revealSelectedItemsInFinder()` | `NSWorkspace.shared.activateFileViewerSelecting` を使う。 |
-| パスコピー | `copyPath(_:)` | `NSPasteboard.general` に文字列としてコピーする。 |
-| Terminal 起動 | `openTerminal(at:)` | Terminal.app を指定ディレクトリで開く。 |
-
-操作後は関連するフォルダツリーキャッシュを更新し、ファイル一覧を再読み込みする。
-
-### 7.7 コピー / カット / ペースト
-
-コピーとカットは `FileClipboard` に URL 配列と操作種別を保存し、同時に `NSPasteboard` へ URL を書き込む。ペーストはアプリ内の `clipboard` を参照して実行する。
-
-ペースト時は各 URL について `destinationDecision(for:in:operation:)` を呼び出し、移動先を決定する。同名ファイルが存在する場合は `NSAlert` で次の選択肢を表示する。
-
-| 選択肢 | 動作 |
+| Operation | Behavior |
 | --- | --- |
-| Replace | 既存項目を削除して置き換える。 |
-| Keep Both | 連番付きの一意名でコピー / 移動する。 |
-| Skip | 該当項目を処理しない。 |
-| Cancel | 残りの処理を中止する。 |
+| New Folder | Prompts for a name and creates a unique destination if needed. |
+| Rename | Prompts for a new name and creates a unique destination if needed. |
+| Move to Trash | Uses `FileManager.default.trashItem`; it does not permanently delete files. |
+| Reveal in Finder | Uses `NSWorkspace.shared.activateFileViewerSelecting`. |
+| Copy Path | Writes a path string to `NSPasteboard.general`. |
+| Open Terminal Here | Opens Terminal.app at the target directory. |
 
-移動操作の完了後はアプリ内クリップボードをクリアする。
+After mutating operations, affected directories and folder-tree caches are refreshed where practical.
 
-### 7.8 ドラッグアンドドロップ
+### 8.7 Copy, Cut, and Paste
 
-`FileRow`、`FilePane`、`FolderTreeRow`、`FolderTreePane` は `UTType.fileURL` のドロップを受け入れる。`FileDropDelegate` が `FileBrowserModel.moveDroppedFiles(_:to:completion:)` を呼び出し、対象ディレクトリへ移動する。
+Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs to `NSPasteboard`. Paste currently uses the app-local clipboard.
 
-ドロップされた URL がセキュリティスコープ付きリソースの場合は、移動中のみ `startAccessingSecurityScopedResource()` を呼び出す。
+Same-name conflicts are resolved through a user prompt:
 
-### 7.9 プレビュー
-
-プレビューは選択中の主項目 URL を入力にして View を切り替える。PDF、動画、Markdown は専用 View を使い、それ以外は Quick Look を使用する。
-
-Markdown は外部ライブラリを使わず、簡易パーサーで HTML に変換して `WKWebView` に表示する。対応する主な Markdown 要素は見出し、段落、リスト、コードブロック、引用、インラインコード、強調、リンクである。
-
-将来の Markdown プレビュー拡張では、ルビ表示、数式表示、Mermaid 図表、独自記法、CSS カスタマイズを対象とする。設定は TOML で管理し、KaTeX、MathJax、Mermaid、CSS を個別に指定できるようにする。
-
-```toml
-[markdown.katex]
-macros = {}
-
-[markdown.mathjax.tex]
-
-[markdown.mathjax.options]
-
-[markdown.mathjax.loader]
-
-[markdown.mermaid]
-startOnLoad = false
-
-[markdown.css]
-files = ["markdown/preview.css"]
-inline = ""
-```
-
-## 8. 永続化設計
-
-### 8.1 UserDefaults キー
-
-| キー | 内容 |
+| Choice | Behavior |
 | --- | --- |
-| `TerminalFileManager.leftDirectory` | 左ペインの最終ディレクトリ |
-| `TerminalFileManager.rightDirectory` | 右ペインの最終ディレクトリ |
-| `TerminalFileManager.isPreviewVisible` | プレビュー表示状態 |
-| `TerminalFileManager.isSplitViewVisible` | 分割表示状態 |
-| `TerminalFileManager.activePane` | アクティブペイン |
-| `TerminalFileManager.activeArea` | アクティブ領域 |
-| `TerminalFileManager.folderTreeWidth` | フォルダツリー幅 |
-| `TerminalFileManager.previewWidth` | プレビュー幅 |
-| `TerminalFileManager.fileSplitRatio` | ファイルペイン分割比率 |
-| `TerminalFileManager.fileNameColumnWidth` | ファイル名カラム幅 |
-| `TerminalFileManager.fileColumnConfiguration` | カラム表示 / 順序設定 |
-| `TerminalFileManager.pinnedFolders` | ピン留めフォルダ一覧 |
+| Replace | Remove the existing item and use the requested destination. |
+| Keep Both | Generate a unique numbered destination. |
+| Skip | Skip the current item. |
+| Cancel | Stop the remaining operation. |
 
-ピン留めフォルダ一覧は保存された配列順を表示順として扱う。新規ピン留め時は末尾に追加し、ドラッグ並べ替え時は更新後の順序を保存する。並べ替えは macOS のファイルドラッグアンドドロップではなく、アプリ内ドラッグジェスチャで処理する。
+The app-local clipboard is cleared after a successful move operation.
 
-### 8.2 ウィンドウ状態
+### 8.8 Drag and Drop
 
-`WindowFrameAutosaver` が AppKit の `setFrameAutosaveName(_:)` を使用し、`TerminalFileManagerWindow` 名でウィンドウフレームを保存する。
+File rows, file-pane blank space, and folder-tree rows accept `UTType.fileURL` drops. `FileBrowserDropDelegate` calls `FileBrowserModel.moveDroppedFiles(_:to:completion:)`.
 
-## 9. キーボード操作設計
+File drops move files into the target directory. Folder-tree internal folder movement is intentionally not supported. Pinned-folder reordering uses app-local gesture state and only updates pinned display order.
 
-`KeyboardEventHandler` は `NSViewRepresentable` で `NSView` を埋め込み、`keyDown(with:)` を SwiftUI 側へ橋渡しする。検索フィールドがフォーカス中の場合は独自キー処理を無効化する。
+If a dropped URL requires security-scoped access, access is started only for the duration of the move.
 
-| キー | 動作 |
+### 8.9 Preview
+
+Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look.
+
+Markdown is converted to HTML with the built-in renderer and displayed in a `WKWebView`. The supported baseline syntax includes headings, paragraphs, lists, code blocks, block quotes, inline code, emphasis, and links.
+
+Future Markdown extensions will cover ruby text, math rendering, Mermaid diagrams, custom syntax, and CSS customization through TOML configuration.
+
+## 9. Persistence
+
+### 9.1 UserDefaults Keys
+
+| Key | Meaning |
 | --- | --- |
-| 上 / 下 | ファイルペインまたはフォルダツリーの選択移動 |
-| Shift + 上 / 下 | ファイルペインの範囲選択 |
-| 左 / 右 | フォルダツリーとファイルペイン、または左右ペイン間のフォーカス移動 |
-| Enter | 選択ファイルを開く、または選択フォルダへ移動 |
-| Command + [ / ] | 戻る / 進む |
-| Command + 上 | 親フォルダへ移動 |
-| Command + F | 検索フォーカス |
-| Command + N | 新規フォルダ |
-| Delete | ゴミ箱へ移動 |
-| Command + C / X / V | コピー / カット / ペースト |
-| Command + A | 表示中項目をすべて選択 |
-| Command + R | 再読み込み |
-| Command + Shift + T | Terminal.app 起動 |
-| Command + Shift + . | 隠しファイル表示切り替え |
+| `TerminalFileManager.leftDirectory` | Last left pane directory. |
+| `TerminalFileManager.rightDirectory` | Last right pane directory. |
+| `TerminalFileManager.isPreviewVisible` | Preview pane visibility. |
+| `TerminalFileManager.isSplitViewVisible` | Split-pane visibility. |
+| `TerminalFileManager.activePane` | Active pane. |
+| `TerminalFileManager.activeArea` | Active keyboard target. |
+| `TerminalFileManager.folderTreeWidth` | Folder tree width. |
+| `TerminalFileManager.previewWidth` | Preview width. |
+| `TerminalFileManager.fileSplitRatio` | File pane split ratio. |
+| `TerminalFileManager.fileNameColumnWidth` | File name column width. |
+| `TerminalFileManager.fileColumnConfiguration` | Column visibility and order. |
+| `TerminalFileManager.pinnedFolders` | Pinned folder list. |
 
-## 10. エラー処理設計
+Pinned folders are displayed in the saved array order. New pinned folders are appended. Drag reordering saves the reordered array.
 
-ファイル操作、ディレクトリ読み込み、Terminal.app 起動で発生したエラーは `FileBrowserModel.show(_:)` に集約する。モデルは `errorMessage` と `isShowingError` を更新し、`TerminalFileManagerView` が alert として表示する。
+### 9.2 Window State
 
-同名競合はエラーではなくユーザー判断が必要な状態として扱い、専用の競合解決ダイアログを表示する。
+`WindowFrameAutosaver` uses AppKit's `setFrameAutosaveName(_:)` with the `TerminalFileManagerWindow` name.
 
-## 11. セキュリティ・安全性
+## 10. Keyboard Design
 
-- 削除相当の操作は完全削除ではなく Trash へ移動する。
-- 同名ファイルは黙って上書きせず、必ず競合解決を行う。
-- ドラッグアンドドロップ元がセキュリティスコープ付きリソースの場合、アクセス期間を処理中に限定する。
-- 権限不足などの失敗はユーザーに alert で通知する。
-- 管理者権限を要求する操作は提供しない。
+`KeyboardEventHandler` bridges AppKit `keyDown(with:)` into SwiftUI. Custom key handling is disabled while the search field is focused.
 
-## 12. 性能設計
-
-- フォルダツリーは全ディレクトリを再帰的に走査せず、展開されたフォルダの子フォルダのみ読み込む。
-- フォルダツリーの子フォルダは `folderChildrenCache` に保持する。
-- ファイル一覧は `LazyVStack` を使用して行描画の負荷を抑える。
-- 検索とソートは現在ディレクトリ内の `allItems` に対して実行する。
-- ファイル操作後は対象ディレクトリのキャッシュとファイル一覧を更新する。
-
-## 13. 既知の制約
-
-- `FileBrowserModel` と多くの View が単一ファイルに同居しているため、機能追加時の見通しが悪くなりやすい。
-- アプリ内ペーストは `FileClipboard` を参照するため、Finder など外部アプリからのペースト内容は現在の中心設計では扱わない。
-- Markdown プレビューは簡易変換であり、CommonMark 完全準拠ではない。
-- フォルダツリーは隠しフォルダを表示しない。
-- コピー / 移動処理は同期的に実行されるため、大容量ファイルでは UI 応答性に影響する可能性がある。
-- ファイル監視は行わず、外部変更の反映は再読み込み操作または一部操作後の reload に依存する。
-
-## 14. 将来の分割方針
-
-現行実装を保ちながら保守性を高める場合、次の単位でファイル分割する。
-
-| 分割先候補 | 移動対象 |
+| Key | Behavior |
 | --- | --- |
-| `Models/FileBrowserModel.swift` | `FileBrowserModel`、`FileItem`、`FileSortKey`、`FileClipboard` |
-| `Views/TerminalFileManagerView.swift` | ルート画面とヘッダー |
-| `Views/FilePane.swift` | `FilePane`、`FileRow`、`ParentDirectoryRow`、`FileIcon` |
-| `Views/FolderTreePane.swift` | `FolderTreePane`、`FolderTreeRow`、`FolderTreeSectionHeader` |
-| `Views/PreviewPane.swift` | `PreviewPane` と各プレビュー View |
-| `Views/FileListSettingsView.swift` | カラム設定 UI と設定モデル |
-| `Platform/AppKitBridges.swift` | `WindowFrameAutosaver`、`KeyboardEventHandler` |
+| Up / Down | Move selection in the active file pane or folder tree. |
+| Shift + Up / Down | Extend file-pane selection range. |
+| Left / Right | Move focus between folder tree and file panes, or between left and right panes. |
+| Enter | Open selected file or navigate into selected folder. |
+| Command + [ / ] | Back / Forward. |
+| Command + Up | Parent folder. |
+| Command + F | Focus search. |
+| Command + N | New folder. |
+| Delete | Move to Trash. |
+| Command + C / X / V | Copy / Cut / Paste. |
+| Command + A | Select all visible items. |
+| Command + R | Reload. |
+| Command + Shift + T | Open Terminal.app. |
+| Command + Shift + . | Toggle hidden files. |
 
-## 15. テスト観点
+## 11. Error Handling
 
-### 15.1 手動確認
+Errors from file operations, directory loading, and Terminal.app launch are routed through `FileBrowserModel.show(_:)`. The model updates `errorMessage` and `isShowingError`, and `TerminalFileManagerView` displays them through an alert.
 
-- 初回起動時にホームと Downloads が左右ペインへ表示されること。
-- 戻る / 進む / 親フォルダ移動で履歴と一覧が整合すること。
-- フォルダツリークリック、ファイルダブルクリック、キーボード操作で同じディレクトリ移動結果になること。
-- 複数選択と範囲選択がプレビュー対象を壊さないこと。
-- コピー / カット / ペーストで同名競合ダイアログが表示されること。
-- Trash 移動後に一覧とフォルダツリーキャッシュが更新されること。
-- PDF、動画、Markdown、その他ファイルのプレビューが切り替わること。
-- レイアウト幅、表示ペイン、カラム設定、ピン留めフォルダが再起動後に復元されること。
+Same-name conflicts are not treated as errors. They are handled through a dedicated conflict-resolution prompt.
 
-### 15.2 自動テスト候補
+## 12. Safety
 
-- `FileListColumnConfiguration` の raw value 復元、補完、表示切り替え、順序変更。
-- `FileBrowserModel` のフィルタ、ソート、選択、履歴操作。
-- `uniqueDestination(for:in:)` の連番生成。
-- `PreviewKind` の拡張子 / UTType 判定。
-- Markdown 簡易変換の HTML エスケープ。
+- Delete-like operations move files to Trash instead of permanently deleting them.
+- Same-name files are never silently overwritten.
+- Security-scoped resources are accessed only during the operation that needs them.
+- Permission failures are shown to the user.
+- No operation requests administrator privileges.
+
+## 13. Performance Design
+
+- Folder tree loading is lazy and does not recursively scan the whole file system.
+- Folder-tree child folders are cached in `folderChildrenCache`.
+- File lists use lazy rendering.
+- Filtering and sorting run against loaded `allItems`.
+- Slow or stale work is guarded with cancellation state.
+- File operations refresh affected directories instead of forcing broad reloads where practical.
+- `TFX_PERFORMANCE_LOGS=1` records timing for key operations.
+
+## 14. Known Limitations
+
+- External paste from Finder is not the central paste path yet; app-local paste uses `FileClipboard`.
+- Markdown preview is a built-in renderer and is not full CommonMark.
+- The folder tree hides hidden folders.
+- Large copy/move operations may still affect UI responsiveness.
+- File watching is not implemented; external changes rely on reload or operation-triggered refresh.
+
+## 15. Test Focus
+
+### 15.1 Manual Checks
+
+- First launch shows Home and Downloads in the left and right panes.
+- Back, forward, and parent navigation keep history and file lists consistent.
+- Folder tree clicks, file double-clicks, and keyboard navigation produce consistent directory changes.
+- Multiple selection and range selection keep preview state valid.
+- Copy, cut, and paste show conflict prompts for same-name items.
+- Trash operations update the file list and folder-tree cache.
+- PDF, video, Markdown, and fallback previews switch correctly.
+- Layout widths, visible panes, column settings, and pinned folders survive restart.
+- File-view to folder-tree drag-and-drop highlights the target and moves files.
+- Pinned-folder drag reorder changes display order only.
+
+### 15.2 Automated Test Candidates
+
+- `FileListColumnConfiguration` raw-value restoration, repair, visibility changes, and ordering.
+- `FileBrowserModel` filtering, sorting, selection, and navigation history.
+- Unique destination generation for same-name conflicts.
+- `PreviewKind` extension and UTType detection.
+- Markdown HTML escaping.

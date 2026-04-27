@@ -2,7 +2,7 @@
 
 **Terminal File eXplorer**  
 読み方: **タフィックス**  
-Version: **0.2.0**
+Version: **0.2.1**
 
 [English](README.md) | 日本語
 
@@ -62,10 +62,16 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 ## プロジェクト構成
 
-- `tfx/TerminalFileManagerView.swift`: メインのファイルマネージャー実装
-- `tfx/ContentView.swift`: macOS で `TerminalFileManagerView` を表示
+- `tfx/App`: アプリのエントリーポイントとルート View
+- `tfx/TerminalFileManager`: メイン画面、操作部、キーボード処理、レイアウト状態
+- `tfx/FileBrowser`: ファイルブラウザのモデル、ディレクトリ読み込み、選択、ファイル操作、メタデータ、ドラッグアンドドロップ
+- `tfx/FilePane`: ファイル一覧ペイン、行、ヘッダー、メニュー、表示設定、ステータス行
+- `tfx/FolderTree`: フォルダツリーとピン留めフォルダ UI
+- `tfx/Preview`: プレビューペイン、Markdown / PDF / 動画 / Quick Look プレビュー、プレビュー種別判定
+- `tfx/Infrastructure`: 小さな AppKit / SwiftUI 共通補助
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
 - `tools/generate_app_icon.swift`: アプリアイコン再生成スクリプト
+- `docs/code-organization.md`: ソース配置と命名規則
 - `docs/file-manager-implementation-plan.md`: 実装計画と進捗
 - `docs/development-roadmap.md`: 今後の開発計画
 - `docs/detailed-design.md`: 詳細設計書

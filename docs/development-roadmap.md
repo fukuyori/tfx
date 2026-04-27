@@ -1,141 +1,150 @@
-# tfx 開発ロードマップ
+# tfx Development Roadmap
 
-この文書は、今後の開発順序を判断するためのロードマップである。詳細な仕様は `docs/detailed-design.md`、実装履歴は `docs/file-manager-implementation-plan.md` を参照する。
+This document defines the development order for upcoming work. See `docs/detailed-design.md` for detailed design, `docs/file-manager-implementation-plan.md` for implementation history, and `docs/code-organization.md` for source layout rules.
 
-## 0. 基本方針
+Project documentation should be written in English by default. `README.md` is the English README, and `README.ja.md` is the Japanese README.
 
-- 日常操作の反応速度、選択の分かりやすさ、ドラッグアンドドロップの操作感を優先する。
-- フォルダツリーは表示、ナビゲーション、ドロップ先選択に使う。
-- フォルダツリー内で実フォルダを並べ替えたり、別フォルダ内へ移動したりする操作は禁止する。
-- ファイルビューからフォルダツリー上のフォルダへファイルをドロップして移動する操作は許可する。
-- ピン留めフォルダはショートカットとして扱い、`PINNED` セクション内の表示順だけを変更できる。
-- ユーザー編集可能な設定は `~/Library/Application Support/tfx/` に置く。
-- 宣言的な設定は TOML、動的な拡張は Lua、ウィンドウやペイン幅などの UI 状態は `UserDefaults` に保存する。
-- Lua は初期段階では sandbox 化し、ファイル変更や外部コマンド実行を許可しない。
+## 0. Principles
 
-## 1. 現在の完了項目
+- Prioritize everyday responsiveness, clear selection state, and predictable drag-and-drop behavior.
+- Use the folder tree for display, navigation, and choosing file drop targets.
+- Do not allow moving real folders within the folder tree.
+- Allow dragging files from the file view onto folders in the folder tree.
+- Treat pinned folders as shortcuts. Only their order in the `PINNED` section can be changed.
+- Store user-editable settings in `~/Library/Application Support/tfx/`.
+- Use TOML for declarative configuration, Lua for dynamic extension, and `UserDefaults` for UI state such as window size and pane widths.
+- Sandbox Lua in the initial implementation. Do not allow file mutation or external command execution.
 
-### 1.1 反応速度と操作感
+## 1. Completed Work
 
-- 単クリック時の選択反映を即時化した。
-- ダブルクリック時も、最初のクリックで対象選択を表示してから開くようにした。
-- ツールバーのヘルプ表示を `.help` から即時表示寄りの独自表示へ変更した。
-- ディレクトリ読み込み、検索、ソート、メタデータ取得を UI スレッドから切り離した。
-- 検索、ソート、プレビュー、メタデータ先読みをキャンセル可能にした。
-- 大きなフォルダの読み込みを段階的に表示するようにした。
-- 通常の名前ソートを高速な `Name` とし、自然順ソートは `Name (Natural)` として残した。
-- `TFX_PERFORMANCE_LOGS=1` で主要処理の時間を計測できるようにした。
+### 1.1 Responsiveness and Interaction
 
-### 1.2 ファイルビューとプレビュー
+- Selection updates immediately on single click.
+- Double click first updates the selected target, then performs the open action.
+- Toolbar help was changed from delayed `.help` behavior to a faster custom help display.
+- Directory loading, filtering, sorting, and metadata loading were moved away from the UI path.
+- Filtering, sorting, preview loading, and metadata prefetching can be cancelled.
+- Large directories are displayed incrementally.
+- The default name sort is the fast `Name` sort; natural sorting remains available as `Name (Natural)`.
+- `TFX_PERFORMANCE_LOGS=1` enables timing logs for major operations.
 
-- ファイルビューの上下キー移動で選択行が表示外へ出た場合にスクロールするようにした。
-- ファイル一覧が横に収まらない場合、横スクロールバーを表示するようにした。
-- 複数ファイル選択時にプレビューを並べて表示できるようにした。
-- 複数プレビューの読み込み数を制限し、古いプレビュー処理をキャンセルするようにした。
-- プレビュー上の項目選択とドラッグを扱えるようにした。
+### 1.2 File View and Preview
 
-### 1.3 フォルダツリーとピン留めフォルダ
+- Arrow-key movement scrolls the file list when the selected row moves outside the visible area.
+- The file list shows a horizontal scrollbar when metadata columns exceed the available width.
+- Multiple selected files can be shown side by side in the preview pane.
+- Multi-preview loading is limited, and stale preview work is cancelled.
+- Preview items can be selected and dragged.
 
-- ピン留めフォルダをドラッグアンドドロップで並べ替えできるようにした。
-- ピン留めフォルダは `PINNED` セクションでは展開しないようにした。
-- ピン留めフォルダのドラッグ中に挿入位置を広げ、ドロップしやすくした。
-- フォルダツリーの上下キー移動とスクロールを整理した。
-- フォルダ名クリックで展開と折りたたみの両方ができるようにした。
-- サブフォルダがないフォルダでは展開マークを表示しないようにした。
-- フォルダ選択の古いハイライトが残りにくいようにした。
-- フォルダツリーの子フォルダ読み込みをキュー化し、同時実行数を制限した。
-- ファイルビューからフォルダツリーへのドロップを許可し、ドロップ先フォルダをハイライトするようにした。
+### 1.3 Folder Tree and Pinned Folders
 
-## 2. 次に進める短期項目
+- Pinned folders can be reordered by drag and drop.
+- Pinned folders do not expand inside the `PINNED` section.
+- The pinned-folder insertion target expands during dragging to make dropping easier.
+- Folder tree arrow-key navigation and scrolling were organized.
+- Clicking a folder name can both expand and collapse the folder.
+- Folders without subfolders do not show an expansion indicator.
+- Stale folder selection highlights were reduced.
+- Folder-tree child loading is queued with limited concurrency.
+- Files can be dropped from the file view onto the folder tree, and the target folder is highlighted.
 
-### 2.1 実測ベースの速度改善
+### 1.4 Code Organization
 
-目的:
+- The large file manager implementation was split into feature-oriented files.
+- Swift sources were organized under `App`, `TerminalFileManager`, `FileBrowser`, `FilePane`, `FolderTree`, `Preview`, and `Infrastructure`.
+- File names were aligned with primary types and responsibilities.
+- Source layout rules were documented in `docs/code-organization.md`.
 
-- 体感ではなく、処理時間ログを見て遅い箇所を絞り込む。
+## 2. Short-Term Work
 
-実施項目:
+### 2.1 Measurement-Based Performance Work
 
-- `TFX_PERFORMANCE_LOGS=1` で次の処理時間を確認する。
-  - ディレクトリヘッダ読み込み
-  - ディレクトリアイテム生成
-  - 検索とソート
-  - メタデータ先読み
-  - フォルダツリー子要素読み込み
-- 特定フォルダで遅い処理があれば、対象を限定して追加最適化する。
-- 必要に応じて、ログ出力を UI から有効化する開発者向け設定を追加する。
+Goal:
 
-完了条件:
+- Use timing logs to identify slow paths instead of relying only on perceived latency.
 
-- 大量ファイルを含むフォルダで、どの処理が遅いか判断できる。
-- 遅い箇所に対して、再現条件と改善前後の時間を記録できる。
+Tasks:
 
-### 2.2 サブフォルダ検索
+- Use `TFX_PERFORMANCE_LOGS=1` to measure:
+  - directory header loading
+  - directory item creation
+  - filtering and sorting
+  - metadata prefetching
+  - folder-tree child loading
+- Add targeted optimizations when a specific folder or operation is slow.
+- Consider a developer setting for enabling performance logs from the UI.
 
-目的:
+Done when:
 
-- 現在フォルダ直下だけでなく、サブフォルダ内のファイルも検索できるようにする。
-- 大きなフォルダでも検索中に UI を止めず、途中結果を確認できるようにする。
+- Slow paths can be identified in large directories.
+- Reproduction conditions and before/after timings can be recorded for each optimization.
 
-探索方式:
+### 2.2 Subfolder Search
 
-- 幅優先探索で検索する。
-- まず現在フォルダ直下のファイルと、第 1 階層のすべてのフォルダを検索対象にする。
-- 続いて、見つかったすべてのフォルダの第 2 階層を検索する。
-- 以降も同様に、同じ深さのフォルダをすべて処理してから次の深さへ進む。
+Goal:
 
-実施項目:
+- Search files below the current folder without blocking the UI.
+- Show partial results while the search is still running.
 
-- 通常の現在フォルダ内フィルタと、サブフォルダ検索を UI 上で切り替えられるようにする。
-- サブフォルダ検索をバックグラウンドで実行する。
-- 検索中の階層、処理済みフォルダ数、ヒット件数を表示する。
-- 検索結果は見つかった順に逐次表示する。
-- 検索停止ボタンを用意する。
-- 検索停止後に古い検索結果が追加表示されないようにする。
-- 初期段階ではファイル名検索に限定する。
-- 深さ上限、除外フォルダ、隠しファイルの扱いを将来設定できるようにする。
+Traversal model:
 
-完了条件:
+- Use breadth-first traversal.
+- First search the current directory and all first-level folders.
+- Then search all second-level folders.
+- Continue by completing each depth before moving to the next depth.
 
-- サブフォルダ検索中でもクリック、選択、スクロールが止まらない。
-- 第 1 階層全体、第 2 階層全体という順序で検索が進む。
-- 検索結果からファイルを開く、Reveal in Finder、Copy Path ができる。
+Tasks:
 
-### 2.3 ドラッグアンドドロップの最終整理
+- Add a UI switch between current-folder filtering and subfolder search.
+- Run subfolder search in the background.
+- Show current depth, processed folder count, and hit count.
+- Display results incrementally.
+- Add a stop button.
+- Prevent stopped or stale searches from appending more results.
+- Start with file-name search only.
+- Leave room for future depth limits, excluded folders, and hidden-file rules.
 
-目的:
+Done when:
 
-- ファイル移動、ピン留め並べ替え、フォルダツリー操作の境界を明確にする。
+- Clicking, selection, and scrolling remain responsive while subfolder search is running.
+- Search proceeds by full depth levels.
+- Results support open, Reveal in Finder, and Copy Path.
 
-実施項目:
+### 2.3 Drag-and-Drop Final Cleanup
 
-- ファイルビューからフォルダツリーへのドロップは許可する。
-- フォルダツリー内のフォルダ同士のドラッグ移動は禁止する。
-- ピン留めフォルダの並べ替えは表示順だけを変更し、実フォルダを移動しない。
-- ドロップ先ハイライトが残らないことを確認する。
-- 空白部分、ファイル行、フォルダ行のコンテキストメニューの役割を整理する。
+Goal:
 
-完了条件:
+- Make the boundary between file movement, pinned-folder ordering, and folder-tree navigation clear.
 
-- 実ファイルの移動が発生する操作と、表示順だけを変える操作が UI 上で混同されない。
-- ドロップ失敗後やキャンセル後にハイライトが残らない。
+Tasks:
 
-## 3. 中期項目
+- Allow file-view to folder-tree drops.
+- Forbid folder-to-folder movement inside the folder tree.
+- Keep pinned-folder reordering as display-order-only behavior.
+- Verify that drop highlights are cleared after cancellation and failure.
+- Clarify the roles of context menus on blank file-view space, file rows, and folder rows.
 
-### 3.1 設定基盤
+Done when:
 
-目的:
+- UI behavior clearly separates real file movement from display-order changes.
+- Drop highlights never remain after a failed or cancelled drop.
 
-- ユーザー編集可能な設定を導入する。
-- テーマ、拡張子ルール、ショートカット、Markdown 拡張、Lua 拡張の土台を作る。
+## 3. Mid-Term Work
 
-設定ディレクトリ:
+### 3.1 Configuration Foundation
+
+Goal:
+
+- Introduce user-editable configuration.
+- Provide the foundation for themes, file type rules, shortcuts, Markdown extensions, and Lua extensions.
+
+Configuration directory:
 
 ```text
 ~/Library/Application Support/tfx/
 ```
 
-想定構成:
+Planned layout:
 
 ```text
 config.toml
@@ -146,82 +155,82 @@ scripts/*.lua
 markdown/preview.css
 ```
 
-完了条件:
+Done when:
 
-- 設定ディレクトリを必要時に作成する。
-- 設定ファイルがなくても内蔵既定値で起動する。
-- TOML の読み込みエラーをユーザーに分かる形で表示する。
+- The configuration directory is created when needed.
+- The app runs with built-in defaults when no configuration files exist.
+- TOML loading errors are shown clearly to the user.
 
-### 3.2 カラースキーマ
+### 3.2 Color Schemes
 
-目的:
+Goal:
 
-- ターミナル風 UI の色をユーザーが選択、編集できるようにする。
+- Let users select and edit terminal-style UI colors.
 
-実施項目:
+Tasks:
 
-- 内蔵テーマを定義する。
-- TOML でユーザー定義テーマを読み込む。
-- ファイルペイン、フォルダツリー、選択行、ドロップ先、アクティブ枠、ステータス行、プレビュー背景をテーマ対象にする。
+- Define built-in themes.
+- Load user-defined themes from TOML.
+- Apply themes to file panes, folder tree, selected rows, drop targets, active borders, status lines, and preview backgrounds.
 
-完了条件:
+Done when:
 
-- テーマを切り替えると主要 UI 色が一貫して変わる。
-- 不足している色定義は既定値にフォールバックする。
+- Switching themes updates the main UI consistently.
+- Missing color values fall back to defaults.
 
-### 3.3 ショートカット整理
+### 3.3 Shortcut Organization
 
-目的:
+Goal:
 
-- 現在散らばっているショートカット定義を整理し、将来的なユーザー定義に備える。
+- Centralize shortcut definitions and prepare for user-defined shortcuts.
 
-実施項目:
+Tasks:
 
-- アクション一覧を作る。
-- 既定ショートカットを中央管理する。
-- TOML による上書き形式を決める。
-- 衝突検出を行う。
+- Define an action list.
+- Manage default shortcuts centrally.
+- Define the TOML override format.
+- Detect shortcut conflicts.
 
-完了条件:
+Done when:
 
-- 既存ショートカットが一箇所のアクション定義から把握できる。
-- ユーザー定義ショートカットの衝突を検出できる。
+- Existing shortcuts can be reviewed from one action definition list.
+- User-defined shortcut conflicts can be detected.
 
-### 3.4 拡張子別動作
+### 3.4 Extension-Based Behavior
 
-目的:
+Goal:
 
-- 拡張子ごとに開く動作、プレビュー動作、コンテキストメニューを変更できるようにする。
+- Allow extension-specific open behavior, preview behavior, and context menu behavior.
 
-実施項目:
+Tasks:
 
-- `filetypes.toml` で拡張子ごとのルールを定義する。
-- 内蔵動作、TOML ルール、Lua hook の優先順位を決める。
-- 未定義の拡張子は既存の内蔵動作にフォールバックする。
+- Define extension rules in `filetypes.toml`.
+- Define precedence between built-in behavior, TOML rules, and Lua hooks.
+- Fall back to current built-in behavior for unknown extensions.
 
-完了条件:
+Done when:
 
-- 拡張子ごとに preview/open の既定動作を変更できる。
-- ルール衝突時の優先順位が明確である。
+- The default preview/open behavior can be changed per extension.
+- Rule precedence is explicit.
 
-## 4. 長期項目
+## 4. Long-Term Work
 
-### 4.1 Markdown プレビュー拡張
+### 4.1 Markdown Preview Extensions
 
-目的:
+Goal:
 
-- Markdown プレビューをユーザーが拡張できるようにする。
+- Let users extend Markdown preview behavior.
 
-対象:
+Targets:
 
-- ルビ表示
-- KaTeX / MathJax による数式表示
-- Mermaid 図表
-- 独自インライン記法
-- 独自ブロック記法
-- CSS カスタマイズ
+- Ruby text
+- KaTeX / MathJax math rendering
+- Mermaid diagrams
+- Custom inline syntax
+- Custom block syntax
+- CSS customization
 
-想定 TOML:
+Planned TOML:
 
 ```toml
 [markdown.katex]
@@ -241,41 +250,42 @@ files = ["markdown/preview.css"]
 inline = ""
 ```
 
-完了条件:
+Done when:
 
-- CSS を設定ファイルから読み込める。
-- ルビ、数式、Mermaid の表示設定を TOML から読み込める。
-- unsafe な HTML や script の扱いを明示的に制御できる。
+- CSS can be loaded from configuration.
+- Ruby, math, and Mermaid display settings can be loaded from TOML.
+- Unsafe HTML and script handling is explicitly controlled.
 
-### 4.2 Lua 拡張 API
+### 4.2 Lua Extension API
 
-目的:
+Goal:
 
-- 拡張子別動作、ショートカット、Markdown 変換を Lua で拡張できるようにする。
+- Allow extension behavior, shortcuts, and Markdown conversion to be extended with Lua.
 
-初期制限:
+Initial restrictions:
 
-- ファイル変更は禁止する。
-- 外部コマンド実行は禁止する。
-- tfx が公開する読み取り中心 API のみ使用できる。
-- Markdown filter は Markdown 文字列またはサニタイズ対象 HTML 断片を返す。
+- File mutation is forbidden.
+- External command execution is forbidden.
+- Scripts can only use read-oriented APIs exposed by tfx.
+- Markdown filters return Markdown text or sanitized HTML fragments.
 
-完了条件:
+Done when:
 
-- Lua script のエラーでアプリがクラッシュしない。
-- 長時間実行を検出または中断できる。
-- 選択中ファイル、現在フォルダ、拡張子、プレビュー対象などを Lua から参照できる。
+- Lua script errors do not crash the app.
+- Long-running scripts can be detected or stopped.
+- Lua can read selected files, current folder, extension, and preview target information.
 
-## 5. ドキュメント整備
+## 5. Documentation Work
 
-実施項目:
+Tasks:
 
-- `docs/detailed-design.md` のフォルダツリーとドラッグアンドドロップ方針を現在の実装に合わせる。
-- `docs/file-manager-implementation-plan.md` の Current State を定期的に更新する。
-- README に現在の主要機能を反映する。
-- 設定ファイルのサンプルを追加する。
+- Keep `docs/detailed-design.md` aligned with the current folder tree and drag-and-drop behavior.
+- Keep `docs/file-manager-implementation-plan.md` current.
+- Keep `README.md` and `README.ja.md` aligned.
+- Add sample configuration files.
+- Convert remaining Japanese documentation to English, except for `README.ja.md`.
 
-完了条件:
+Done when:
 
-- 実装計画、詳細設計、README の内容が矛盾しない。
-- 新しい設定項目を見れば、ユーザーが最低限のカスタマイズを始められる。
+- The implementation plan, detailed design, and READMEs do not contradict each other.
+- Users can start basic customization from the configuration examples.
