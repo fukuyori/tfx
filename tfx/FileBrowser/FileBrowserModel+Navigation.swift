@@ -14,7 +14,12 @@ extension FileBrowserModel {
         currentDirectory.deletingLastPathComponent() != currentDirectory
     }
 
-    func navigate(to directory: URL, recordsHistory: Bool = true, expandsTarget: Bool = true) {
+    func navigate(
+        to directory: URL,
+        recordsHistory: Bool = true,
+        expandsTarget: Bool = true,
+        selecting selectionURL: URL? = nil
+    ) {
         let target = directory.standardizedFileURL
         guard target != currentDirectory.standardizedFileURL else { return }
 
@@ -27,6 +32,7 @@ extension FileBrowserModel {
         folderTreeSelectionSection = .tree
         clearDropTargetDirectory(nil)
         clearSelection()
+        pendingFileSelectionURL = selectionURL?.standardizedFileURL
         expandAncestors(of: target)
         if expandsTarget {
             expandFolder(target)
@@ -45,9 +51,10 @@ extension FileBrowserModel {
     }
 
     func goUp() {
-        let parent = currentDirectory.deletingLastPathComponent()
-        guard parent != currentDirectory else { return }
-        navigate(to: parent)
+        let previousDirectory = currentDirectory.standardizedFileURL
+        let parent = previousDirectory.deletingLastPathComponent()
+        guard parent != previousDirectory else { return }
+        navigate(to: parent, selecting: previousDirectory)
     }
 }
 

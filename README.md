@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.2.3**
+Version: **0.2.4**
 
 English | [日本語](README.ja.md)
 
@@ -52,6 +52,34 @@ English | [日本語](README.ja.md)
 - `Command + Shift + T`: Open Terminal.app here
 - `Command + Shift + .`: Toggle hidden files
 
+## Command Line Launch
+
+Open the installed app at the current directory:
+
+```sh
+open -a tfx "$PWD"
+```
+
+Open a specific directory:
+
+```sh
+open -a tfx /path/to/folder
+```
+
+Do not use `-n` or `--args`; pass the folder as the item for `open` instead. `--args` is treated as a launch argument and does not use macOS's normal folder-open path.
+
+If `open -a tfx` cannot find the app, or launches a different build, pass the app path directly:
+
+```sh
+open -a /Applications/tfx.app "$PWD"
+```
+
+If you have a wrapper such as `/usr/local/bin/tfx`, relative paths are supported:
+
+```sh
+tfx .
+```
+
 ## Build
 
 ```sh
@@ -62,12 +90,6 @@ Release build:
 
 ```sh
 xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
-```
-
-Signed release package:
-
-```sh
-./scripts/build_release_pkg.sh
 ```
 
 ## Project Structure
@@ -81,7 +103,6 @@ Signed release package:
 - `tfx/Infrastructure`: Small reusable AppKit and SwiftUI helpers
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
 - `tools/generate_app_icon.swift`: App icon regeneration script
-- `scripts/build_release_pkg.sh`: Developer ID signed release package build script
 - `docs/code-organization.md`: Source layout and naming rules
 - `docs/file-manager-implementation-plan.md`: Implementation plan and progress notes
 - `docs/development-roadmap.md`: Future development roadmap
@@ -93,4 +114,3 @@ Signed release package:
 - Delete-like operations use the macOS Trash instead of permanent deletion.
 - Previews use PDFKit, AVKit, WebKit, and Quick Look.
 - Date display uses `yyyy-MM-dd HH:mm:ss`.
-- `scripts/build_release_pkg.sh` creates a Developer ID signed app and pkg. Notarization is not performed by this script.

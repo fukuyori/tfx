@@ -51,6 +51,7 @@ extension FileBrowserModel {
                 }
 
                 self.items = filteredItems
+                self.applyPendingFileSelectionIfVisible()
                 if pruneAfterUpdate {
                     self.pruneSelection()
                 }

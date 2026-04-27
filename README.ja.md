@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.2.3**
+Version: **0.2.4**
 
 [English](README.md) | 日本語
 
@@ -52,6 +52,34 @@ Version: **0.2.3**
 - `Command + Shift + T`: 現在フォルダで Terminal.app を開く
 - `Command + Shift + .`: 隠しファイル表示切り替え
 
+## コマンドラインから起動
+
+インストール済みアプリを現在のディレクトリで開く:
+
+```sh
+open -a tfx "$PWD"
+```
+
+任意のディレクトリを指定:
+
+```sh
+open -a tfx /path/to/folder
+```
+
+`-n` や `--args` は使わず、フォルダを `open` の対象として渡してください。`--args` は起動引数扱いになり、macOS の通常のフォルダオープン経路を通りません。
+
+`open -a tfx` でアプリが見つからない、または別のビルドが起動する場合は、アプリのパスを直接指定します。
+
+```sh
+open -a /Applications/tfx.app "$PWD"
+```
+
+`/usr/local/bin/tfx` などにラッパーを用意している場合は、次のように相対パスも指定できます。
+
+```sh
+tfx .
+```
+
 ## ビルド
 
 ```sh
@@ -62,12 +90,6 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -destination 'platform=macOS' -der
 
 ```sh
 xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
-```
-
-署名済みリリース pkg:
-
-```sh
-./scripts/build_release_pkg.sh
 ```
 
 ## プロジェクト構成
@@ -81,7 +103,6 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Infrastructure`: 小さな AppKit / SwiftUI 共通補助
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
 - `tools/generate_app_icon.swift`: アプリアイコン再生成スクリプト
-- `scripts/build_release_pkg.sh`: Developer ID 署名済みリリース pkg 作成スクリプト
 - `docs/code-organization.md`: ソース配置と命名規則
 - `docs/file-manager-implementation-plan.md`: 実装計画と進捗
 - `docs/development-roadmap.md`: 今後の開発計画
@@ -93,4 +114,3 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - 削除操作は完全削除ではなく、macOS の Trash を使用します。
 - プレビューは PDFKit、AVKit、WebKit、Quick Look を使います。
 - 日付表示は `yyyy-MM-dd HH:mm:ss` 形式です。
-- `scripts/build_release_pkg.sh` は Developer ID 署名済み app と pkg を作成します。notarization は実施しません。

@@ -70,6 +70,18 @@ extension FileBrowserModel {
         selectionAnchorItemID = nil
     }
 
+    func applyPendingFileSelectionIfVisible() {
+        guard let pendingFileSelectionURL else { return }
+        let key = pendingFileSelectionURL.standardizedFileURL
+        guard visibleItemIndexLookup[key] != nil else { return }
+
+        selectedItemIDs = [key]
+        primarySelectedItemID = key
+        selectionAnchorItemID = key
+        isParentDirectorySelected = false
+        self.pendingFileSelectionURL = nil
+    }
+
     func pruneSelection() {
         let result = FileBrowserSelectionSupport.prunedSelection(
             selectedItemIDs: selectedItemIDs,

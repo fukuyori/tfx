@@ -63,6 +63,7 @@ final class FileBrowserModel: ObservableObject {
     var pinnedFolderDrag = FileBrowserPinnedFolderDrag()
     var filterWorkItem: DispatchWorkItem?
     var metadataPrefetchWorkItem: DispatchWorkItem?
+    var pendingFileSelectionURL: URL?
     private var pinnedFoldersObserver: AnyCancellable?
     private var fileOperationObserver: AnyCancellable?
     var directoryLoadCancellation: DirectoryLoadCancellation?

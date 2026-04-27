@@ -15,6 +15,7 @@ struct TerminalFileManagerView: View {
     @AppStorage("TerminalFileManager.fileSplitRatio") var fileSplitRatio = 0.5
     @AppStorage("TerminalFileManager.fileNameColumnWidth") var fileNameColumnWidth = 320.0
     @AppStorage("TerminalFileManager.fileColumnConfiguration") var fileColumnConfigurationRaw = FileListColumnConfiguration.defaultRawValue
+    @StateObject private var openDirectoryRouter = AppOpenDirectoryRouter.shared
     @State private var folderDragStartWidth: Double?
     @State private var previewDragStartWidth: Double?
     @State var fileSplitDragStartRatio: Double?
@@ -22,15 +23,20 @@ struct TerminalFileManagerView: View {
     @State var hoverHelpText = ""
     @FocusState var isSearchFocused: Bool
 
-    init() {
+    init(initialDirectory: URL? = AppLaunchArguments.initialDirectory()) {
         let defaults = UserDefaults.standard
         let homeURL = URL(fileURLWithPath: NSHomeDirectory())
         let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? homeURL
-        let leftURL = Self.restoredDirectory(forKey: "TerminalFileManager.leftDirectory", fallback: homeURL)
+        let leftURL = initialDirectory ?? Self.restoredDirectory(forKey: "TerminalFileManager.leftDirectory", fallback: homeURL)
         let rightURL = Self.restoredDirectory(forKey: "TerminalFileManager.rightDirectory", fallback: downloadsURL)
 
         _leftModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: leftURL))
         _rightModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: rightURL))
+
+        if initialDirectory != nil {
+            defaults.set(BrowserPaneID.left.rawValue, forKey: "TerminalFileManager.activePane")
+            defaults.set(ActiveArea.files.rawValue, forKey: "TerminalFileManager.activeArea")
+        }
 
         let activePane = defaults.string(forKey: "TerminalFileManager.activePane") ?? BrowserPaneID.left.rawValue
         if BrowserPaneID(rawValue: activePane) == nil {
@@ -89,6 +95,12 @@ struct TerminalFileManagerView: View {
             handleKeyEvent(event)
         })
         .background(Color(nsColor: .textBackgroundColor))
+        .onAppear {
+            openRequestedDirectoryIfNeeded()
+        }
+        .onChange(of: openDirectoryRouter.request) {
+            openRequestedDirectoryIfNeeded()
+        }
         .onChange(of: leftModel.currentDirectory) {
             UserDefaults.standard.set(leftModel.currentDirectory.path, forKey: "TerminalFileManager.leftDirectory")
         }
@@ -108,6 +120,17 @@ struct TerminalFileManagerView: View {
         } message: {
             Text(leftModel.isShowingError ? leftModel.errorMessage : rightModel.errorMessage)
         }
+    }
+
+    private func openRequestedDirectoryIfNeeded() {
+        guard let directory = openDirectoryRouter.request?.directory else {
+            return
+        }
+
+        activePane = .left
+        activeArea = .files
+        leftModel.navigate(to: directory)
+        NSApp.activate()
     }
 
     private func clampedFolderWidth(totalWidth: CGFloat) -> CGFloat {
