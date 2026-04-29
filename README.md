@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.2.4**
+Version: **0.2.5**
 
 English | [日本語](README.ja.md)
 
@@ -22,10 +22,15 @@ English | [日本語](README.ja.md)
 - Drag and drop between left and right file panes
 - Visual highlighting for the active view
 - `..` row for parent-folder navigation
+- Backspace parent-folder navigation
 - PDF, video, Markdown, and Quick Look previews
 - Toggleable preview pane
+- Browse zip archives without extracting them
+- Copy files from browsed zip archives
 - Open Terminal.app at the current folder
-- New Folder, Rename, Move to Trash, and Reveal in Finder
+- New File, New Folder, Rename, Move to Trash, and Reveal in Finder
+- Compress selected items to a zip archive
+- Extract zip archives
 - Copy, Cut, Paste, and same-name conflict handling
 - Search, hidden-file toggle, and sorting
 - Multi-selection with Command-click
@@ -43,9 +48,11 @@ English | [日本語](README.ja.md)
 - `Enter`: Open the selected file or enter the selected folder
 - `Command + [` / `Command + ]`: Back / Forward
 - `Command + Up`: Parent folder
+- `Backspace`: Parent folder
 - `Command + F`: Search
 - `Command + N`: New folder
 - `Delete`: Move to Trash
+- `Command + Backspace`: Move to Trash
 - `Command + C / X / V`: Copy / Cut / Paste
 - `Command + A`: Select all
 - `Command + R`: Reload
@@ -96,7 +103,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 - `tfx/App`: App entry points and root view wiring
 - `tfx/TerminalFileManager`: Top-level file manager screen, controls, keyboard routing, and layout state
-- `tfx/FileBrowser`: File browser model, directory loading, selection, file operations, metadata, and drag/drop behavior
+- `tfx/FileBrowser`: File browser model, directory loading, selection, file operations, zip archive browsing, metadata, and drag/drop behavior
 - `tfx/FilePane`: File list panes, rows, headers, menus, settings, and status line
 - `tfx/FolderTree`: Folder tree and pinned-folder UI
 - `tfx/Preview`: Preview pane, Markdown/PDF/video/Quick Look previews, and preview type selection
@@ -104,6 +111,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
 - `tools/generate_app_icon.swift`: App icon regeneration script
 - `docs/code-organization.md`: Source layout and naming rules
+- `docs/README.md`: Documentation index and maintenance rules
 - `docs/file-manager-implementation-plan.md`: Implementation plan and progress notes
 - `docs/development-roadmap.md`: Future development roadmap
 - `docs/detailed-design.md`: Detailed design document

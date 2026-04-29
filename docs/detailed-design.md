@@ -18,8 +18,11 @@ Project documentation is written in English by default. `README.ja.md` is mainta
 - Single selection, multiple selection, and range selection.
 - Back, forward, and parent-folder navigation.
 - New folder, rename, and move to Trash.
+- New file.
 - Copy, cut, paste, and drag-and-drop move operations.
 - Same-name conflict resolution.
+- Zip archive browsing without full extraction.
+- Zip archive compression and extraction.
 - Reveal in Finder, copy path, and Terminal.app integration.
 - Search, hidden-file display, and sorting.
 - PDF, video, Markdown, and Quick Look previews.
@@ -42,7 +45,7 @@ The Swift sources are organized by feature responsibility:
 | --- | --- |
 | `tfx/App` | App entry points and root view wiring. |
 | `tfx/TerminalFileManager` | Main screen composition, header controls, keyboard routing, and top-level layout state. |
-| `tfx/FileBrowser` | File browser model, directory loading, selection, file operations, folder-tree data, pinned folders, metadata, icon caching, and drag/drop model behavior. |
+| `tfx/FileBrowser` | File browser model, directory loading, selection, file operations, zip archive browsing, folder-tree data, pinned folders, metadata, icon caching, and drag/drop model behavior. |
 | `tfx/FilePane` | File list UI, rows, headers, menus, status line, and file-list display settings. |
 | `tfx/FolderTree` | Folder tree UI and pinned-folder UI. |
 | `tfx/Preview` | Preview pane, preview type selection, Markdown/PDF/video/Quick Look previews, and multi-preview UI. |
@@ -61,6 +64,8 @@ See `docs/code-organization.md` for file naming and placement rules.
 | Markdown preview | WebKit |
 | Generic preview | QuickLookUI |
 | File type detection | UniformTypeIdentifiers |
+| Zip archive listing and extraction | `/usr/bin/unzip` |
+| Zip archive creation | `/usr/bin/ditto` |
 | Persistence | `UserDefaults` / `@AppStorage` |
 
 ## 5. Screen Design
@@ -162,6 +167,8 @@ The active model is selected from `leftModel` or `rightModel` through `activePan
 
 Display properties include `name`, `mode`, `sizeText`, `kindText`, `modifiedText`, `createdText`, and `permissionsText`. Dates are displayed as `yyyy-MM-dd HH:mm:ss`.
 
+Zip archive entries are represented as `FileItem` values with virtual URLs. These rows support listing, preview, open-by-materialization, and copy-out behavior, but do not represent directly mutable file-system locations.
+
 `FileListColumnConfiguration` serializes column visibility and order to a `UserDefaults`-safe raw value. Invalid or incomplete values are repaired by filling in defaults.
 
 ## 8. Processing Design
@@ -172,7 +179,7 @@ Display properties include `name`, `mode`, `sizeText`, `kindText`, `modifiedText
 2. On macOS, `ContentView` creates `TerminalFileManagerView`.
 3. `TerminalFileManagerView.init()` restores the last left and right directories from `UserDefaults`.
 4. If the restored directories no longer exist, the left pane starts at Home and the right pane starts at Downloads.
-5. Each `FileBrowserModel` runs `reload()` and expands the current folder's ancestor chain in the folder tree.
+5. Each `FileBrowserModel` runs `reload()` and expands the current folder's ancestor chain in the folder tree. Subfolders start collapsed unless they are on that ancestor path.
 
 ### 8.2 Directory Loading
 
@@ -193,7 +200,9 @@ Rules:
 
 ### 8.4 Navigation
 
-`navigate(to:recordsHistory:)` is the central directory navigation operation. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation clears selection, expands ancestors in the folder tree, and reloads the target directory.
+`navigate(to:recordsHistory:updatesFolderTreeSelection:)` is the central directory navigation operation. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation clears selection, expands ancestors in the folder tree, and reloads the target directory.
+
+Pinned-folder navigation uses the same directory navigation path, but keeps the active folder-tree selection on the pinned row. The regular folder tree still expands the matching ancestor path so the physical location is visible.
 
 Back and forward are handled by `goBack()` and `goForward()`. Parent-folder navigation is handled by `goUp()` and does nothing at the root directory.
 
@@ -207,16 +216,27 @@ The `..` row is tracked separately through `isParentDirectorySelected`. Pressing
 
 | Operation | Behavior |
 | --- | --- |
+| New File | Prompts for a name and creates an empty file with a unique destination if needed. |
 | New Folder | Prompts for a name and creates a unique destination if needed. |
 | Rename | Prompts for a new name and creates a unique destination if needed. |
 | Move to Trash | Uses `FileManager.default.trashItem`; it does not permanently delete files. |
 | Reveal in Finder | Uses `NSWorkspace.shared.activateFileViewerSelecting`. |
 | Copy Path | Writes a path string to `NSPasteboard.general`. |
 | Open Terminal Here | Opens Terminal.app at the target directory. |
+| Compress to Zip | Creates a unique zip archive from the selected items. |
+| Extract Zip | Extracts a zip archive into a unique destination folder named from the archive. |
 
 After mutating operations, affected directories and folder-tree caches are refreshed where practical.
 
-### 8.7 Copy, Cut, and Paste
+### 8.7 Zip Archive Browsing
+
+Zip archives are exposed as virtual directories. Opening a real `.zip` file navigates into the archive without extracting the whole archive into the current folder.
+
+`ZipArchiveBrowser` uses `/usr/bin/unzip` to list archive entries and materialize individual entries when needed for preview, open, or copy-out operations. Virtual archive paths are read-only. File creation, rename, move-to-trash, paste-into-archive, and archive mutation are not supported inside a zip archive.
+
+Copying from a zip archive extracts the selected virtual entries into the paste target. Cutting from a zip archive behaves as copy because the archive is not modified.
+
+### 8.8 Copy, Cut, and Paste
 
 Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs to `NSPasteboard`. Paste currently uses the app-local clipboard.
 
@@ -231,7 +251,7 @@ Same-name conflicts are resolved through a user prompt:
 
 The app-local clipboard is cleared after a successful move operation.
 
-### 8.8 Drag and Drop
+### 8.9 Drag and Drop
 
 File rows, file-pane blank space, and folder-tree rows accept `UTType.fileURL` drops. `FileBrowserDropDelegate` calls `FileBrowserModel.moveDroppedFiles(_:to:completion:)`.
 
@@ -239,7 +259,7 @@ File drops move files into the target directory. Folder-tree internal folder mov
 
 If a dropped URL requires security-scoped access, access is started only for the duration of the move.
 
-### 8.9 Preview
+### 8.10 Preview
 
 Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look.
 
@@ -284,9 +304,11 @@ Pinned folders are displayed in the saved array order. New pinned folders are ap
 | Enter | Open selected file or navigate into selected folder. |
 | Command + [ / ] | Back / Forward. |
 | Command + Up | Parent folder. |
+| Backspace | Parent folder. |
 | Command + F | Focus search. |
 | Command + N | New folder. |
 | Delete | Move to Trash. |
+| Command + Backspace | Move to Trash. |
 | Command + C / X / V | Copy / Cut / Paste. |
 | Command + A | Select all visible items. |
 | Command + R | Reload. |
@@ -320,6 +342,7 @@ Same-name conflicts are not treated as errors. They are handled through a dedica
 ## 14. Known Limitations
 
 - External paste from Finder is not the central paste path yet; app-local paste uses `FileClipboard`.
+- Zip archive virtual directories are read-only.
 - Markdown preview is a built-in renderer and is not full CommonMark.
 - The folder tree hides hidden folders.
 - Large copy/move operations may still affect UI responsiveness.
@@ -331,6 +354,8 @@ Same-name conflicts are not treated as errors. They are handled through a dedica
 
 - First launch shows Home and Downloads in the left and right panes.
 - Back, forward, and parent navigation keep history and file lists consistent.
+- Startup folder-tree expansion keeps subfolders collapsed except for the active ancestor path.
+- Pinned-folder selection remains on the pinned row while the regular tree expands the physical ancestor path.
 - Folder tree clicks, file double-clicks, and keyboard navigation produce consistent directory changes.
 - Multiple selection and range selection keep preview state valid.
 - Copy, cut, and paste show conflict prompts for same-name items.
@@ -339,6 +364,7 @@ Same-name conflicts are not treated as errors. They are handled through a dedica
 - Layout widths, visible panes, column settings, and pinned folders survive restart.
 - File-view to folder-tree drag-and-drop highlights the target and moves files.
 - Pinned-folder drag reorder changes display order only.
+- Zip archives can be browsed, previewed, copied out, compressed, and extracted.
 
 ### 15.2 Automated Test Candidates
 

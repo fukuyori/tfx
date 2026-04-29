@@ -5,6 +5,14 @@ extension FileBrowserModel {
     func open(_ item: FileItem) {
         if item.isDirectory {
             navigate(to: item.url)
+        } else if ZipArchiveBrowser.isZipArchive(item.url) {
+            navigate(to: item.url)
+        } else if ZipArchiveBrowser.canCopyFromArchive(item.url) {
+            do {
+                FileBrowserExternalActions.open(try ZipArchiveBrowser.materializedURL(for: item.url))
+            } catch {
+                show(error)
+            }
         } else {
             FileBrowserExternalActions.open(item.url)
         }

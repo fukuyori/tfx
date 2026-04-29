@@ -19,7 +19,7 @@ Use this directory for code that coordinates multiple panes or owns the main scr
 
 ### `tfx/FileBrowser`
 
-File browser model, directory loading, selection state, file operations, folder-tree data, pinned folders, drag/drop model actions, metadata, icon caching, and browser-level shared types.
+File browser model, directory loading, selection state, file operations, zip archive browsing, folder-tree data, pinned folders, drag/drop model actions, metadata, icon caching, and browser-level shared types.
 
 Use this directory for non-visual file browsing behavior and model-side operations.
 

@@ -105,7 +105,6 @@ final class FileBrowserModel: ObservableObject {
         loadPinnedFolders()
         reload()
         expandAncestors(of: currentDirectory)
-        expandFolder(currentDirectory)
     }
 
     func isDropTargetDirectory(_ url: URL) -> Bool {

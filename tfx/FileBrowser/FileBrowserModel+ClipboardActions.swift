@@ -7,6 +7,10 @@ extension FileBrowserModel {
     }
 
     func cutSelectedItems() {
+        guard !selectedItems.contains(where: { ZipArchiveBrowser.canCopyFromArchive($0.url) }) else {
+            clipboard = FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .copy)
+            return
+        }
         clipboard = FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .move)
     }
 

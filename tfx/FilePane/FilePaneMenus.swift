@@ -44,6 +44,20 @@ struct FileItemContextMenu: View {
         }
         .disabled(!model.canPaste)
 
+        Button("Compress to Zip") {
+            activate()
+            model.selectForContextMenu(item)
+            model.compressSelectedItemsToZip()
+        }
+
+        if ZipArchiveBrowser.isZipArchive(item.url) {
+            Button("Extract Zip") {
+                activate()
+                model.selectForContextMenu(item)
+                model.extractZipArchive(item)
+            }
+        }
+
         Divider()
 
         Button("Reveal in Finder") {
@@ -82,6 +96,11 @@ extension FilePane {
         Button("New Folder") {
             activate()
             model.createFolder()
+        }
+
+        Button("New File") {
+            activate()
+            model.createFile()
         }
 
         Button("Select All") {

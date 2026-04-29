@@ -4,6 +4,14 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.5] - 2026-04-29
+
+### Changed
+
+- Updated the version to `0.2.5` and the build number to `7`.
+- Updated user and developer documentation for zip browsing, archive actions, New File, Backspace navigation, and delete-key alternatives.
+- Added `docs/README.md` as the documentation index.
+
 ## [0.2.4] - 2026-04-27
 
 ### Changed

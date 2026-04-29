@@ -129,7 +129,12 @@ struct FolderTreeRow: View {
     private func handleSingleClick() {
         activateTree()
         model.selectFolderTree(url, in: selectionSection)
-        model.navigate(to: url, expandsTarget: false)
+        model.expandAncestors(of: url)
+        model.navigate(
+            to: url,
+            expandsTarget: false,
+            updatesFolderTreeSelection: selectionSection == .tree
+        )
     }
 
     private func handleDoubleClick() {

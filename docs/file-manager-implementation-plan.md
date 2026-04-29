@@ -20,11 +20,13 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - The active file pane is highlighted in green.
 - The folder tree can also become the active keyboard target and highlights the selected folder.
 - Toolbar actions, search, sorting, preview, Terminal.app opening, and the folder tree follow the active file pane.
-- The folder tree highlights and expands the active pane's current folder.
+- The folder tree highlights the active pane's current folder and expands its ancestor path.
+- On startup, the folder tree expands only the ancestor path for the current folder and leaves subfolders collapsed.
 - Folders can be pinned and are shown in a persistent `PINNED` section at the top of the folder tree.
 - Pinned folders can be reordered by dragging within the `PINNED` section.
 - Pinned folder rows act as shortcuts and do not expand child folders in the `PINNED` section.
-- The folder tree is display/navigation only; dropping or pasting items into folders from the tree is not supported.
+- Selecting a pinned folder keeps the active tree selection on the pinned row while expanding the matching physical ancestor path in the regular tree.
+- The folder tree is display/navigation/drop-target UI. Dropping files from a file pane onto a regular folder-tree row is supported, but moving folders within the tree is not supported.
 - The regular folder tree is a single hierarchy starting at `/`; Home, Documents, Downloads, and similar folders are not duplicated as separate tree roots.
 - The app restores the previous window frame, visible panes, active pane, opened folders, and pane widths on launch.
 - Preview pane supports:
@@ -38,6 +40,7 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - File modified date uses `yyyy-MM-dd HH:mm:ss`.
 - Back and forward navigation are available.
 - Single-selection file operations are available:
+  - New file.
   - New folder.
   - Rename.
   - Move to Trash.
@@ -50,6 +53,10 @@ This document tracks the implementation plan for turning `tfx` into a practical 
   - Move to Trash.
   - Reveal in Finder.
 - App-local copy, cut, and paste are available.
+- Zip archives can be browsed without extracting the whole archive.
+- Zip archive entries can be copied out to real folders.
+- Context menus can compress selected items to zip and extract zip archives.
+- Zip archive virtual directories are read-only.
 - Paste and drag/drop same-name conflicts show a dialog:
   - Replace.
   - Keep Both.
@@ -58,11 +65,13 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - Keyboard shortcuts are available for common actions:
   - Back / forward.
   - Parent folder.
+  - Backspace parent-folder navigation.
   - Search focus.
   - Toggle hidden files.
   - New folder.
   - Rename.
   - Move to Trash.
+  - Command-Backspace move to Trash.
   - Copy / cut / paste.
   - Select all.
   - Reload.
@@ -109,6 +118,7 @@ Acceptance criteria:
 Implement single-selection file operations first.
 
 - New folder.
+- New file.
 - Rename selected item.
 - Move selected item to Trash.
 - Reveal selected item in Finder.
@@ -130,6 +140,8 @@ Add right-click actions to file rows and folder tree rows.
 File row menu:
 
 - Open.
+- Compress to Zip.
+- Extract Zip when the row is a zip archive.
 - Rename.
 - Move to Trash.
 - Reveal in Finder.
@@ -147,6 +159,7 @@ Acceptance criteria:
 
 - Context menu actions operate on the row under the pointer.
 - Primary selection updates predictably when opening the context menu.
+- Blank file-view context menus can create a new file or folder.
 
 ## Phase 4: Multiple Selection
 
@@ -239,6 +252,8 @@ Add expected file-manager shortcuts.
 - `Command-R`: Reload.
 - `Command-N`: New Folder.
 - `Delete`: Move to Trash.
+- `Backspace`: Parent folder.
+- `Command-Backspace`: Move to Trash.
 - `Command-C`: Copy selected path or selected files.
 - `Command-V`: Paste files.
 - `Command-F`: Focus search.
@@ -444,7 +459,7 @@ Acceptance criteria:
 ## Recommended Implementation Order
 
 1. Navigation history.
-2. New folder, rename, and move to Trash.
+2. New file, new folder, rename, and move to Trash.
 3. Context menus.
 4. Multiple selection.
 5. Search, hidden files, and sorting.

@@ -47,6 +47,8 @@ Project documentation should be written in English by default. `README.md` is th
 - Stale folder selection highlights were reduced.
 - Folder-tree child loading is queued with limited concurrency.
 - Files can be dropped from the file view onto the folder tree, and the target folder is highlighted.
+- Startup expands only the folder-tree ancestor path for the current folder.
+- Selecting a pinned folder keeps the active selection on the pinned row while expanding the matching ancestor path in the regular tree.
 
 ### 1.4 Code Organization
 
@@ -54,6 +56,14 @@ Project documentation should be written in English by default. `README.md` is th
 - Swift sources were organized under `App`, `TerminalFileManager`, `FileBrowser`, `FilePane`, `FolderTree`, `Preview`, and `Infrastructure`.
 - File names were aligned with primary types and responsibilities.
 - Source layout rules were documented in `docs/code-organization.md`.
+- Documentation entry points and maintenance rules were documented in `docs/README.md`.
+
+### 1.5 Archive and Context Menu Work
+
+- Zip archives can be browsed without extracting the whole archive.
+- Files can be copied from browsed zip archives into real folders.
+- Context menus can create files, create folders, compress selected items to zip, and extract zip archives.
+- Zip archive virtual directories are read-only.
 
 ## 2. Short-Term Work
 
@@ -282,6 +292,7 @@ Tasks:
 - Keep `docs/detailed-design.md` aligned with the current folder tree and drag-and-drop behavior.
 - Keep `docs/file-manager-implementation-plan.md` current.
 - Keep `README.md` and `README.ja.md` aligned.
+- Keep `docs/README.md` aligned with the documentation set.
 - Add sample configuration files.
 - Convert remaining Japanese documentation to English, except for `README.ja.md`.
 

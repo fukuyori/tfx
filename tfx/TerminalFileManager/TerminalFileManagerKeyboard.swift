@@ -3,6 +3,13 @@ import AppKit
 
 extension TerminalFileManagerView {
     func handleKeyEvent(_ event: NSEvent) -> Bool {
+        if event.modifierFlags.contains(.command),
+           event.modifierFlags.intersection([.option, .control]).isEmpty,
+           event.keyCode == 51 {
+            activeModel.moveSelectedItemsToTrash()
+            return true
+        }
+
         let unsupportedModifiers = event.modifierFlags.intersection([.command, .option, .control])
         guard unsupportedModifiers.isEmpty else { return false }
         let isRangeSelection = event.modifierFlags.contains(.shift)
@@ -19,6 +26,9 @@ extension TerminalFileManagerView {
             return true
         case 124:
             moveKeyboardFocusRight()
+            return true
+        case 51:
+            activeModel.goUp()
             return true
         case 36, 76:
             activeArea == .folderTree ? activeModel.activateFolderTreeSelection() : activeModel.activateFileSelection()

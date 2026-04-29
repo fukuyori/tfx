@@ -18,7 +18,8 @@ extension FileBrowserModel {
         to directory: URL,
         recordsHistory: Bool = true,
         expandsTarget: Bool = true,
-        selecting selectionURL: URL? = nil
+        selecting selectionURL: URL? = nil,
+        updatesFolderTreeSelection: Bool = true
     ) {
         let target = directory.standardizedFileURL
         guard target != currentDirectory.standardizedFileURL else { return }
@@ -28,14 +29,18 @@ extension FileBrowserModel {
         }
 
         currentDirectory = target
-        folderTreeSelection = target
-        folderTreeSelectionSection = .tree
+        if updatesFolderTreeSelection, ZipArchiveBrowser.location(for: target) == nil {
+            folderTreeSelection = target
+            folderTreeSelectionSection = .tree
+        }
         clearDropTargetDirectory(nil)
         clearSelection()
         pendingFileSelectionURL = selectionURL?.standardizedFileURL
-        expandAncestors(of: target)
-        if expandsTarget {
-            expandFolder(target)
+        if ZipArchiveBrowser.location(for: target) == nil {
+            expandAncestors(of: target)
+            if expandsTarget {
+                expandFolder(target)
+            }
         }
         reload()
     }

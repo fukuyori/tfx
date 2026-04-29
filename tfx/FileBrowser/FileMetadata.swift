@@ -54,5 +54,25 @@ struct FileItem: Identifiable, Hashable {
         modifiedTextValue = FileDisplayTextCache.shared.dateText(for: modified)
         createdTextValue = FileDisplayTextCache.shared.dateText(for: created)
     }
+
+    nonisolated init(zipEntry: ZipArchiveEntry, archiveURL: URL) {
+        let virtualURL = ZipArchiveBrowser.virtualURL(archiveURL: archiveURL, innerPath: zipEntry.path)
+        self.url = virtualURL
+
+        isDirectory = zipEntry.isDirectory
+        isHidden = virtualURL.lastPathComponent.hasPrefix(".")
+        size = zipEntry.size
+        modified = zipEntry.modified
+        created = nil
+        nameValue = virtualURL.lastPathComponent
+        searchNameValue = nameValue.localizedLowercase
+        let extensionName = virtualURL.pathExtension.lowercased()
+        iconCacheKeyValue = isDirectory ? "directory" : (extensionName.isEmpty ? "file" : "file.\(extensionName)")
+        modeValue = isDirectory ? "drwx" : "-rw-"
+        kindSortKeyValue = isDirectory ? "Folder" : extensionName
+        sizeTextValue = isDirectory ? "-" : FileDisplayTextCache.shared.sizeText(byteCount: size)
+        modifiedTextValue = FileDisplayTextCache.shared.dateText(for: modified)
+        createdTextValue = "-"
+    }
 }
 #endif

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.2.4**
+Version: **0.2.5**
 
 [English](README.md) | 日本語
 
@@ -22,10 +22,15 @@ Version: **0.2.4**
 - 左右ペイン間のドラッグアンドドロップ
 - アクティブビューのハイライト表示
 - `..` 行による親フォルダ移動
+- Backspace による親フォルダ移動
 - PDF / 動画 / Markdown / Quick Look プレビュー
 - プレビュー表示のオン / オフ切り替え
+- zip ファイルを展開せずに閲覧
+- 閲覧中の zip ファイルからファイルをコピー
 - Terminal.app を現在フォルダで開く
-- New Folder / Rename / Move to Trash / Reveal in Finder
+- New File / New Folder / Rename / Move to Trash / Reveal in Finder
+- 選択項目を zip ファイルに圧縮
+- zip ファイルを展開
 - Copy / Cut / Paste と同名ファイル競合ダイアログ
 - 検索、隠しファイル表示、ソート
 - Command-click による複数選択
@@ -43,9 +48,11 @@ Version: **0.2.4**
 - `Enter`: ファイルを開く、またはフォルダへ移動
 - `Command + [` / `Command + ]`: 戻る / 進む
 - `Command + ↑`: 親フォルダへ移動
+- `Backspace`: 親フォルダへ移動
 - `Command + F`: 検索
 - `Command + N`: 新規フォルダ
 - `Delete`: ゴミ箱へ移動
+- `Command + Backspace`: ゴミ箱へ移動
 - `Command + C / X / V`: コピー / カット / ペースト
 - `Command + A`: すべて選択
 - `Command + R`: 再読み込み
@@ -96,7 +103,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 - `tfx/App`: アプリのエントリーポイントとルート View
 - `tfx/TerminalFileManager`: メイン画面、操作部、キーボード処理、レイアウト状態
-- `tfx/FileBrowser`: ファイルブラウザのモデル、ディレクトリ読み込み、選択、ファイル操作、メタデータ、ドラッグアンドドロップ
+- `tfx/FileBrowser`: ファイルブラウザのモデル、ディレクトリ読み込み、選択、ファイル操作、zip 閲覧、メタデータ、ドラッグアンドドロップ
 - `tfx/FilePane`: ファイル一覧ペイン、行、ヘッダー、メニュー、表示設定、ステータス行
 - `tfx/FolderTree`: フォルダツリーとピン留めフォルダ UI
 - `tfx/Preview`: プレビューペイン、Markdown / PDF / 動画 / Quick Look プレビュー、プレビュー種別判定
@@ -104,6 +111,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
 - `tools/generate_app_icon.swift`: アプリアイコン再生成スクリプト
 - `docs/code-organization.md`: ソース配置と命名規則
+- `docs/README.md`: ドキュメント索引と保守ルール
 - `docs/file-manager-implementation-plan.md`: 実装計画と進捗
 - `docs/development-roadmap.md`: 今後の開発計画
 - `docs/detailed-design.md`: 詳細設計書
