@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.2.6**
+Version: **0.2.7**
 
 English | [日本語](README.ja.md)
 
@@ -23,6 +23,7 @@ English | [日本語](README.ja.md)
 - Visual highlighting for the active view
 - `..` row for parent-folder navigation
 - Backspace parent-folder navigation
+- Clickable breadcrumb path navigation
 - PDF, video, Markdown, and Quick Look previews
 - Toggleable preview pane
 - Browse zip archives without extracting them
@@ -101,6 +102,8 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 ## Project Structure
 
+Source directories:
+
 - `tfx/App`: App entry points and root view wiring
 - `tfx/TerminalFileManager`: Top-level file manager screen, controls, keyboard routing, and layout state
 - `tfx/FileBrowser`: File browser model, directory loading, selection, file operations, zip archive browsing, metadata, and drag/drop behavior
@@ -109,13 +112,15 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Preview`: Preview pane, Markdown/PDF/video/Quick Look previews, and preview type selection
 - `tfx/Infrastructure`: Small reusable AppKit and SwiftUI helpers
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
+
+Supporting directories:
+
 - `tools/generate_app_icon.swift`: App icon regeneration script
-- `docs/code-organization.md`: Source layout and naming rules
-- `docs/README.md`: Documentation index and maintenance rules
-- `docs/file-manager-implementation-plan.md`: Implementation plan and progress notes
-- `docs/development-roadmap.md`: Future development roadmap
-- `docs/detailed-design.md`: Detailed design document
 - `CHANGELOG.md`: Release history
+
+## Documentation
+
+See `docs/README.md` for the documentation index, maintenance rules, source layout guide, detailed design, implementation history, and roadmap.
 
 ## Notes
 

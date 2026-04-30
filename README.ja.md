@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.2.6**
+Version: **0.2.7**
 
 [English](README.md) | 日本語
 
@@ -23,6 +23,7 @@ Version: **0.2.6**
 - アクティブビューのハイライト表示
 - `..` 行による親フォルダ移動
 - Backspace による親フォルダ移動
+- クリック可能な breadcrumb パス移動
 - PDF / 動画 / Markdown / Quick Look プレビュー
 - プレビュー表示のオン / オフ切り替え
 - zip ファイルを展開せずに閲覧
@@ -101,6 +102,8 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 ## プロジェクト構成
 
+ソースディレクトリ:
+
 - `tfx/App`: アプリのエントリーポイントとルート View
 - `tfx/TerminalFileManager`: メイン画面、操作部、キーボード処理、レイアウト状態
 - `tfx/FileBrowser`: ファイルブラウザのモデル、ディレクトリ読み込み、選択、ファイル操作、zip 閲覧、メタデータ、ドラッグアンドドロップ
@@ -109,13 +112,15 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/Preview`: プレビューペイン、Markdown / PDF / 動画 / Quick Look プレビュー、プレビュー種別判定
 - `tfx/Infrastructure`: 小さな AppKit / SwiftUI 共通補助
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
+
+補助ファイル:
+
 - `tools/generate_app_icon.swift`: アプリアイコン再生成スクリプト
-- `docs/code-organization.md`: ソース配置と命名規則
-- `docs/README.md`: ドキュメント索引と保守ルール
-- `docs/file-manager-implementation-plan.md`: 実装計画と進捗
-- `docs/development-roadmap.md`: 今後の開発計画
-- `docs/detailed-design.md`: 詳細設計書
 - `CHANGELOG.md`: 変更履歴
+
+## ドキュメント
+
+ドキュメント索引、保守ルール、ソース配置、詳細設計、実装履歴、ロードマップは `docs/README.md` を参照してください。
 
 ## 注意事項
 
