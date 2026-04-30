@@ -4,6 +4,19 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.7] - 2026-05-01
+
+### Added
+
+- Added clickable breadcrumb navigation for the current path in the header.
+
+### Changed
+
+- Updated the version to `0.2.7` and the build number to `9`.
+- Split view now opens the newly visible pane at the same folder as the currently visible pane.
+- Reorganized README documentation references around `docs/README.md`.
+- Updated design and planning documentation for breadcrumb path navigation.
+
 ## [0.2.6] - 2026-05-01
 
 ### Fixed

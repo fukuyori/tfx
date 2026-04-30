@@ -2,13 +2,18 @@
 
 Project documentation is written in English by default. `README.ja.md` is the Japanese README.
 
-## Documents
+## User-Facing Documents
 
 | Document | Purpose |
 | --- | --- |
 | [`README.md`](../README.md) | User-facing overview, features, shortcuts, launch commands, and build commands. |
 | [`README.ja.md`](../README.ja.md) | Japanese user-facing overview. Keep this aligned with `README.md`. |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Release history and version changes. |
+
+## Engineering Documents
+
+| Document | Purpose |
+| --- | --- |
 | [`docs/detailed-design.md`](detailed-design.md) | Current architecture, state model, file operations, persistence, limitations, and test focus. |
 | [`docs/code-organization.md`](code-organization.md) | Source layout, naming rules, and placement rules for Swift files. |
 | [`docs/file-manager-implementation-plan.md`](file-manager-implementation-plan.md) | Implementation history and phase status for the file manager feature set. |
@@ -21,3 +26,4 @@ Project documentation is written in English by default. `README.ja.md` is the Ja
 - Update `docs/file-manager-implementation-plan.md` when a planned phase changes status.
 - Update `docs/development-roadmap.md` when future work is completed, removed, or reprioritized.
 - Update `CHANGELOG.md` for version changes and notable user-facing changes.
+- Keep top-level README project-structure sections focused on source and support layout; keep detailed documentation references here.

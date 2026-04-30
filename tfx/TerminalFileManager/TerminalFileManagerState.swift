@@ -51,5 +51,20 @@ extension TerminalFileManagerView {
         rightModel.reload()
         activeModel.expandFolder(activeModel.currentDirectory)
     }
+
+    func setSplitViewVisible(_ isVisible: Bool) {
+        guard isSplitViewVisible != isVisible else { return }
+
+        if isVisible {
+            let sourceModel = activeModel
+            let targetModel = activePane == .left ? rightModel : leftModel
+            targetModel.navigate(
+                to: sourceModel.currentDirectory,
+                recordsHistory: false
+            )
+        }
+
+        isSplitViewVisible = isVisible
+    }
 }
 #endif

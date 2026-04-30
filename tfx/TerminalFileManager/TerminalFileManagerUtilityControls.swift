@@ -48,7 +48,10 @@ extension TerminalFileManagerView {
             .keyboardShortcut("p", modifiers: [.command, .option])
             .quickHelp(isPreviewVisible ? "Hide preview" : "Show preview", text: $hoverHelpText)
 
-            Toggle(isOn: $isSplitViewVisible) {
+            Toggle(isOn: Binding(
+                get: { isSplitViewVisible },
+                set: { setSplitViewVisible($0) }
+            )) {
                 Image(systemName: "rectangle.split.2x1")
             }
             .toggleStyle(.button)
