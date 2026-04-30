@@ -57,7 +57,6 @@ Project documentation should be written in English by default. `README.md` is th
 - File names were aligned with primary types and responsibilities.
 - Source layout rules were documented in `docs/code-organization.md`.
 - Documentation entry points and maintenance rules were documented in `docs/README.md`.
-- Top-level README documentation references were consolidated around `docs/README.md`.
 
 ### 1.5 Archive and Context Menu Work
 
@@ -65,11 +64,6 @@ Project documentation should be written in English by default. `README.md` is th
 - Files can be copied from browsed zip archives into real folders.
 - Context menus can create files, create folders, compress selected items to zip, and extract zip archives.
 - Zip archive virtual directories are read-only.
-
-### 1.6 Navigation Refinement
-
-- The header path was changed to a horizontally scrollable breadcrumb.
-- Clicking a breadcrumb segment navigates directly to that folder through the normal navigation model.
 
 ## 2. Short-Term Work
 

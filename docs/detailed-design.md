@@ -13,7 +13,6 @@ Project documentation is written in English by default. `README.ja.md` is mainta
 ### 2.1 In Scope
 
 - Directory navigation from the folder tree.
-- Directory navigation from the header breadcrumb path.
 - File listing in left and right file panes.
 - Single-pane and split-pane display modes.
 - Single selection, multiple selection, and range selection.
@@ -80,9 +79,7 @@ See `docs/code-organization.md` for file naming and placement rules.
 3. File display area
 4. Preview pane
 
-The header contains navigation, breadcrumb path navigation, search, sorting, file operations, pane visibility toggles, Terminal.app launch, and path copy actions. Folder tree width, preview width, and split-pane ratio can be changed by dragging.
-
-The current directory path is displayed as a horizontally scrollable breadcrumb bar. Each path segment is clickable and calls the same directory navigation path as file-pane and folder-tree navigation. The bar scrolls to the trailing end when the current directory changes so the deepest folder remains visible.
+The header contains navigation, search, sorting, file operations, pane visibility toggles, Terminal.app launch, and path copy actions. Folder tree width, preview width, and split-pane ratio can be changed by dragging.
 
 ### 5.2 Folder Tree Pane
 
@@ -203,7 +200,7 @@ Rules:
 
 ### 8.4 Navigation
 
-`navigate(to:recordsHistory:updatesFolderTreeSelection:)` is the central directory navigation operation. Folder-tree clicks, file-pane activation, parent navigation, and breadcrumb path clicks all use this path. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation clears selection, expands ancestors in the folder tree, and reloads the target directory.
+`navigate(to:recordsHistory:updatesFolderTreeSelection:)` is the central directory navigation operation. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation clears selection, expands ancestors in the folder tree, and reloads the target directory.
 
 Pinned-folder navigation uses the same directory navigation path, but keeps the active folder-tree selection on the pinned row. The regular folder tree still expands the matching ancestor path so the physical location is visible.
 

@@ -20,7 +20,6 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - The active file pane is highlighted in green.
 - The folder tree can also become the active keyboard target and highlights the selected folder.
 - Toolbar actions, search, sorting, preview, Terminal.app opening, and the folder tree follow the active file pane.
-- The header path is a clickable breadcrumb bar; clicking a segment navigates directly to that folder.
 - The folder tree highlights the active pane's current folder and expands its ancestor path.
 - On startup, the folder tree expands only the ancestor path for the current folder and leaves subfolders collapsed.
 - Folders can be pinned and are shown in a persistent `PINNED` section at the top of the folder tree.
@@ -111,7 +110,7 @@ Add navigation history and stronger location controls.
 
 Acceptance criteria:
 
-- Back and forward work across folder tree clicks, breadcrumb path clicks, double-click navigation, parent navigation, and folder picker navigation.
+- Back and forward work across folder tree clicks, double-click navigation, parent navigation, and folder picker navigation.
 - Current directory remains the single source of truth for file list, preview, Terminal.app opening, and drag destination.
 
 ## Phase 2: File Operations
