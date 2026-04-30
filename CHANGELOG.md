@@ -4,6 +4,16 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.6] - 2026-05-01
+
+### Fixed
+
+- Fixed the folder tree disappearing when split-pane mode is enabled.
+
+### Changed
+
+- Updated the version to `0.2.6` and the build number to `8`.
+
 ## [0.2.5] - 2026-04-29
 
 ### Changed

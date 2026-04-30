@@ -60,7 +60,7 @@ struct TerminalFileManagerView: View {
                         isActive: activeArea == .folderTree,
                         activate: { activeArea = .folderTree }
                     )
-                        .frame(width: folderWidth)
+                        .frame(width: folderWidth, height: geometry.size.height)
 
                     SplitDragHandle {
                         folderDragStartWidth = folderTreeWidth
@@ -85,7 +85,7 @@ struct TerminalFileManagerView: View {
                         }
 
                         PreviewPane(urls: activeModel.previewURLs)
-                            .frame(width: previewPaneWidth)
+                            .frame(width: previewPaneWidth, height: geometry.size.height)
                     }
                 }
             }
