@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.2.7**
+Version: **0.2.8**
 
 [English](README.md) | 日本語
 

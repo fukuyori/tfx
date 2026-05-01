@@ -37,7 +37,7 @@ extension FileBrowserModel {
 
     func renameSelectedItem() {
         guard selectedItemIDs.count == 1, let selectedItem = primarySelectedItem else { return }
-        guard ZipArchiveBrowser.location(for: selectedItem.url) == nil else {
+        guard !ZipArchiveBrowser.canCopyFromArchive(selectedItem.url) else {
             show(ZipArchiveBrowserError.unsupportedWrite)
             return
         }
@@ -58,7 +58,7 @@ extension FileBrowserModel {
 
     func moveSelectedItemsToTrash() {
         let itemsToTrash = selectedItems
-        guard !itemsToTrash.contains(where: { ZipArchiveBrowser.location(for: $0.url) != nil }) else {
+        guard !itemsToTrash.contains(where: { ZipArchiveBrowser.canCopyFromArchive($0.url) }) else {
             show(ZipArchiveBrowserError.unsupportedWrite)
             return
         }

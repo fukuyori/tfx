@@ -4,6 +4,16 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.8] - 2026-05-01
+
+### Fixed
+
+- Fixed moving real zip archive files to Trash.
+
+### Changed
+
+- Updated the version to `0.2.8` and the build number to `10`.
+
 ## [0.2.7] - 2026-05-01
 
 ### Added
