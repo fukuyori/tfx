@@ -4,6 +4,23 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.2.9] - 2026-05-07
+
+### Added
+
+- Added Enter-triggered subfolder search with progress reporting and cancellation.
+
+### Fixed
+
+- Skipped unreadable folders during subfolder search without interrupting the search.
+- Stopped subfolder search when navigating folders.
+- Prevented search status text from wrapping in the status line.
+- Prevented folder tree refreshes caused by subfolder search result updates.
+
+### Changed
+
+- Updated the version to `0.2.9` and the build number to `11`.
+
 ## [0.2.8] - 2026-05-01
 
 ### Fixed

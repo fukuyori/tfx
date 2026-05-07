@@ -22,6 +22,13 @@ extension FileBrowserModel {
         updatesFolderTreeSelection: Bool = true
     ) {
         let target = directory.standardizedFileURL
+
+        if searchesSubfolders {
+            searchesSubfolders = false
+        } else {
+            stopSubfolderSearch()
+        }
+
         guard target != currentDirectory.standardizedFileURL else { return }
 
         if recordsHistory {

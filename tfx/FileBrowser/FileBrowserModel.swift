@@ -25,25 +25,41 @@ final class FileBrowserModel: ObservableObject {
     @Published var folderTreeSelection: URL?
     @Published var folderTreeSelectionSection: FolderTreeSelectionSection = .tree
     @Published var isShowingError = false
+    @Published var errorTitle = "File operation failed"
+    @Published var errorButtonTitle = "OK"
     @Published var errorMessage = ""
     @Published var searchText = "" {
         didSet {
-            scheduleFilterAndSort()
+            if isSubfolderSearchRunning {
+                stopSubfolderSearch()
+            }
         }
     }
+    @Published var searchesSubfolders = false
+    @Published var isSubfolderSearchRunning = false
+    @Published var subfolderSearchDepth = 0
+    @Published var subfolderSearchProcessedFolderCount = 0
+    @Published var subfolderSearchSkippedFolderCount = 0
+    @Published var subfolderSearchHitCount = 0
     @Published var showHiddenFiles = false {
         didSet {
-            applyFiltersAndSortImmediately()
+            if !isSubfolderSearchRunning {
+                applyFiltersAndSortImmediately()
+            }
         }
     }
     @Published var sortKey = FileSortKey.fastName {
         didSet {
-            applyFiltersAndSortImmediately()
+            if !isSubfolderSearchRunning {
+                applyFiltersAndSortImmediately()
+            }
         }
     }
     @Published var sortAscending = true {
         didSet {
-            applyFiltersAndSortImmediately()
+            if !isSubfolderSearchRunning {
+                applyFiltersAndSortImmediately()
+            }
         }
     }
     @Published var expandedFolders: Set<URL> = []
@@ -62,15 +78,20 @@ final class FileBrowserModel: ObservableObject {
     var clipboard: FileClipboard?
     var pinnedFolderDrag = FileBrowserPinnedFolderDrag()
     var filterWorkItem: DispatchWorkItem?
+    var subfolderSearchWorkItem: DispatchWorkItem?
     var metadataPrefetchWorkItem: DispatchWorkItem?
+    var errorDismissalHandler: (() -> Void)?
+    var subfolderSearchResumeAfterError: (() -> Void)?
     var pendingFileSelectionURL: URL?
     private var pinnedFoldersObserver: AnyCancellable?
     private var fileOperationObserver: AnyCancellable?
     var directoryLoadCancellation: DirectoryLoadCancellation?
     var filterSortCancellation: FilterSortCancellation?
+    var subfolderSearchCancellation: SubfolderSearchCancellation?
     var metadataPrefetchCancellation: MetadataPrefetchCancellation?
     var reloadGeneration = 0
     var filterGeneration = 0
+    var subfolderSearchGeneration = 0
     var folderChildrenLoadGenerations: [URL: Int] = [:]
     var folderChildrenLoadQueue: [URL] = []
     var queuedFolderChildrenLoads: Set<URL> = []
@@ -124,8 +145,30 @@ final class FileBrowserModel: ObservableObject {
     }
 
     func show(_ error: Error) {
+        show(error, title: "File operation failed", buttonTitle: "OK", onDismiss: nil)
+    }
+
+    func show(
+        _ error: Error,
+        title: String = "File operation failed",
+        buttonTitle: String = "OK",
+        onDismiss: (() -> Void)? = nil
+    ) {
+        errorTitle = title
+        errorButtonTitle = buttonTitle
         errorMessage = error.localizedDescription
+        errorDismissalHandler = onDismiss
         isShowingError = true
+    }
+
+    func dismissError() {
+        guard isShowingError else { return }
+        isShowingError = false
+        let handler = errorDismissalHandler
+        errorTitle = "File operation failed"
+        errorButtonTitle = "OK"
+        errorDismissalHandler = nil
+        handler?()
     }
 }
 

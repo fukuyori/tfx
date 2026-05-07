@@ -68,4 +68,21 @@ final class MetadataPrefetchCancellation: @unchecked Sendable {
         lock.unlock()
     }
 }
+
+final class SubfolderSearchCancellation: @unchecked Sendable {
+    private let lock = NSLock()
+    nonisolated(unsafe) private var isCancelledStorage = false
+
+    nonisolated var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return isCancelledStorage
+    }
+
+    nonisolated func cancel() {
+        lock.lock()
+        isCancelledStorage = true
+        lock.unlock()
+    }
+}
 #endif

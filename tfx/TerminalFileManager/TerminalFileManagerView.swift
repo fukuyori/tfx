@@ -107,19 +107,34 @@ struct TerminalFileManagerView: View {
         .onChange(of: rightModel.currentDirectory) {
             UserDefaults.standard.set(rightModel.currentDirectory.path, forKey: "TerminalFileManager.rightDirectory")
         }
-        .alert("File operation failed", isPresented: Binding(
+        .alert(activeErrorTitle, isPresented: Binding(
             get: { leftModel.isShowingError || rightModel.isShowingError },
             set: { isPresented in
                 if !isPresented {
-                    leftModel.isShowingError = false
-                    rightModel.isShowingError = false
+                    leftModel.dismissError()
+                    rightModel.dismissError()
                 }
             }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(activeErrorButtonTitle, role: .cancel) {
+                leftModel.dismissError()
+                rightModel.dismissError()
+            }
         } message: {
-            Text(leftModel.isShowingError ? leftModel.errorMessage : rightModel.errorMessage)
+            Text(activeErrorMessage)
         }
+    }
+
+    private var activeErrorTitle: String {
+        leftModel.isShowingError ? leftModel.errorTitle : rightModel.errorTitle
+    }
+
+    private var activeErrorButtonTitle: String {
+        leftModel.isShowingError ? leftModel.errorButtonTitle : rightModel.errorButtonTitle
+    }
+
+    private var activeErrorMessage: String {
+        leftModel.isShowingError ? leftModel.errorMessage : rightModel.errorMessage
     }
 
     private func openRequestedDirectoryIfNeeded() {

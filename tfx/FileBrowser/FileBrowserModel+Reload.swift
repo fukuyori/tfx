@@ -9,6 +9,11 @@ extension FileBrowserModel {
         let chunkSize = directoryLoadChunkSize
         let cancellation = resetDirectoryLoadState()
 
+        if hasActiveSubfolderSearchQuery {
+            startSubfolderSearch()
+            return
+        }
+
         FileBrowserDirectoryLoader.load(
             directory: directory,
             chunkSize: chunkSize,
@@ -33,6 +38,12 @@ extension FileBrowserModel {
         let cancellation = DirectoryLoadCancellation()
         directoryLoadCancellation = cancellation
         filterSortCancellation?.cancel()
+        subfolderSearchWorkItem?.cancel()
+        subfolderSearchWorkItem = nil
+        subfolderSearchCancellation?.cancel()
+        subfolderSearchCancellation = nil
+        subfolderSearchGeneration += 1
+        isSubfolderSearchRunning = false
         filterWorkItem?.cancel()
         filterWorkItem = nil
         metadataPrefetchWorkItem?.cancel()

@@ -17,6 +17,28 @@ extension TerminalFileManagerView {
                 .font(.system(.callout, design: .monospaced))
                 .frame(width: 180)
                 .focused($isSearchFocused)
+                .onSubmit {
+                    model.submitSubfolderSearch()
+                }
+
+            if model.isSubfolderSearchRunning {
+                Button {
+                    model.stopSubfolderSearch()
+                } label: {
+                    Image(systemName: "stop.fill")
+                }
+                .buttonStyle(.borderless)
+                .quickHelp("Stop search", text: $hoverHelpText)
+            }
+
+            if let subfolderSearchStatusText = model.subfolderSearchStatusText {
+                Text(subfolderSearchStatusText)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(model.isSubfolderSearchRunning ? .green : .secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 260, alignment: .leading)
+            }
 
             Button {
                 isSearchFocused = true

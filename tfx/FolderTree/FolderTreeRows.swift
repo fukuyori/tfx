@@ -53,7 +53,7 @@ struct FolderTreeRow: View {
             }
         }
         .onChange(of: model.items) {
-            if allowsExpansion && isExpanded {
+            if allowsExpansion && isExpanded && !model.isSubfolderSearchRunning {
                 model.refreshFolderChildren(url)
             }
         }
