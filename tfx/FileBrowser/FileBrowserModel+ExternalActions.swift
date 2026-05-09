@@ -18,6 +18,16 @@ extension FileBrowserModel {
         }
     }
 
+    func openFromContextMenu(_ item: FileItem) {
+        if item.isApplicationBundle {
+            FileBrowserExternalActions.openApplication(item.url) { [weak self] error in
+                self?.show(error)
+            }
+        } else {
+            open(item)
+        }
+    }
+
     func pickFolder() {
         if let url = FileBrowserExternalActions.chooseDirectory(startingAt: currentDirectory) {
             navigate(to: url)

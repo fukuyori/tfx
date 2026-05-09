@@ -2,7 +2,7 @@
 import AppKit
 import SwiftUI
 
-struct MultiPreviewItem<Content: View>: View {
+struct MultiPreviewItem<Content: View, Info: View>: View {
     let url: URL
     let isSelected: Bool
     let isPreviewActive: Bool
@@ -10,6 +10,7 @@ struct MultiPreviewItem<Content: View>: View {
     let requestPreview: () -> Void
     let releasePreview: () -> Void
     @ViewBuilder let content: () -> Content
+    @ViewBuilder let info: () -> Info
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,6 +36,8 @@ struct MultiPreviewItem<Content: View>: View {
             }
             .frame(height: 220)
             .clipped()
+
+            info()
         }
         .background(Color(nsColor: .textBackgroundColor))
         .overlay(

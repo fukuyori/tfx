@@ -19,6 +19,9 @@ struct FileItem: Identifiable, Hashable {
 
     nonisolated var id: URL { url }
     nonisolated var name: String { nameValue }
+    nonisolated var isApplicationBundle: Bool {
+        isDirectory && url.pathExtension.caseInsensitiveCompare("app") == .orderedSame
+    }
     nonisolated var searchName: String { searchNameValue }
     nonisolated var iconCacheKey: String { iconCacheKeyValue }
     nonisolated var mode: String { modeValue }
@@ -35,11 +38,24 @@ struct FileItem: Identifiable, Hashable {
         return String(format: "%03o", permissions)
     }
 
+    nonisolated private static func isDirectoryOrDirectorySymlink(_ url: URL, values: URLResourceValues?) -> Bool {
+        if values?.isDirectory == true {
+            return true
+        }
+
+        if let aliasTarget = FileBrowserExternalActions.resolvedAliasURL(for: url) {
+            return FileBrowserExternalActions.isDirectory(aliasTarget)
+        }
+
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+    }
+
     nonisolated init(url: URL) {
         self.url = url
 
-        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey, .fileSizeKey, .contentModificationDateKey, .creationDateKey])
-        isDirectory = values?.isDirectory == true
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey, .isAliasFileKey, .fileSizeKey, .contentModificationDateKey, .creationDateKey])
+        isDirectory = Self.isDirectoryOrDirectorySymlink(url, values: values)
         isHidden = values?.isHidden == true || url.lastPathComponent.hasPrefix(".")
         size = Int64(values?.fileSize ?? 0)
         modified = values?.contentModificationDate

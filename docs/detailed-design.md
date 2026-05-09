@@ -21,6 +21,8 @@ Project documentation is written in English by default. `README.ja.md` is mainta
 - New folder, rename, and move to Trash.
 - New file.
 - Copy, cut, paste, and drag-and-drop move operations.
+- Finder pasteboard interoperability for file copy, cut, and paste.
+- Finder alias and directory symlink resolution for navigation.
 - Same-name conflict resolution.
 - Zip archive browsing without full extraction.
 - Zip archive compression and extraction.
@@ -65,6 +67,7 @@ See `docs/code-organization.md` for file naming and placement rules.
 | Markdown preview | WebKit |
 | Generic preview | QuickLookUI |
 | File type detection | UniformTypeIdentifiers |
+| Code signature status | Security |
 | Zip archive listing and extraction | `/usr/bin/unzip` |
 | Zip archive creation | `/usr/bin/ditto` |
 | Persistence | `UserDefaults` / `@AppStorage` |
@@ -86,9 +89,11 @@ The current directory path is displayed as a horizontally scrollable breadcrumb 
 
 ### 5.2 Folder Tree Pane
 
-`FolderTreePane` displays a single tree rooted at `/`. If pinned folders exist, a `PINNED` section is shown before the normal `FOLDERS` tree.
+`FolderTreePane` displays a single tree rooted at `/`. If pinned folders exist, a `PINNED` section is shown before the normal `FOLDERS` tree. On first launch, Home, Documents, and Downloads are seeded as default pinned folders.
 
 Pinned folders are shortcuts. They can be reordered inside the `PINNED` section, but that only changes the app's display order and never moves real folders. Pinned-folder rows do not expand child folders.
+
+Hidden folders are included in the folder tree when hidden-file display is enabled, and excluded when hidden-file display is disabled.
 
 The regular folder tree is used for display, navigation, expansion/collapse, context menus, and file drop targets. Moving real folders within the folder tree is not allowed. Dropping files from the file view onto a folder tree row is allowed and moves those files into the target folder.
 
@@ -101,6 +106,8 @@ The file list begins with a `..` parent-directory row. `FileRow` renders file ty
 ### 5.4 Preview Pane
 
 `PreviewPane` displays the active pane's selected item. When multiple files are selected, the preview pane can show multiple preview cards with a limit on active preview loading.
+
+Selected files and folders also show compact metadata in the preview pane. The metadata includes display name, kind, size, containing folder, creation date, modification date, access date, POSIX permissions, and code-signature status. Signature status is reported as `Valid`, `Unsigned`, `Invalid`, or `-` when the item is not code-signable.
 
 Preview type is selected by `PreviewKind` from the URL extension and content type:
 
@@ -203,7 +210,7 @@ Rules:
 
 ### 8.4 Navigation
 
-`navigate(to:recordsHistory:updatesFolderTreeSelection:)` is the central directory navigation operation. Folder-tree clicks, file-pane activation, parent navigation, and breadcrumb path clicks all use this path. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation clears selection, expands ancestors in the folder tree, and reloads the target directory.
+`navigate(to:recordsHistory:updatesFolderTreeSelection:)` is the central directory navigation operation. Folder-tree clicks, file-pane activation, parent navigation, and breadcrumb path clicks all use this path. Finder aliases and directory symlinks are resolved before navigation when they point to directories. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation stops subfolder search, clears search text, clears selection, expands ancestors in the folder tree, and reloads the target directory.
 
 Pinned-folder navigation uses the same directory navigation path, but keeps the active folder-tree selection on the pinned row. The regular folder tree still expands the matching ancestor path so the physical location is visible.
 
@@ -211,7 +218,7 @@ Back and forward are handled by `goBack()` and `goForward()`. Parent-folder navi
 
 ### 8.5 Selection
 
-Single selection, Command-click extension, Shift-click range selection, and Shift-arrow range selection are handled by `FileBrowserSelectionSupport` and `FileBrowserModel` selection methods.
+Single selection, Command-click extension, Shift-click range selection, Shift-arrow range selection, and mouse drag range selection are handled by `FileBrowserSelectionSupport` and `FileBrowserModel` selection methods.
 
 The `..` row is tracked separately through `isParentDirectorySelected`. Pressing Enter while `..` is selected runs `goUp()`.
 
@@ -241,7 +248,7 @@ Copying from a zip archive extracts the selected virtual entries into the paste 
 
 ### 8.8 Copy, Cut, and Paste
 
-Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs to `NSPasteboard`. Paste currently uses the app-local clipboard.
+Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs and the preferred operation to `NSPasteboard`. Paste first uses the app-local clipboard when available, and otherwise reads file URLs from the macOS pasteboard so files copied in Finder can be pasted into tfx. `Command + Option + V` performs move-paste for file URLs when available.
 
 Same-name conflicts are resolved through a user prompt:
 
@@ -258,13 +265,13 @@ The app-local clipboard is cleared after a successful move operation.
 
 File rows, file-pane blank space, and folder-tree rows accept `UTType.fileURL` drops. `FileBrowserDropDelegate` calls `FileBrowserModel.moveDroppedFiles(_:to:completion:)`.
 
-File drops move files into the target directory. Folder-tree internal folder movement is intentionally not supported. Pinned-folder reordering uses app-local gesture state and only updates pinned display order.
+File drops move files into the target directory by default. Holding Option requests copy behavior, matching Finder's copy modifier. Folder-tree internal folder movement is intentionally not supported. Pinned-folder reordering uses app-local gesture state and only updates pinned display order.
 
 If a dropped URL requires security-scoped access, access is started only for the duration of the move.
 
 ### 8.10 Preview
 
-Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look.
+Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look. `PreviewFileInfoView` loads metadata asynchronously so metadata display does not block preview layout.
 
 Markdown is converted to HTML with the built-in renderer and displayed in a `WKWebView`. The supported baseline syntax includes headings, paragraphs, lists, code blocks, block quotes, inline code, emphasis, and links.
 
@@ -313,6 +320,7 @@ Pinned folders are displayed in the saved array order. New pinned folders are ap
 | Delete | Move to Trash. |
 | Command + Backspace | Move to Trash. |
 | Command + C / X / V | Copy / Cut / Paste. |
+| Command + Option + V | Move-paste when pasteboard file URLs are available. |
 | Command + A | Select all visible items. |
 | Command + R | Reload. |
 | Command + Shift + T | Open Terminal.app. |
@@ -344,10 +352,8 @@ Same-name conflicts are not treated as errors. They are handled through a dedica
 
 ## 14. Known Limitations
 
-- External paste from Finder is not the central paste path yet; app-local paste uses `FileClipboard`.
 - Zip archive virtual directories are read-only.
 - Markdown preview is a built-in renderer and is not full CommonMark.
-- The folder tree hides hidden folders.
 - Large copy/move operations may still affect UI responsiveness.
 - File watching is not implemented; external changes rely on reload or operation-triggered refresh.
 
@@ -356,14 +362,19 @@ Same-name conflicts are not treated as errors. They are handled through a dedica
 ### 15.1 Manual Checks
 
 - First launch shows Home and Downloads in the left and right panes.
+- First launch seeds Home, Documents, and Downloads in the pinned folders section.
 - Back, forward, and parent navigation keep history and file lists consistent.
+- Navigating to another folder clears search text and search-field focus.
 - Startup folder-tree expansion keeps subfolders collapsed except for the active ancestor path.
 - Pinned-folder selection remains on the pinned row while the regular tree expands the physical ancestor path.
 - Folder tree clicks, file double-clicks, and keyboard navigation produce consistent directory changes.
 - Multiple selection and range selection keep preview state valid.
-- Copy, cut, and paste show conflict prompts for same-name items.
+- Mouse drag range selection works across file-list rows.
+- Copy, cut, Finder paste, app paste, and move-paste show conflict prompts for same-name items.
+- Option-drag copies files while normal drag moves files.
+- Finder aliases and directory symlinks navigate to their resolved directory targets.
 - Trash operations update the file list and folder-tree cache.
-- PDF, video, Markdown, and fallback previews switch correctly.
+- PDF, video, Markdown, fallback previews, and compact preview metadata switch correctly.
 - Layout widths, visible panes, column settings, and pinned folders survive restart.
 - File-view to folder-tree drag-and-drop highlights the target and moves files.
 - Pinned-folder drag reorder changes display order only.

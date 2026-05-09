@@ -3,6 +3,13 @@ import AppKit
 
 extension TerminalFileManagerView {
     func handleKeyEvent(_ event: NSEvent) -> Bool {
+        if event.modifierFlags.contains([.command, .option]),
+           event.modifierFlags.intersection([.control]).isEmpty,
+           event.charactersIgnoringModifiers?.lowercased() == "v" {
+            activeModel.pasteItemsMoving()
+            return true
+        }
+
         if event.modifierFlags.contains(.command),
            event.modifierFlags.intersection([.option, .control]).isEmpty,
            event.keyCode == 51 {

@@ -24,13 +24,8 @@ final class AppOpenDirectoryRouter: ObservableObject {
 
     private static func directoryURL(for url: URL) -> URL? {
         let fileURL = url.isFileURL ? url : URL(fileURLWithPath: url.path)
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) else {
-            return nil
-        }
-
-        if isDirectory.boolValue {
-            return fileURL.standardizedFileURL
+        if let directoryURL = FileBrowserExternalActions.directoryURLForNavigation(fileURL) {
+            return directoryURL
         }
 
         return fileURL.deletingLastPathComponent().standardizedFileURL

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.2.9**
+Version: **0.3.0**
 
 [English](README.md) | 日本語
 
@@ -17,14 +17,17 @@ Version: **0.2.9**
 - ターミナル風のファイル一覧 UI
 - `/` から始まる単一フォルダツリー
 - ピン留めフォルダの常時表示
+- 初回起動時に Home / Documents / Downloads をピン留め
 - ピン留めフォルダのドラッグ並べ替え
 - 単独ビュー / スプリットビュー切り替え
 - 左右ペイン間のドラッグアンドドロップ
+- Option ドラッグによるコピー、通常ドラッグによる移動
 - アクティブビューのハイライト表示
 - `..` 行による親フォルダ移動
 - Backspace による親フォルダ移動
 - クリック可能な breadcrumb パス移動
 - PDF / 動画 / Markdown / Quick Look プレビュー
+- 選択中のファイル / フォルダのコンパクトなメタデータ表示
 - プレビュー表示のオン / オフ切り替え
 - zip ファイルを展開せずに閲覧
 - 閲覧中の zip ファイルからファイルをコピー
@@ -32,10 +35,12 @@ Version: **0.2.9**
 - New File / New Folder / Rename / Move to Trash / Reveal in Finder
 - 選択項目を zip ファイルに圧縮
 - zip ファイルを展開
-- Copy / Cut / Paste と同名ファイル競合ダイアログ
+- Copy / Cut / Paste、Finder クリップボード互換、同名ファイル競合ダイアログ
+- Finder エイリアスとディレクトリシンボリックリンクのナビゲーション解決
 - 検索、隠しファイル表示、ソート
 - Command-click による複数選択
-- Shift + 上下キー、Shift-click による範囲選択
+- Shift + 上下キー、Shift-click、マウスドラッグによる範囲選択
+- 進捗表示とキャンセルに対応したサブフォルダ検索
 - ファイル種別に応じたアイコン表示
 - ファイル一覧カラムの表示 / 非表示、順番変更
 - `NAME` ヘッダーのドラッグによるファイル名カラム幅変更
@@ -55,6 +60,7 @@ Version: **0.2.9**
 - `Delete`: ゴミ箱へ移動
 - `Command + Backspace`: ゴミ箱へ移動
 - `Command + C / X / V`: コピー / カット / ペースト
+- `Command + Option + V`: 移動ペースト
 - `Command + A`: すべて選択
 - `Command + R`: 再読み込み
 - `Command + Shift + T`: 現在フォルダで Terminal.app を開く
@@ -109,7 +115,7 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 - `tfx/FileBrowser`: ファイルブラウザのモデル、ディレクトリ読み込み、選択、ファイル操作、zip 閲覧、メタデータ、ドラッグアンドドロップ
 - `tfx/FilePane`: ファイル一覧ペイン、行、ヘッダー、メニュー、表示設定、ステータス行
 - `tfx/FolderTree`: フォルダツリーとピン留めフォルダ UI
-- `tfx/Preview`: プレビューペイン、Markdown / PDF / 動画 / Quick Look プレビュー、プレビュー種別判定
+- `tfx/Preview`: プレビューペイン、Markdown / PDF / 動画 / Quick Look プレビュー、プレビューメタデータ、プレビュー種別判定
 - `tfx/Infrastructure`: 小さな AppKit / SwiftUI 共通補助
 - `tfx/Assets.xcassets/AppIcon.appiconset`: アプリアイコン
 

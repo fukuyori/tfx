@@ -80,6 +80,18 @@ struct FileClipboard {
     let operation: Operation
 }
 
+struct FileDropOperationResult {
+    let destinationURL: URL
+    let removedSourceURL: URL?
+    let affectedDirectories: Set<URL>
+}
+
+struct FileMouseRangeSelectionState {
+    let anchorItemID: FileItem.ID
+    let originalSelectedItemIDs: Set<FileItem.ID>
+    let addsToExistingSelection: Bool
+}
+
 struct FileDragItem {
     let url: URL
     let iconCacheKey: String

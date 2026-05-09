@@ -11,7 +11,11 @@ struct PreviewPane: View {
     var body: some View {
         Group {
             if urls.count == 1, let url = urls.first {
-                preview(for: url)
+                VStack(spacing: 0) {
+                    preview(for: url)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    PreviewFileInfoView(url: url)
+                }
             } else if !urls.isEmpty {
                 ScrollView {
                     LazyVStack(spacing: 12) {
@@ -29,6 +33,8 @@ struct PreviewPane: View {
                                 }
                             ) {
                                 preview(for: url)
+                            } info: {
+                                PreviewFileInfoView(url: url)
                             }
                         }
                     }

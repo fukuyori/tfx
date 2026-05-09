@@ -21,7 +21,13 @@ extension FileBrowserFolderSupport {
     }
 
     static func loadPinnedFolders(key: String) -> [URL] {
-        let paths = UserDefaults.standard.stringArray(forKey: key) ?? []
+        let paths: [String]
+        if let savedPaths = UserDefaults.standard.stringArray(forKey: key) {
+            paths = savedPaths
+        } else {
+            paths = defaultPinnedFolders().map(\.path)
+            UserDefaults.standard.set(paths, forKey: key)
+        }
         var seen = Set<URL>()
 
         return paths
@@ -33,6 +39,17 @@ extension FileBrowserFolderSupport {
     static func savePinnedFolders(_ pinnedFolders: [URL], key: String) {
         UserDefaults.standard.set(pinnedFolders.map(\.path), forKey: key)
         NotificationCenter.default.post(name: .pinnedFoldersDidChange, object: nil)
+    }
+
+    private static func defaultPinnedFolders() -> [URL] {
+        let home = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL
+        let candidates = [
+            home,
+            home.appendingPathComponent("Documents", isDirectory: true),
+            home.appendingPathComponent("Downloads", isDirectory: true)
+        ]
+
+        return candidates.filter { FileBrowserExternalActions.isDirectory($0) }
     }
 }
 #endif

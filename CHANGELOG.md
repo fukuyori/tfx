@@ -4,6 +4,33 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.3.0] - 2026-05-09
+
+### Fixed
+
+- Seed first-run pinned folders with Home, Documents, and Downloads.
+- Read file URLs from the macOS pasteboard so items copied in Finder can be pasted into tfx.
+- Write selected file URLs to the macOS pasteboard when copying or cutting in tfx.
+- Support `Command + Option + V` as move-paste for copied file URLs.
+- Support Option-drag copying for file drops.
+- Support mouse drag range selection in the file list.
+- Show hidden folders in the folder tree when hidden files are enabled.
+- Resolve Finder alias files when opening or navigating to folder aliases.
+- Open `.app` bundles from the file-row context menu as applications instead of navigating into the bundle.
+- Treat directory symlinks such as Dropbox and Google Drive home-folder links as folders in the file list.
+- Resolve directory symlinks to their target paths before navigating, so CloudStorage links open inside tfx.
+- Clear search text and search-field focus when navigating to another folder.
+- Prevent keyboard handling from stealing focus back from the search field after a single click.
+
+### Added
+
+- Added compact preview metadata for selected files and folders, including kind, size, location, dates, permissions, and code-signature status.
+
+### Changed
+
+- Updated the version to `0.3.0` and the build number to `12`.
+- Removed duplicate subfolder-search status text from the header; search progress remains in the file-pane status line.
+
 ## [0.2.9] - 2026-05-07
 
 ### Added

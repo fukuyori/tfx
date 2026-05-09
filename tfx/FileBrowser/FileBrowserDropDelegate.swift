@@ -24,7 +24,7 @@ struct FileBrowserDropDelegate: DropDelegate {
         }
 
         model.setDropTargetDirectory(highlightedDirectory)
-        return DropProposal(operation: .move)
+        return DropProposal(operation: dropOperation == .copy ? .copy : .move)
     }
 
     func dropExited(info: DropInfo) {
@@ -40,8 +40,13 @@ struct FileBrowserDropDelegate: DropDelegate {
         return model.moveDroppedFiles(
             info.itemProviders(for: [UTType.fileURL.identifier]),
             to: targetDirectory,
+            operation: dropOperation,
             completion: reloadRelatedPanes
         )
+    }
+
+    private var dropOperation: FileClipboard.Operation {
+        NSEvent.modifierFlags.contains(.option) ? .copy : .move
     }
 }
 

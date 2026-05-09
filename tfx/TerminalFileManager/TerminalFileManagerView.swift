@@ -103,9 +103,11 @@ struct TerminalFileManagerView: View {
         }
         .onChange(of: leftModel.currentDirectory) {
             UserDefaults.standard.set(leftModel.currentDirectory.path, forKey: "TerminalFileManager.leftDirectory")
+            isSearchFocused = false
         }
         .onChange(of: rightModel.currentDirectory) {
             UserDefaults.standard.set(rightModel.currentDirectory.path, forKey: "TerminalFileManager.rightDirectory")
+            isSearchFocused = false
         }
         .alert(activeErrorTitle, isPresented: Binding(
             get: { leftModel.isShowingError || rightModel.isShowingError },

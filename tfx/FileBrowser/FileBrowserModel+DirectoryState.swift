@@ -15,7 +15,7 @@ extension FileBrowserModel {
     }
 
     var canPaste: Bool {
-        clipboard?.urls.isEmpty == false
+        clipboard?.urls.isEmpty == false || FileBrowserExternalActions.fileClipboardFromPasteboard() != nil
     }
 
     var primarySelectedItem: FileItem? {

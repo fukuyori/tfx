@@ -2,20 +2,24 @@
 import Foundation
 
 extension FileBrowserFolderSupport {
-    nonisolated static func loadChildren(for url: URL) -> [URL] {
+    nonisolated static func loadChildren(for url: URL, showsHiddenFiles: Bool) -> [URL] {
         let loadStart = PerformanceTrace.now()
         do {
+            let options: FileManager.DirectoryEnumerationOptions = showsHiddenFiles ? [.skipsPackageDescendants] : [.skipsHiddenFiles, .skipsPackageDescendants]
             let children = try FileManager.default.contentsOfDirectory(
                 at: url,
-                includingPropertiesForKeys: [.isDirectoryKey],
-                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+                includingPropertiesForKeys: [.isDirectoryKey, .isAliasFileKey, .isHiddenKey],
+                options: options
             )
 
             var childFolders: [(url: URL, sortName: String)] = []
             childFolders.reserveCapacity(children.count)
 
             for child in children {
-                guard (try? child.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else {
+                let values = try? child.resourceValues(forKeys: [.isDirectoryKey, .isAliasFileKey])
+                let isDirectory = values?.isDirectory == true
+                    || FileBrowserExternalActions.directoryURLForNavigation(child) != nil
+                guard isDirectory else {
                     continue
                 }
 

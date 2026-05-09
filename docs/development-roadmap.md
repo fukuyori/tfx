@@ -71,6 +71,24 @@ Project documentation should be written in English by default. `README.md` is th
 - The header path was changed to a horizontally scrollable breadcrumb.
 - Clicking a breadcrumb segment navigates directly to that folder through the normal navigation model.
 
+### 1.7 Finder Compatibility and Search
+
+- Home, Documents, and Downloads are seeded as pinned folders on first launch.
+- Files copied or cut in tfx are written to the macOS pasteboard as file URLs.
+- Files copied in Finder can be pasted into tfx.
+- `Command + Option + V` performs move-paste for file URLs.
+- Option-drag copies files while normal drag moves files.
+- Finder aliases and directory symlinks are resolved when navigating to folders.
+- `.app` bundles are opened as applications from the row context menu.
+- Hidden folders appear in the folder tree when hidden-file display is enabled.
+- Subfolder search supports progress reporting, incremental results, cancellation, and status-line display.
+- Search text and search-field focus are cleared when navigating to another folder.
+
+### 1.8 Selection and Preview Details
+
+- Mouse drag range selection is available in the file list.
+- The preview pane shows compact metadata for selected files and folders, including kind, size, location, dates, permissions, and code-signature status.
+
 ## 2. Short-Term Work
 
 ### 2.1 Measurement-Based Performance Work
@@ -95,38 +113,7 @@ Done when:
 - Slow paths can be identified in large directories.
 - Reproduction conditions and before/after timings can be recorded for each optimization.
 
-### 2.2 Subfolder Search
-
-Goal:
-
-- Search files below the current folder without blocking the UI.
-- Show partial results while the search is still running.
-
-Traversal model:
-
-- Use breadth-first traversal.
-- First search the current directory and all first-level folders.
-- Then search all second-level folders.
-- Continue by completing each depth before moving to the next depth.
-
-Tasks:
-
-- Add a UI switch between current-folder filtering and subfolder search.
-- Run subfolder search in the background.
-- Show current depth, processed folder count, and hit count.
-- Display results incrementally.
-- Add a stop button.
-- Prevent stopped or stale searches from appending more results.
-- Start with file-name search only.
-- Leave room for future depth limits, excluded folders, and hidden-file rules.
-
-Done when:
-
-- Clicking, selection, and scrolling remain responsive while subfolder search is running.
-- Search proceeds by full depth levels.
-- Results support open, Reveal in Finder, and Copy Path.
-
-### 2.3 Drag-and-Drop Final Cleanup
+### 2.2 Drag-and-Drop Final Cleanup
 
 Goal:
 

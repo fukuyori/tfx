@@ -18,8 +18,20 @@ extension FileBrowserModel {
         pasteItems(into: currentDirectory)
     }
 
+    func pasteItemsMoving() {
+        pasteItems(into: currentDirectory, forcedOperation: .move)
+    }
+
     func pasteItems(into targetDirectory: URL) {
-        guard let clipboard, !clipboard.urls.isEmpty else { return }
+        pasteItems(into: targetDirectory, forcedOperation: nil)
+    }
+
+    private func pasteItems(into targetDirectory: URL, forcedOperation: FileClipboard.Operation?) {
+        guard var clipboard = clipboard ?? FileBrowserExternalActions.fileClipboardFromPasteboard(defaultOperation: forcedOperation ?? .copy),
+              !clipboard.urls.isEmpty else { return }
+        if let forcedOperation {
+            clipboard = FileClipboard(urls: clipboard.urls, operation: forcedOperation)
+        }
 
         do {
             guard let result = try FileBrowserFileOperations.paste(clipboard, into: targetDirectory) else { return }

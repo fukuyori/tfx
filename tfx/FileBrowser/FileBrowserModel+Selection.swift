@@ -4,6 +4,7 @@ import Foundation
 
 extension FileBrowserModel {
     func selectForMouseDown(_ item: FileItem, modifiers: NSEvent.ModifierFlags) {
+        mouseRangeSelectionState = nil
         isParentDirectorySelected = false
 
         if modifiers.contains(.shift) {
@@ -18,6 +19,10 @@ extension FileBrowserModel {
     }
 
     func selectForMouseUp(_ item: FileItem, modifiers: NSEvent.ModifierFlags) {
+        if mouseRangeSelectionState != nil {
+            finishMouseRangeSelection()
+            return
+        }
         guard !modifiers.contains(.shift), !modifiers.contains(.command) else { return }
         select(item)
     }
@@ -32,6 +37,60 @@ extension FileBrowserModel {
             selectedItemIDs: selectedItemIDs,
             selectedVisibleItems: selectedVisibleItems
         )
+    }
+
+    func beginMouseRangeSelection(from item: FileItem, modifiers: NSEvent.ModifierFlags) {
+        isParentDirectorySelected = false
+        let addsToExistingSelection = modifiers.contains(.command)
+        mouseRangeSelectionState = FileMouseRangeSelectionState(
+            anchorItemID: item.id,
+            originalSelectedItemIDs: selectedItemIDs,
+            addsToExistingSelection: addsToExistingSelection
+        )
+        updateMouseRangeSelection(to: item)
+    }
+
+    func updateMouseRangeSelection(to item: FileItem) {
+        guard
+            let state = mouseRangeSelectionState,
+            let anchorIndex = visibleItemIndexLookup[state.anchorItemID.standardizedFileURL],
+            let targetIndex = visibleItemIndexLookup[item.id.standardizedFileURL]
+        else {
+            return
+        }
+
+        let range = min(anchorIndex, targetIndex)...max(anchorIndex, targetIndex)
+        var selectedIDs = Set(items[range].map(\.id))
+        if state.addsToExistingSelection {
+            selectedIDs.formUnion(state.originalSelectedItemIDs)
+        }
+
+        selectedItemIDs = selectedIDs
+        primarySelectedItemID = item.id
+        selectionAnchorItemID = state.anchorItemID
+        isParentDirectorySelected = false
+    }
+
+    func beginMouseRangeSelection(atItemIndex itemIndex: Int, modifiers: NSEvent.ModifierFlags) {
+        guard items.indices.contains(itemIndex) else { return }
+        beginMouseRangeSelection(from: items[itemIndex], modifiers: modifiers)
+    }
+
+    func updateMouseRangeSelection(toItemIndex itemIndex: Int) {
+        guard items.indices.contains(itemIndex) else { return }
+        updateMouseRangeSelection(to: items[itemIndex])
+    }
+
+    func updateMouseRangeSelection(startingAt item: FileItem, verticalOffset: CGFloat, rowHeight: CGFloat) {
+        guard rowHeight > 0, let startIndex = visibleItemIndexLookup[item.id.standardizedFileURL] else { return }
+
+        let rowOffset = Int(round(-verticalOffset / rowHeight))
+        let targetIndex = FileBrowserSelectionSupport.clampedIndex(startIndex + rowOffset, count: items.count)
+        updateMouseRangeSelection(to: items[targetIndex])
+    }
+
+    func finishMouseRangeSelection() {
+        mouseRangeSelectionState = nil
     }
 
     func moveFileSelection(delta: Int, extendingRange: Bool = false) {

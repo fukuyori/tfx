@@ -21,7 +21,9 @@ extension FileBrowserModel {
         selecting selectionURL: URL? = nil,
         updatesFolderTreeSelection: Bool = true
     ) {
-        let target = directory.standardizedFileURL
+        let target = FileBrowserExternalActions.directoryURLForNavigation(directory) ?? directory.standardizedFileURL
+
+        guard target != currentDirectory.standardizedFileURL else { return }
 
         if searchesSubfolders {
             searchesSubfolders = false
@@ -29,7 +31,9 @@ extension FileBrowserModel {
             stopSubfolderSearch()
         }
 
-        guard target != currentDirectory.standardizedFileURL else { return }
+        if !searchText.isEmpty {
+            searchText = ""
+        }
 
         if recordsHistory {
             navigationHistory.recordNavigation(from: currentDirectory)

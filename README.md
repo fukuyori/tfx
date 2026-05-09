@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.2.9**
+Version: **0.3.0**
 
 English | [日本語](README.ja.md)
 
@@ -17,14 +17,17 @@ English | [日本語](README.ja.md)
 - Terminal-style file list UI
 - Single folder tree rooted at `/`
 - Persistent pinned folders section
+- Home, Documents, and Downloads are pinned by default on first launch
 - Drag reordering for pinned folders
 - Single-pane and split-pane modes
 - Drag and drop between left and right file panes
+- Option-drag copies files; normal drag moves files
 - Visual highlighting for the active view
 - `..` row for parent-folder navigation
 - Backspace parent-folder navigation
 - Clickable breadcrumb path navigation
 - PDF, video, Markdown, and Quick Look previews
+- Compact preview metadata for selected files and folders
 - Toggleable preview pane
 - Browse zip archives without extracting them
 - Copy files from browsed zip archives
@@ -32,10 +35,12 @@ English | [日本語](README.ja.md)
 - New File, New Folder, Rename, Move to Trash, and Reveal in Finder
 - Compress selected items to a zip archive
 - Extract zip archives
-- Copy, Cut, Paste, and same-name conflict handling
+- Copy, Cut, Paste, Finder pasteboard interoperability, and same-name conflict handling
+- Finder aliases and directory symlinks are resolved for navigation
 - Search, hidden-file toggle, and sorting
 - Multi-selection with Command-click
-- Range selection with Shift + arrow keys and Shift-click
+- Range selection with Shift + arrow keys, Shift-click, and mouse drag
+- Subfolder search with progress and cancellation
 - File-type icons in the file list
 - Configurable file-list columns: visibility and order
 - Resizable file-name column by dragging the `NAME` header
@@ -55,6 +60,7 @@ English | [日本語](README.ja.md)
 - `Delete`: Move to Trash
 - `Command + Backspace`: Move to Trash
 - `Command + C / X / V`: Copy / Cut / Paste
+- `Command + Option + V`: Move-paste
 - `Command + A`: Select all
 - `Command + R`: Reload
 - `Command + Shift + T`: Open Terminal.app here
@@ -109,7 +115,7 @@ Source directories:
 - `tfx/FileBrowser`: File browser model, directory loading, selection, file operations, zip archive browsing, metadata, and drag/drop behavior
 - `tfx/FilePane`: File list panes, rows, headers, menus, settings, and status line
 - `tfx/FolderTree`: Folder tree and pinned-folder UI
-- `tfx/Preview`: Preview pane, Markdown/PDF/video/Quick Look previews, and preview type selection
+- `tfx/Preview`: Preview pane, Markdown/PDF/video/Quick Look previews, preview metadata, and preview type selection
 - `tfx/Infrastructure`: Small reusable AppKit and SwiftUI helpers
 - `tfx/Assets.xcassets/AppIcon.appiconset`: App icon assets
 

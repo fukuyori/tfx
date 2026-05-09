@@ -24,17 +24,20 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - The folder tree highlights the active pane's current folder and expands its ancestor path.
 - On startup, the folder tree expands only the ancestor path for the current folder and leaves subfolders collapsed.
 - Folders can be pinned and are shown in a persistent `PINNED` section at the top of the folder tree.
+- Home, Documents, and Downloads are pinned by default on first launch.
 - Pinned folders can be reordered by dragging within the `PINNED` section.
 - Pinned folder rows act as shortcuts and do not expand child folders in the `PINNED` section.
 - Selecting a pinned folder keeps the active tree selection on the pinned row while expanding the matching physical ancestor path in the regular tree.
 - The folder tree is display/navigation/drop-target UI. Dropping files from a file pane onto a regular folder-tree row is supported, but moving folders within the tree is not supported.
 - The regular folder tree is a single hierarchy starting at `/`; Home, Documents, Downloads, and similar folders are not duplicated as separate tree roots.
+- Hidden folders appear in the folder tree when hidden-file display is enabled.
 - The app restores the previous window frame, visible panes, active pane, opened folders, and pane widths on launch.
 - Preview pane supports:
   - PDF through PDFKit.
   - Video through AVKit.
   - Markdown through a rendered WebKit preview.
   - Other file types through Quick Look fallback.
+  - Compact metadata for selected files and folders, including kind, size, location, dates, permissions, and code-signature status.
 - Drag and drop file moving is available.
 - Drag and drop works between the left and right file panes, and both panes reload after a completed drop.
 - Terminal toolbar button opens Terminal.app at the current directory.
@@ -49,11 +52,17 @@ This document tracks the implementation plan for turning `tfx` into a practical 
   - Copy path.
 - Context menus are available for file rows and folder tree rows.
 - Current-folder search, hidden file toggle, and sorting are available.
+- Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.
+- Range selection is available with Shift-click, Shift + Up/Down, and mouse drag.
 - Multi-item operations are available for:
   - Move to Trash.
   - Reveal in Finder.
 - App-local copy, cut, and paste are available.
+- Finder pasteboard compatibility is available for copying, cutting, and pasting file URLs.
+- `Command + Option + V` is available as move-paste for file URLs.
+- Option-drag copies files while normal drag moves files.
+- Finder aliases and directory symlinks are resolved for folder navigation.
 - Zip archives can be browsed without extracting the whole archive.
 - Zip archive entries can be copied out to real folders.
 - Context menus can compress selected items to zip and extract zip archives.

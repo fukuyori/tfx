@@ -19,7 +19,7 @@ struct KeyboardEventHandler: NSViewRepresentable {
 
         if isEnabled {
             DispatchQueue.main.async {
-                nsView.window?.makeFirstResponder(nsView)
+                nsView.becomeKeyboardHandlerIfAppropriate()
             }
         }
     }
@@ -38,7 +38,7 @@ final class KeyHandlingNSView: NSView {
 
         if isEnabled {
             DispatchQueue.main.async {
-                self.window?.makeFirstResponder(self)
+                self.becomeKeyboardHandlerIfAppropriate()
             }
         }
     }
@@ -49,6 +49,18 @@ final class KeyHandlingNSView: NSView {
         }
 
         super.keyDown(with: event)
+    }
+
+    func becomeKeyboardHandlerIfAppropriate() {
+        guard isEnabled, let window else { return }
+
+        if window.firstResponder is NSTextView {
+            return
+        }
+
+        if window.firstResponder !== self {
+            window.makeFirstResponder(self)
+        }
     }
 }
 #endif

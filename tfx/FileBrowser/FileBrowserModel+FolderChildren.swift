@@ -53,9 +53,10 @@ extension FileBrowserModel {
             queuedFolderChildrenLoads.remove(key)
             activeFolderChildrenLoadCount += 1
             let generation = folderChildrenLoadGenerations[key] ?? 0
+            let showsHiddenFiles = showHiddenFiles
 
             DispatchQueue.global(qos: .utility).async {
-                let children = FileBrowserFolderSupport.loadChildren(for: key)
+                let children = FileBrowserFolderSupport.loadChildren(for: key, showsHiddenFiles: showsHiddenFiles)
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
@@ -68,6 +69,20 @@ extension FileBrowserModel {
                     self.processFolderChildrenLoadQueue()
                 }
             }
+        }
+    }
+
+    func refreshFolderTreeForHiddenFileSettingChange() {
+        folderChildrenCache.removeAll()
+        for key in folderChildrenLoadGenerations.keys {
+            folderChildrenLoadGenerations[key, default: 0] += 1
+        }
+        queuedFolderChildrenLoads.removeAll()
+        folderChildrenLoadQueue.removeAll()
+
+        let foldersToRefresh = expandedFolders
+        for folder in foldersToRefresh {
+            refreshFolderChildren(folder)
         }
     }
 }

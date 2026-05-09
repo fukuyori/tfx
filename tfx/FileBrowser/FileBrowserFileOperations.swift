@@ -30,11 +30,6 @@ struct FilePasteResult {
     let shouldClearClipboard: Bool
 }
 
-struct FileMoveResult {
-    let destinationURL: URL
-    let affectedDirectories: Set<URL>
-}
-
 struct FileCreateFolderResult {
     let folderURL: URL
     let affectedDirectory: URL
@@ -260,8 +255,8 @@ enum FileBrowserFileOperations {
         )
     }
 
-    static func move(_ sourceURL: URL, to targetDirectory: URL) throws -> FileMoveResult? {
-        let decision = FileConflictResolver.destinationDecision(for: sourceURL, in: targetDirectory, operation: .move)
+    static func drop(_ sourceURL: URL, to targetDirectory: URL, operation: FileClipboard.Operation) throws -> FileDropOperationResult? {
+        let decision = FileConflictResolver.destinationDecision(for: sourceURL, in: targetDirectory, operation: operation)
 
         let scoped = sourceURL.startAccessingSecurityScopedResource()
         defer {
@@ -282,13 +277,22 @@ enum FileBrowserFileOperations {
             destinationURL = resolvedDestinationURL
         }
 
-        try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
-        return FileMoveResult(
+        switch operation {
+        case .copy:
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        case .move:
+            try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+        }
+
+        var affectedDirectories: Set<URL> = [targetDirectory.standardizedFileURL]
+        if operation == .move {
+            affectedDirectories.insert(sourceURL.deletingLastPathComponent().standardizedFileURL)
+        }
+
+        return FileDropOperationResult(
             destinationURL: destinationURL,
-            affectedDirectories: [
-                sourceURL.deletingLastPathComponent().standardizedFileURL,
-                targetDirectory.standardizedFileURL
-            ]
+            removedSourceURL: operation == .move ? sourceURL : nil,
+            affectedDirectories: affectedDirectories
         )
     }
 

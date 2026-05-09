@@ -11,7 +11,7 @@ struct FileItemContextMenu: View {
         Button("Open") {
             activate()
             model.selectForContextMenu(item)
-            model.open(item)
+            model.openFromContextMenu(item)
         }
 
         Button("Rename") {

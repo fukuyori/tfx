@@ -43,6 +43,7 @@ final class FileBrowserModel: ObservableObject {
     @Published var subfolderSearchHitCount = 0
     @Published var showHiddenFiles = false {
         didSet {
+            refreshFolderTreeForHiddenFileSettingChange()
             if !isSubfolderSearchRunning {
                 applyFiltersAndSortImmediately()
             }
@@ -75,6 +76,7 @@ final class FileBrowserModel: ObservableObject {
     var visibleItemIndexLookup: [FileItem.ID: Int] = [:]
     var navigationHistory = FileBrowserNavigationHistory()
     var selectionAnchorItemID: FileItem.ID?
+    var mouseRangeSelectionState: FileMouseRangeSelectionState?
     var clipboard: FileClipboard?
     var pinnedFolderDrag = FileBrowserPinnedFolderDrag()
     var filterWorkItem: DispatchWorkItem?
