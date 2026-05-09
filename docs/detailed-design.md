@@ -188,7 +188,7 @@ Zip archive entries are represented as `FileItem` values with virtual URLs. Thes
 1. `tfxApp` presents `ContentView`.
 2. On macOS, `ContentView` creates `TerminalFileManagerView`.
 3. `TerminalFileManagerView.init()` restores the last left and right directories from `UserDefaults`.
-4. If the restored directories no longer exist, the left pane starts at Home and the right pane starts at Downloads.
+4. If the restored directories no longer exist, both panes start at Home. Saved Desktop, Documents, and Downloads paths are not auto-restored at launch to avoid macOS privacy prompts before the user explicitly opens those folders.
 5. Each `FileBrowserModel` runs `reload()` and expands the current folder's ancestor chain in the folder tree. Subfolders start collapsed unless they are on that ancestor path.
 
 ### 8.2 Directory Loading
@@ -361,7 +361,7 @@ Same-name conflicts are not treated as errors. They are handled through a dedica
 
 ### 15.1 Manual Checks
 
-- First launch shows Home and Downloads in the left and right panes.
+- First launch shows Home in the left and right panes.
 - First launch seeds Home, Documents, and Downloads in the pinned folders section.
 - Back, forward, and parent navigation keep history and file lists consistent.
 - Navigating to another folder clears search text and search-field focus.

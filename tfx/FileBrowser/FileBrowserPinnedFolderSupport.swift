@@ -32,7 +32,6 @@ extension FileBrowserFolderSupport {
 
         return paths
             .map { URL(fileURLWithPath: $0).standardizedFileURL }
-            .filter { FileBrowserExternalActions.isDirectory($0) }
             .filter { seen.insert($0).inserted }
     }
 
@@ -49,7 +48,7 @@ extension FileBrowserFolderSupport {
             home.appendingPathComponent("Downloads", isDirectory: true)
         ]
 
-        return candidates.filter { FileBrowserExternalActions.isDirectory($0) }
+        return candidates
     }
 }
 #endif

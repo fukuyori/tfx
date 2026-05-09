@@ -85,5 +85,24 @@ extension FileBrowserModel {
             refreshFolderChildren(folder)
         }
     }
+
+    func rebuildFolderTree() {
+        let knownFolders = Set(folderChildrenLoadGenerations.keys)
+            .union(expandedFolders)
+            .union(FileBrowserFolderSupport.ancestors(of: currentDirectory))
+            .union([URL(fileURLWithPath: "/").standardizedFileURL])
+
+        folderChildrenCache.removeAll()
+        for key in knownFolders {
+            folderChildrenLoadGenerations[key, default: 0] += 1
+        }
+        queuedFolderChildrenLoads.removeAll()
+        folderChildrenLoadQueue.removeAll()
+        activeFolderChildrenLoadCount = 0
+
+        expandAncestors(of: currentDirectory)
+        refreshFolderChildren(URL(fileURLWithPath: "/").standardizedFileURL)
+        ensureFolderTreeSelection()
+    }
 }
 #endif

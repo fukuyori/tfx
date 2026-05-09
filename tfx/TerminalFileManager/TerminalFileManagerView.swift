@@ -26,9 +26,8 @@ struct TerminalFileManagerView: View {
     init(initialDirectory: URL? = AppLaunchArguments.initialDirectory()) {
         let defaults = UserDefaults.standard
         let homeURL = URL(fileURLWithPath: NSHomeDirectory())
-        let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? homeURL
         let leftURL = initialDirectory ?? Self.restoredDirectory(forKey: "TerminalFileManager.leftDirectory", fallback: homeURL)
-        let rightURL = Self.restoredDirectory(forKey: "TerminalFileManager.rightDirectory", fallback: downloadsURL)
+        let rightURL = Self.restoredDirectory(forKey: "TerminalFileManager.rightDirectory", fallback: homeURL)
 
         _leftModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: leftURL))
         _rightModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: rightURL))

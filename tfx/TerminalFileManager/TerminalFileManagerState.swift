@@ -34,12 +34,38 @@ extension TerminalFileManagerView {
         }
 
         let url = URL(fileURLWithPath: path)
+        if let safeParent = safeRestorationParent(forPrivacyProtectedUserDirectory: url) {
+            return safeParent
+        }
+
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue {
             return url
         }
 
         return fallback
+    }
+
+    private static func safeRestorationParent(forPrivacyProtectedUserDirectory url: URL) -> URL? {
+        let home = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL
+        let protectedDirectories = [
+            home.appendingPathComponent("Desktop", isDirectory: true),
+            home.appendingPathComponent("Documents", isDirectory: true),
+            home.appendingPathComponent("Downloads", isDirectory: true)
+        ]
+        let target = url.standardizedFileURL
+
+        for protectedDirectory in protectedDirectories {
+            if target == protectedDirectory {
+                return home
+            }
+
+            if target.path.hasPrefix(protectedDirectory.path + "/") {
+                return protectedDirectory.deletingLastPathComponent().standardizedFileURL
+            }
+        }
+
+        return nil
     }
 
     func clamp(_ value: Double, min minValue: Double, max maxValue: Double) -> Double {

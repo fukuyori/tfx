@@ -17,6 +17,7 @@ struct FolderTreePane: View {
                 Spacer()
                 Button {
                     model.reload()
+                    model.rebuildFolderTree()
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -31,7 +32,7 @@ struct FolderTreePane: View {
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    VStack(spacing: 0) {
                         if !model.pinnedFolders.isEmpty {
                             FolderTreeSectionHeader(title: "PINNED")
 

@@ -4,6 +4,21 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.3.1] - 2026-05-09
+
+### Fixed
+
+- Avoid automatically restoring Desktop, Documents, and Downloads paths at launch to reduce macOS privacy prompts.
+- Restore protected user-folder paths by opening their safe parent folder instead.
+- Avoid privacy prompts while loading default pinned folders by not probing protected folders during startup.
+- Rebuild folder-tree cache from the folder-tree reload button.
+- Render the folder tree with a non-lazy stack to avoid intermittent blank tree contents.
+
+### Changed
+
+- Updated the version to `0.3.1` and the build number to `13`.
+- Use Home as the default folder for both panes when no previous safe folder can be restored.
+
 ## [0.3.0] - 2026-05-09
 
 ### Fixed
