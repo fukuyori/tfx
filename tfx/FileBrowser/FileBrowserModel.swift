@@ -77,6 +77,7 @@ final class FileBrowserModel: ObservableObject {
     var navigationHistory = FileBrowserNavigationHistory()
     var selectionAnchorItemID: FileItem.ID?
     var mouseRangeSelectionState: FileMouseRangeSelectionState?
+    var mouseBlankSelectionState: FileMouseBlankSelectionState?
     var clipboard: FileClipboard?
     var pinnedFolderDrag = FileBrowserPinnedFolderDrag()
     var filterWorkItem: DispatchWorkItem?

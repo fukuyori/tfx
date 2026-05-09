@@ -10,7 +10,7 @@ struct FilePaneFileList: View {
     let visibleColumns: [FileListColumn]
     @Binding var fileNameColumnWidth: Double
     let activate: () -> Void
-    @State private var mouseRangeStartIndex: Int?
+    @State private var blankSelectionStartY: CGFloat?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,14 +20,17 @@ struct FilePaneFileList: View {
             )
 
             ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        parentDirectoryRow
-                        fileRows
+                GeometryReader { geometry in
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            parentDirectoryRow
+                            fileRows
+                        }
+                        .frame(minHeight: geometry.size.height, alignment: .top)
+                        .contentShape(Rectangle())
+                        .coordinateSpace(name: "file-list-content")
+                        .simultaneousGesture(fileRangeSelectionGesture)
                     }
-                    .contentShape(Rectangle())
-                    .coordinateSpace(name: "file-list-content")
-                    .simultaneousGesture(fileRangeSelectionGesture)
                 }
                 .onChange(of: model.selectedFileListRowID) {
                     scrollToSelection(with: proxy)
@@ -45,29 +48,46 @@ struct FilePaneFileList: View {
     private var fileRangeSelectionGesture: some Gesture {
         DragGesture(minimumDistance: 4, coordinateSpace: .named("file-list-content"))
             .onChanged { value in
-                activate()
-                guard let currentIndex = itemIndex(for: value.location.y) else { return }
-
-                if mouseRangeStartIndex == nil {
-                    let startIndex = itemIndex(for: value.startLocation.y) ?? currentIndex
-                    mouseRangeStartIndex = startIndex
-                    model.beginMouseRangeSelection(atItemIndex: startIndex, modifiers: NSEvent.modifierFlags)
+                guard blankSelectionStartY != nil || isBlankArea(y: value.startLocation.y) else {
+                    return
                 }
 
-                model.updateMouseRangeSelection(toItemIndex: currentIndex)
+                activate()
+                if blankSelectionStartY == nil {
+                    blankSelectionStartY = value.startLocation.y
+                    model.beginMouseBlankSelection(modifiers: NSEvent.modifierFlags)
+                }
+
+                guard let startY = blankSelectionStartY else { return }
+                model.updateMouseBlankSelection(itemIndexes: itemIndexRange(from: startY, to: value.location.y))
             }
             .onEnded { _ in
-                mouseRangeStartIndex = nil
-                model.finishMouseRangeSelection()
+                blankSelectionStartY = nil
+                model.finishMouseBlankSelection()
             }
     }
 
-    private func itemIndex(for y: CGFloat) -> Int? {
+    private func isBlankArea(y: CGFloat) -> Bool {
+        y >= rowAreaHeight
+    }
+
+    private var rowAreaHeight: CGFloat {
+        CGFloat((model.canGoUp ? 1 : 0) + model.items.count) * rowHeight
+    }
+
+    private func itemIndexRange(from startY: CGFloat, to currentY: CGFloat) -> ClosedRange<Int>? {
         let parentOffset = model.canGoUp ? 1 : 0
-        let rowIndex = Int(floor(max(0, y) / rowHeight))
-        let itemIndex = rowIndex - parentOffset
-        guard model.items.indices.contains(itemIndex) else { return nil }
-        return itemIndex
+        guard !model.items.isEmpty else { return nil }
+
+        let lowerY = max(0, min(startY, currentY))
+        let upperY = max(startY, currentY)
+        let firstRow = Int(floor(lowerY / rowHeight))
+        let lastRow = Int(floor(max(lowerY, upperY - 0.5) / rowHeight))
+        let firstItemIndex = max(0, firstRow - parentOffset)
+        let lastItemIndex = min(model.items.count - 1, lastRow - parentOffset)
+
+        guard firstItemIndex <= lastItemIndex else { return nil }
+        return firstItemIndex...lastItemIndex
     }
 
     private var parentDirectoryRow: some View {

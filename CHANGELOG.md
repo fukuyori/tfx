@@ -4,6 +4,17 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.3.2] - 2026-05-09
+
+### Fixed
+
+- Start mouse range selection only from blank file-list space.
+- Treat dragging from a file row as normal file drag and drop instead of range selection.
+
+### Changed
+
+- Updated the version to `0.3.2` and the build number to `14`.
+
 ## [0.3.1] - 2026-05-09
 
 ### Fixed

@@ -5,6 +5,7 @@ import Foundation
 extension FileBrowserModel {
     func selectForMouseDown(_ item: FileItem, modifiers: NSEvent.ModifierFlags) {
         mouseRangeSelectionState = nil
+        mouseBlankSelectionState = nil
         isParentDirectorySelected = false
 
         if modifiers.contains(.shift) {
@@ -41,6 +42,7 @@ extension FileBrowserModel {
 
     func beginMouseRangeSelection(from item: FileItem, modifiers: NSEvent.ModifierFlags) {
         isParentDirectorySelected = false
+        mouseBlankSelectionState = nil
         let addsToExistingSelection = modifiers.contains(.command)
         mouseRangeSelectionState = FileMouseRangeSelectionState(
             anchorItemID: item.id,
@@ -91,6 +93,39 @@ extension FileBrowserModel {
 
     func finishMouseRangeSelection() {
         mouseRangeSelectionState = nil
+    }
+
+    func beginMouseBlankSelection(modifiers: NSEvent.ModifierFlags) {
+        isParentDirectorySelected = false
+        mouseRangeSelectionState = nil
+        mouseBlankSelectionState = FileMouseBlankSelectionState(
+            originalSelectedItemIDs: selectedItemIDs,
+            addsToExistingSelection: modifiers.contains(.command)
+        )
+    }
+
+    func updateMouseBlankSelection(itemIndexes: ClosedRange<Int>?) {
+        guard let state = mouseBlankSelectionState else { return }
+
+        var selectedIDs: Set<FileItem.ID>
+        if let itemIndexes {
+            selectedIDs = Set(items[itemIndexes].map(\.id))
+            if state.addsToExistingSelection {
+                selectedIDs.formUnion(state.originalSelectedItemIDs)
+            }
+            primarySelectedItemID = itemIndexes.upperBound < items.count ? items[itemIndexes.upperBound].id : nil
+        } else {
+            selectedIDs = state.addsToExistingSelection ? state.originalSelectedItemIDs : []
+            primarySelectedItemID = selectedIDs.first
+        }
+
+        selectedItemIDs = selectedIDs
+        selectionAnchorItemID = nil
+        isParentDirectorySelected = false
+    }
+
+    func finishMouseBlankSelection() {
+        mouseBlankSelectionState = nil
     }
 
     func moveFileSelection(delta: Int, extendingRange: Bool = false) {

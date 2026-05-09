@@ -92,6 +92,11 @@ struct FileMouseRangeSelectionState {
     let addsToExistingSelection: Bool
 }
 
+struct FileMouseBlankSelectionState {
+    let originalSelectedItemIDs: Set<FileItem.ID>
+    let addsToExistingSelection: Bool
+}
+
 struct FileDragItem {
     let url: URL
     let iconCacheKey: String
