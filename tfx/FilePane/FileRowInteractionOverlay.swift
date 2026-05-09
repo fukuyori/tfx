@@ -81,7 +81,7 @@ final class FileRowInteractionView: NSView, NSDraggingSource {
         let verticalOffset = event.locationInWindow.y - mouseDownEvent.locationInWindow.y
         let isVerticalRangeSelection = abs(verticalOffset) >= abs(horizontalOffset)
 
-        if !mouseDownWasSelected || isVerticalRangeSelection {
+        if isVerticalRangeSelection {
             if !hasStartedRangeSelection {
                 hasStartedRangeSelection = true
                 model.beginMouseRangeSelection(from: item, modifiers: mouseDownEvent.modifierFlags)
