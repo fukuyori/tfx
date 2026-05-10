@@ -47,7 +47,7 @@ extension TerminalFileManagerView {
                 Image(systemName: model.isFolderPinned(model.currentDirectory) ? "pin.fill" : "pin")
             }
             .buttonStyle(.borderless)
-            .quickHelp(model.isFolderPinned(model.currentDirectory) ? "Unpin current folder" : "Pin current folder", text: $hoverHelpText)
+            .quickHelp(model.isFolderPinned(model.currentDirectory) ? LocalizedStringResource("Unpin current folder") : LocalizedStringResource("Pin current folder"), text: $hoverHelpText)
         }
     }
 }

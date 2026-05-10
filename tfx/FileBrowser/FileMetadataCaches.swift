@@ -46,7 +46,7 @@ final class FileKindCache {
         }
 
         let values = try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey])
-        let kind = values?.localizedTypeDescription ?? (isDirectory ? "Folder" : url.pathExtension.uppercased())
+        let kind = values?.localizedTypeDescription ?? (isDirectory ? String(localized: "Folder") : url.pathExtension.uppercased())
         cache.setObject(NSString(string: kind), forKey: key)
         return kind
     }

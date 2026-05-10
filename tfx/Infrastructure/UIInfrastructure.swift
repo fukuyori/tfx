@@ -36,11 +36,12 @@ struct WindowFrameAutosaver: NSViewRepresentable {
 }
 
 extension View {
-    func quickHelp(_ message: String, text: Binding<String>) -> some View {
-        onHover { isHovering in
-            text.wrappedValue = isHovering ? message : ""
+    func quickHelp(_ message: LocalizedStringResource, text: Binding<String>) -> some View {
+        let resolved = String(localized: message)
+        return onHover { isHovering in
+            text.wrappedValue = isHovering ? resolved : ""
         }
-        .accessibilityHint(message)
+        .accessibilityHint(Text(resolved))
     }
 }
 #endif

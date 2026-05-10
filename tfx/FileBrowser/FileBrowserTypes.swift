@@ -5,7 +5,7 @@ enum BrowserPaneID: String {
     case left
     case right
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .left:
             return "LEFT"
@@ -52,7 +52,7 @@ enum FileSortKey: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .fastName:
             return "Name"

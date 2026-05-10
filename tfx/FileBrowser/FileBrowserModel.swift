@@ -25,8 +25,8 @@ final class FileBrowserModel: ObservableObject {
     @Published var folderTreeSelection: URL?
     @Published var folderTreeSelectionSection: FolderTreeSelectionSection = .tree
     @Published var isShowingError = false
-    @Published var errorTitle = "File operation failed"
-    @Published var errorButtonTitle = "OK"
+    @Published var errorTitle = String(localized: "File operation failed")
+    @Published var errorButtonTitle = String(localized: "OK")
     @Published var errorMessage = ""
     @Published var searchText = "" {
         didSet {
@@ -148,13 +148,13 @@ final class FileBrowserModel: ObservableObject {
     }
 
     func show(_ error: Error) {
-        show(error, title: "File operation failed", buttonTitle: "OK", onDismiss: nil)
+        show(error, title: String(localized: "File operation failed"), buttonTitle: String(localized: "OK"), onDismiss: nil)
     }
 
     func show(
         _ error: Error,
-        title: String = "File operation failed",
-        buttonTitle: String = "OK",
+        title: String = String(localized: "File operation failed"),
+        buttonTitle: String = String(localized: "OK"),
         onDismiss: (() -> Void)? = nil
     ) {
         errorTitle = title
@@ -168,8 +168,8 @@ final class FileBrowserModel: ObservableObject {
         guard isShowingError else { return }
         isShowingError = false
         let handler = errorDismissalHandler
-        errorTitle = "File operation failed"
-        errorButtonTitle = "OK"
+        errorTitle = String(localized: "File operation failed")
+        errorButtonTitle = String(localized: "OK")
         errorDismissalHandler = nil
         handler?()
     }

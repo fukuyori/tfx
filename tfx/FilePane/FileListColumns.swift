@@ -13,7 +13,7 @@ enum FileListColumn: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .icon:
             return "Icon"
@@ -34,7 +34,7 @@ enum FileListColumn: String, CaseIterable, Identifiable {
         }
     }
 
-    var headerTitle: String {
+    var headerTitle: LocalizedStringResource {
         switch self {
         case .icon:
             return "ICO"

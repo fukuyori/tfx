@@ -13,14 +13,20 @@ extension FileBrowserModel {
     var subfolderSearchStatusText: String? {
         guard searchesSubfolders else { return nil }
         guard !trimmedSearchQuery.isEmpty else {
-            return "Subfolder search: enter a query"
+            return String(localized: "Subfolder search: enter a query")
         }
 
-        let state = isSubfolderSearchRunning ? "Searching" : "Search"
-        if subfolderSearchSkippedFolderCount > 0 {
-            return "\(state): depth \(subfolderSearchDepth), \(subfolderSearchProcessedFolderCount) folders, \(subfolderSearchSkippedFolderCount) skipped, \(subfolderSearchHitCount) hits"
+        if isSubfolderSearchRunning {
+            if subfolderSearchSkippedFolderCount > 0 {
+                return String(localized: "Searching: depth \(subfolderSearchDepth), \(subfolderSearchProcessedFolderCount) folders, \(subfolderSearchSkippedFolderCount) skipped, \(subfolderSearchHitCount) hits")
+            }
+            return String(localized: "Searching: depth \(subfolderSearchDepth), \(subfolderSearchProcessedFolderCount) folders, \(subfolderSearchHitCount) hits")
+        } else {
+            if subfolderSearchSkippedFolderCount > 0 {
+                return String(localized: "Search: depth \(subfolderSearchDepth), \(subfolderSearchProcessedFolderCount) folders, \(subfolderSearchSkippedFolderCount) skipped, \(subfolderSearchHitCount) hits")
+            }
+            return String(localized: "Search: depth \(subfolderSearchDepth), \(subfolderSearchProcessedFolderCount) folders, \(subfolderSearchHitCount) hits")
         }
-        return "\(state): depth \(subfolderSearchDepth), \(subfolderSearchProcessedFolderCount) folders, \(subfolderSearchHitCount) hits"
     }
 
     func submitSubfolderSearch() {

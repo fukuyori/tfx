@@ -46,7 +46,7 @@ extension TerminalFileManagerView {
             }
             .toggleStyle(.button)
             .keyboardShortcut("p", modifiers: [.command, .option])
-            .quickHelp(isPreviewVisible ? "Hide preview" : "Show preview", text: $hoverHelpText)
+            .quickHelp(isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"), text: $hoverHelpText)
 
             Toggle(isOn: Binding(
                 get: { isSplitViewVisible },
@@ -56,7 +56,7 @@ extension TerminalFileManagerView {
             }
             .toggleStyle(.button)
             .keyboardShortcut("s", modifiers: [.command, .option])
-            .quickHelp(isSplitViewVisible ? "Use single pane" : "Use split panes", text: $hoverHelpText)
+            .quickHelp(isSplitViewVisible ? LocalizedStringResource("Use single pane") : LocalizedStringResource("Use split panes"), text: $hoverHelpText)
 
             Button {
                 isFileListSettingsPresented = true

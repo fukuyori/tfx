@@ -26,13 +26,13 @@ enum ZipArchiveBrowserError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .invalidArchive(url):
-            return "Cannot read zip archive: \(url.path)"
+            return String(localized: "Cannot read zip archive: \(url.path)")
         case .unsupportedWrite:
-            return "Writing into zip archives is not supported."
+            return String(localized: "Writing into zip archives is not supported.")
         case let .commandFailed(message):
-            return message.isEmpty ? "Zip command failed." : message
+            return message.isEmpty ? String(localized: "Zip command failed.") : message
         case let .invalidEntry(path):
-            return "Cannot copy unsafe zip entry: \(path)"
+            return String(localized: "Cannot copy unsafe zip entry: \(path)")
         }
     }
 }

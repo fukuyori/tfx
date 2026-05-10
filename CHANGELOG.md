@@ -4,6 +4,17 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.4.0] - 2026-05-10
+
+### Added
+
+- Japanese localization for the user interface; macOS automatically displays Japanese when the system language is Japanese and English otherwise.
+- `Localizable.xcstrings` string catalog with full English/Japanese translations.
+
+### Changed
+
+- Updated the version to `0.4.0` and the build number to `15`.
+
 ## [0.3.2] - 2026-05-09
 
 ### Fixed

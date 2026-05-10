@@ -15,7 +15,7 @@ struct PreviewFileInfo: Equatable, Sendable {
     let signature: String
 
     static let loading = PreviewFileInfo(
-        name: "Loading",
+        name: String(localized: "Loading"),
         kind: "-",
         size: "-",
         location: "-",
@@ -68,7 +68,7 @@ struct PreviewFileInfoView: View {
         }
     }
 
-    private func infoRow(_ label: String, _ value: String) -> some View {
+    private func infoRow(_ label: LocalizedStringResource, _ value: String) -> some View {
         Group {
             Text(label)
                 .foregroundStyle(.secondary)
@@ -103,7 +103,7 @@ enum PreviewFileInfoLoader {
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
         let isDirectory = values?.isDirectory == true
         let displayName = FolderDisplayNameCache.shared.displayName(for: url)
-        let kind = values?.localizedTypeDescription ?? (isDirectory ? "Folder" : "File")
+        let kind = values?.localizedTypeDescription ?? (isDirectory ? String(localized: "Folder") : String(localized: "File"))
         let byteCount = (values?.totalFileSize ?? values?.fileSize).map(Int64.init)
         let size = sizeText(byteCount: byteCount, isDirectory: isDirectory)
         let location = url.deletingLastPathComponent().path(percentEncoded: false)
@@ -125,7 +125,7 @@ enum PreviewFileInfoLoader {
 
     nonisolated private static func sizeText(byteCount: Int64?, isDirectory: Bool) -> String {
         guard let byteCount, !isDirectory else {
-            return isDirectory ? "Folder" : "-"
+            return isDirectory ? String(localized: "Folder") : "-"
         }
 
         return FileDisplayTextCache.shared.sizeText(byteCount: byteCount)
@@ -164,11 +164,11 @@ enum PreviewFileInfoLoader {
 
         switch checkStatus {
         case errSecSuccess:
-            return "Valid"
+            return String(localized: "Valid")
         case errSecCSUnsigned:
-            return "Unsigned"
+            return String(localized: "Unsigned")
         default:
-            return "Invalid"
+            return String(localized: "Invalid")
         }
     }
 }

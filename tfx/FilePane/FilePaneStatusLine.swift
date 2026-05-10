@@ -18,7 +18,7 @@ struct FilePaneStatusLine: View {
                 Text("| \(model.selectionCount) selected")
                     .fixedSize(horizontal: true, vertical: false)
             }
-            Text(model.primarySelectedItem?.url.path(percentEncoded: false) ?? "No selection")
+            primarySelectionText
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
@@ -39,6 +39,14 @@ struct FilePaneStatusLine: View {
             Text(subfolderSearchStatusText)
         } else {
             Text("\(model.items.count) of \(model.allItemCount) items")
+        }
+    }
+
+    private var primarySelectionText: Text {
+        if let path = model.primarySelectedItem?.url.path(percentEncoded: false) {
+            Text(path)
+        } else {
+            Text("No selection")
         }
     }
 }

@@ -69,18 +69,22 @@ enum FileArchiveOperationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noItems:
-            return "No items selected."
+            return String(localized: "No items selected.")
         case .unsupportedArchiveEntry:
-            return "Compressing items inside zip archives is not supported."
+            return String(localized: "Compressing items inside zip archives is not supported.")
         case let .commandFailed(message):
-            return message.isEmpty ? "Archive command failed." : message
+            return message.isEmpty ? String(localized: "Archive command failed.") : message
         }
     }
 }
 
 enum FileBrowserFileOperations {
     static func createFolder(in directory: URL) throws -> FileCreateFolderResult? {
-        guard let name = FileOperationPrompt.text(title: "New Folder", message: "Enter a folder name.", defaultValue: "Untitled Folder") else {
+        guard let name = FileOperationPrompt.text(
+            title: String(localized: "New Folder"),
+            message: String(localized: "Enter a folder name."),
+            defaultValue: String(localized: "Untitled Folder")
+        ) else {
             return nil
         }
 
@@ -93,7 +97,11 @@ enum FileBrowserFileOperations {
     }
 
     static func createFile(in directory: URL) throws -> FileCreateFileResult? {
-        guard let name = FileOperationPrompt.text(title: "New File", message: "Enter a file name.", defaultValue: "Untitled.txt") else {
+        guard let name = FileOperationPrompt.text(
+            title: String(localized: "New File"),
+            message: String(localized: "Enter a file name."),
+            defaultValue: String(localized: "Untitled.txt")
+        ) else {
             return nil
         }
 
@@ -108,7 +116,11 @@ enum FileBrowserFileOperations {
     }
 
     static func rename(_ item: FileItem) throws -> FileRenameResult? {
-        guard let name = FileOperationPrompt.text(title: "Rename", message: "Enter a new name.", defaultValue: item.name) else {
+        guard let name = FileOperationPrompt.text(
+            title: String(localized: "Rename"),
+            message: String(localized: "Enter a new name."),
+            defaultValue: item.name
+        ) else {
             return nil
         }
 
