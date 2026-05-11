@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.4.2] - 2026-05-11
+
+### Added
+
+- The path field at the top of each file pane is now editable; press Return to navigate to the typed path (supports `~/` expansion).
+
+### Changed
+
+- Removed the "LEFT" / "RIGHT" badges from the file pane title bar; the active pane is still distinguishable by background and path color.
+- Removed the "ICO" header label from the icon column.
+- Updated the version to `0.4.2` and the build number to `17`.
+
 ## [0.4.1] - 2026-05-11
 
 ### Changed

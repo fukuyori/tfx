@@ -37,7 +37,7 @@ enum FileListColumn: String, CaseIterable, Identifiable {
     var headerTitle: LocalizedStringResource {
         switch self {
         case .icon:
-            return "ICO"
+            return ""
         case .mode:
             return "MODE"
         case .name:

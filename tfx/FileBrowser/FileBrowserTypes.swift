@@ -4,15 +4,6 @@ import Foundation
 enum BrowserPaneID: String {
     case left
     case right
-
-    var title: LocalizedStringResource {
-        switch self {
-        case .left:
-            return "LEFT"
-        case .right:
-            return "RIGHT"
-        }
-    }
 }
 
 enum ActiveArea: String {
