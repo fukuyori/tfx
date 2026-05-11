@@ -60,7 +60,8 @@ struct FileItem: Identifiable, Hashable {
         size = Int64(values?.fileSize ?? 0)
         modified = values?.contentModificationDate
         created = values?.creationDate
-        nameValue = url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent
+        let localizedName = FolderDisplayNameCache.shared.displayName(for: url)
+        nameValue = localizedName.isEmpty ? (url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent) : localizedName
         searchNameValue = nameValue.localizedLowercase
         let extensionName = url.pathExtension.lowercased()
         iconCacheKeyValue = isDirectory ? "directory" : (extensionName.isEmpty ? "file" : "file.\(extensionName)")
