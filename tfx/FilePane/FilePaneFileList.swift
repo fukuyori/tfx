@@ -146,11 +146,15 @@ struct FilePaneFileList: View {
                 )
             )
             .contextMenu {
-                FileItemContextMenu(
-                    model: model,
-                    item: item,
-                    activate: activate
-                )
+                if !model.hasSelection && !model.isParentDirectorySelected {
+                    EmptyFileAreaContextMenu(model: model, activate: activate)
+                } else {
+                    FileItemContextMenu(
+                        model: model,
+                        item: item,
+                        activate: activate
+                    )
+                }
             }
         }
     }

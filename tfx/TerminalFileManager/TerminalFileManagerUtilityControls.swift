@@ -5,25 +5,6 @@ extension TerminalFileManagerView {
     var utilityControls: some View {
         Group {
             Button {
-                model.revealSelectedItemsInFinder()
-            } label: {
-                Image(systemName: "finder")
-            }
-            .buttonStyle(.borderless)
-            .disabled(!model.hasSelection)
-            .quickHelp("Reveal in Finder", text: $hoverHelpText)
-
-            Button {
-                model.selectAllVisibleItems()
-            } label: {
-                Image(systemName: "checklist")
-            }
-            .buttonStyle(.borderless)
-            .disabled(model.items.isEmpty)
-            .keyboardShortcut("a", modifiers: .command)
-            .quickHelp("Select all", text: $hoverHelpText)
-
-            Button {
                 model.reload()
             } label: {
                 Image(systemName: "arrow.clockwise")
@@ -65,14 +46,6 @@ extension TerminalFileManagerView {
             }
             .buttonStyle(.borderless)
             .quickHelp("File list settings", text: $hoverHelpText)
-
-            Button {
-                model.copyPath(model.currentDirectory)
-            } label: {
-                Image(systemName: "link")
-            }
-            .buttonStyle(.borderless)
-            .quickHelp("Copy current path", text: $hoverHelpText)
         }
     }
 }

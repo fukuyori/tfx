@@ -47,25 +47,10 @@ extension TerminalFileManagerView {
     }
 
     private static func safeRestorationParent(forPrivacyProtectedUserDirectory url: URL) -> URL? {
-        let home = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL
-        let protectedDirectories = [
-            home.appendingPathComponent("Desktop", isDirectory: true),
-            home.appendingPathComponent("Documents", isDirectory: true),
-            home.appendingPathComponent("Downloads", isDirectory: true)
-        ]
-        let target = url.standardizedFileURL
-
-        for protectedDirectory in protectedDirectories {
-            if target == protectedDirectory {
-                return home
-            }
-
-            if target.path.hasPrefix(protectedDirectory.path + "/") {
-                return protectedDirectory.deletingLastPathComponent().standardizedFileURL
-            }
+        guard let protectedDirectory = PrivacyProtectedDirectories.enclosingProtectedDirectory(for: url) else {
+            return nil
         }
-
-        return nil
+        return protectedDirectory.deletingLastPathComponent().standardizedFileURL
     }
 
     func clamp(_ value: Double, min minValue: Double, max maxValue: Double) -> Double {

@@ -90,6 +90,20 @@ enum PreviewFileInfoLoader {
 
     nonisolated private static func loadSynchronously(for inputURL: URL) -> PreviewFileInfo {
         let url = inputURL.standardizedFileURL
+        if PrivacyProtectedDirectories.isProtectedDirectory(url) {
+            return PreviewFileInfo(
+                name: FolderDisplayNameCache.shared.displayName(for: url),
+                kind: String(localized: "Folder"),
+                size: "-",
+                location: url.deletingLastPathComponent().path(percentEncoded: false),
+                created: "-",
+                modified: "-",
+                accessed: "-",
+                permissions: "-",
+                signature: "-"
+            )
+        }
+
         let keys: Set<URLResourceKey> = [
             .contentAccessDateKey,
             .contentModificationDateKey,

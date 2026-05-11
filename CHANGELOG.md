@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.4.1] - 2026-05-11
+
+### Changed
+
+- Removed file-action and selection-action toolbar buttons (new folder, rename, move to trash, copy, cut, paste, reveal in Finder, select all, copy current path) in favor of context menus and keyboard shortcuts.
+- Show the empty-area context menu when right-clicking a file row while nothing is selected.
+- Skip privacy-protected metadata reads (Desktop, Documents, Downloads) in the preview pane to avoid triggering TCC prompts on hover.
+- Separated the pinned-folders section in the folder tree into its own scroll area so it stays visible when the folder tree is scrolled.
+- Updated the version to `0.4.1` and the build number to `16`.
+
+### Added
+
+- Press Escape in the file list to clear the current selection.
+
 ## [0.4.0] - 2026-05-10
 
 ### Added

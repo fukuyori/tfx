@@ -62,7 +62,7 @@ struct FilePane: View {
                 )
             )
             .contextMenu {
-                emptyFileAreaContextMenu
+                EmptyFileAreaContextMenu(model: model, activate: activate)
             }
 
             FilePaneStatusLine(

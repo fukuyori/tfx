@@ -84,9 +84,12 @@ struct FileItemContextMenu: View {
     }
 }
 
-extension FilePane {
+struct EmptyFileAreaContextMenu: View {
+    @ObservedObject var model: FileBrowserModel
+    let activate: () -> Void
+
     @ViewBuilder
-    var emptyFileAreaContextMenu: some View {
+    var body: some View {
         Button("Paste Here") {
             activate()
             model.pasteItems()

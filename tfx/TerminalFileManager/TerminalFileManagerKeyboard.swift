@@ -22,6 +22,10 @@ extension TerminalFileManagerView {
         let isRangeSelection = event.modifierFlags.contains(.shift)
 
         switch event.keyCode {
+        case 53:
+            guard activeArea == .files else { return false }
+            activeModel.clearSelection()
+            return true
         case 126:
             activeArea == .folderTree ? activeModel.moveFolderTreeSelection(delta: -1) : activeModel.moveFileSelection(delta: -1, extendingRange: isRangeSelection)
             return true

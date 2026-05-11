@@ -7,7 +7,6 @@ extension TerminalFileManagerView {
             navigationControls
             pathAndSearchControls
             sortAndVisibilityControls
-            fileActionControls
             utilityControls
         }
         .padding(10)
