@@ -232,11 +232,14 @@ The `..` row is tracked separately through `isParentDirectorySelected`. Pressing
 | Move to Trash | Uses `FileManager.default.trashItem`; it does not permanently delete files. |
 | Reveal in Finder | Uses `NSWorkspace.shared.activateFileViewerSelecting`. |
 | Copy Path | Writes a path string to `NSPasteboard.general`. |
+| Open With | Lists candidate applications from `NSWorkspace.shared.urlsForApplications(toOpen:)` and opens the file via `NSWorkspace.shared.open(_:withApplicationAt:configuration:)`. The submenu also exposes an "Other…" picker (`NSOpenPanel` restricted to `UTType.application`). Hidden for plain folders and for `.app` bundles. |
 | Open Terminal Here | Opens Terminal.app at the target directory. |
 | Compress to Zip | Creates a unique zip archive from the selected items. |
 | Extract Zip | Extracts a zip archive into a unique destination folder named from the archive. |
 
 After mutating operations, affected directories and folder-tree caches are refreshed where practical.
+
+Context menus for both file rows and the empty file-pane area follow Finder's grouping with dividers between groups: open actions (Open, Open With), destructive action (Move to Trash), manipulation (Rename, Compress, Extract, Copy/Cut/Paste), location (Reveal in Finder, Copy Path), and folder-only actions (Pin Folder, Open Terminal Here).
 
 ### 8.7 Zip Archive Browsing
 

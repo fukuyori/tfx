@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 enum FileBrowserExternalActions {
     static let tfxClipboardOperationType = NSPasteboard.PasteboardType("org.spumoni.tfx.file-operation")
@@ -55,6 +56,58 @@ enum FileBrowserExternalActions {
                 }
             }
         }
+    }
+
+    static func applicationsToOpen(_ url: URL) -> [URL] {
+        NSWorkspace.shared.urlsForApplications(toOpen: resolvedOpenURL(for: url))
+    }
+
+    static func defaultApplicationToOpen(_ url: URL) -> URL? {
+        NSWorkspace.shared.urlForApplication(toOpen: resolvedOpenURL(for: url))
+    }
+
+    static func applicationDisplayName(_ appURL: URL) -> String {
+        let name = FileManager.default.displayName(atPath: appURL.path)
+        if !name.isEmpty {
+            // displayName usually drops the ".app" suffix already, but be defensive.
+            if name.hasSuffix(".app") {
+                return String(name.dropLast(4))
+            }
+            return name
+        }
+        return appURL.deletingPathExtension().lastPathComponent
+    }
+
+    static func applicationIcon(_ appURL: URL) -> NSImage {
+        NSWorkspace.shared.icon(forFile: appURL.path)
+    }
+
+    static func open(_ urls: [URL], withApplicationAt appURL: URL, onError: @escaping (Error) -> Void) {
+        let resolved = urls.map { resolvedOpenURL(for: $0) }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+
+        NSWorkspace.shared.open(
+            resolved,
+            withApplicationAt: appURL,
+            configuration: configuration
+        ) { _, error in
+            if let error {
+                DispatchQueue.main.async {
+                    onError(error)
+                }
+            }
+        }
+    }
+
+    static func chooseApplication() -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        return panel.runModal() == .OK ? panel.url : nil
     }
 
     static func chooseDirectory(startingAt directory: URL) -> URL? {

@@ -14,16 +14,57 @@ struct FileItemContextMenu: View {
             model.openFromContextMenu(item)
         }
 
+        if !item.isDirectory {
+            Menu("Open With") {
+                let apps = model.applicationsToOpen(item)
+                ForEach(apps, id: \.self) { appURL in
+                    Button {
+                        model.openItem(item, withApplicationAt: appURL)
+                    } label: {
+                        Label {
+                            Text(FileBrowserExternalActions.applicationDisplayName(appURL))
+                        } icon: {
+                            Image(nsImage: FileBrowserExternalActions.applicationIcon(appURL))
+                        }
+                    }
+                }
+                if !apps.isEmpty {
+                    Divider()
+                }
+                Button("Other…") {
+                    model.chooseApplicationAndOpen(item)
+                }
+            }
+        }
+
+        Divider()
+
+        Button("Move to Trash") {
+            activate()
+            model.selectForContextMenu(item)
+            model.moveSelectedItemsToTrash()
+        }
+
+        Divider()
+
         Button("Rename") {
             activate()
             model.selectForContextMenu(item)
             model.renameSelectedItem()
         }
 
-        Button("Move to Trash") {
+        Button("Compress to Zip") {
             activate()
             model.selectForContextMenu(item)
-            model.moveSelectedItemsToTrash()
+            model.compressSelectedItemsToZip()
+        }
+
+        if ZipArchiveBrowser.isZipArchive(item.url) {
+            Button("Extract Zip") {
+                activate()
+                model.selectForContextMenu(item)
+                model.extractZipArchive(item)
+            }
         }
 
         Button("Copy Items") {
@@ -44,20 +85,6 @@ struct FileItemContextMenu: View {
         }
         .disabled(!model.canPaste)
 
-        Button("Compress to Zip") {
-            activate()
-            model.selectForContextMenu(item)
-            model.compressSelectedItemsToZip()
-        }
-
-        if ZipArchiveBrowser.isZipArchive(item.url) {
-            Button("Extract Zip") {
-                activate()
-                model.selectForContextMenu(item)
-                model.extractZipArchive(item)
-            }
-        }
-
         Divider()
 
         Button("Reveal in Finder") {
@@ -71,6 +98,8 @@ struct FileItemContextMenu: View {
         }
 
         if item.isDirectory {
+            Divider()
+
             Button(model.isFolderPinned(item.url) ? "Unpin Folder" : "Pin Folder") {
                 activate()
                 model.togglePinnedFolder(item.url)
@@ -90,12 +119,6 @@ struct EmptyFileAreaContextMenu: View {
 
     @ViewBuilder
     var body: some View {
-        Button("Paste Here") {
-            activate()
-            model.pasteItems()
-        }
-        .disabled(!model.canPaste)
-
         Button("New Folder") {
             activate()
             model.createFolder()
@@ -105,6 +128,16 @@ struct EmptyFileAreaContextMenu: View {
             activate()
             model.createFile()
         }
+
+        Divider()
+
+        Button("Paste Here") {
+            activate()
+            model.pasteItems()
+        }
+        .disabled(!model.canPaste)
+
+        Divider()
 
         Button("Select All") {
             activate()
@@ -119,6 +152,13 @@ struct EmptyFileAreaContextMenu: View {
             model.revealInFinder(model.currentDirectory)
         }
 
+        Button("Copy Current Path") {
+            activate()
+            model.copyPath(model.currentDirectory)
+        }
+
+        Divider()
+
         Button(model.isFolderPinned(model.currentDirectory) ? "Unpin Folder" : "Pin Folder") {
             activate()
             model.togglePinnedFolder(model.currentDirectory)
@@ -127,11 +167,6 @@ struct EmptyFileAreaContextMenu: View {
         Button("Open Terminal Here") {
             activate()
             model.openTerminal()
-        }
-
-        Button("Copy Current Path") {
-            activate()
-            model.copyPath(model.currentDirectory)
         }
     }
 }

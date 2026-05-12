@@ -65,6 +65,8 @@ Project documentation should be written in English by default. `README.md` is th
 - Files can be copied from browsed zip archives into real folders.
 - Context menus can create files, create folders, compress selected items to zip, and extract zip archives.
 - Zip archive virtual directories are read-only.
+- The file row context menu has an "Open With" submenu listing applications that can open the file, plus an "Other…" picker for choosing an arbitrary application.
+- File row and empty-area context menus follow Finder's grouping with explicit dividers between Open / destructive / manipulation / location / folder-specific groups.
 
 ### 1.6 Navigation Refinement
 

@@ -28,6 +28,25 @@ extension FileBrowserModel {
         }
     }
 
+    func applicationsToOpen(_ item: FileItem) -> [URL] {
+        FileBrowserExternalActions.applicationsToOpen(item.url)
+    }
+
+    func defaultApplicationToOpen(_ item: FileItem) -> URL? {
+        FileBrowserExternalActions.defaultApplicationToOpen(item.url)
+    }
+
+    func openItem(_ item: FileItem, withApplicationAt appURL: URL) {
+        FileBrowserExternalActions.open([item.url], withApplicationAt: appURL) { [weak self] error in
+            self?.show(error)
+        }
+    }
+
+    func chooseApplicationAndOpen(_ item: FileItem) {
+        guard let appURL = FileBrowserExternalActions.chooseApplication() else { return }
+        openItem(item, withApplicationAt: appURL)
+    }
+
     func pickFolder() {
         if let url = FileBrowserExternalActions.chooseDirectory(startingAt: currentDirectory) {
             navigate(to: url)

@@ -51,6 +51,8 @@ This document tracks the implementation plan for turning `tfx` into a practical 
   - Reveal in Finder.
   - Copy path.
 - Context menus are available for file rows and folder tree rows.
+- The file row context menu includes an "Open With" submenu listing applications that can open the file, plus an "Other…" picker for choosing an arbitrary application.
+- File row and empty-area context menus follow Finder's grouping with dividers between Open / destructive / manipulation / location / folder-specific groups.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

@@ -4,6 +4,17 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.4.3] - 2026-05-12
+
+### Added
+
+- "Open With" submenu in the file row context menu, listing applications that can open the selected file, plus an "Other…" picker for choosing an arbitrary application. Powered by `NSWorkspace.urlsForApplications(toOpen:)` and `NSWorkspace.open(_:withApplicationAt:configuration:)`. The submenu is hidden for plain folders and for `.app` bundles, matching Finder.
+
+### Changed
+
+- Reordered the file row and empty-area context menus to follow Finder's grouping with explicit dividers: Open / Open With → Move to Trash → manipulation (Rename, Compress, Copy/Cut/Paste) → Reveal in Finder / Copy Path → folder-only actions (Pin Folder, Open Terminal Here).
+- Updated the version to `0.4.3` and the build number to `18`.
+
 ## [0.4.2] - 2026-05-11
 
 ### Added

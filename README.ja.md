@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.4.0**
+Version: **0.4.3**
 
 [English](README.md) | 日本語
 
@@ -33,6 +33,7 @@ Version: **0.4.0**
 - 閲覧中の zip ファイルからファイルをコピー
 - Terminal.app を現在フォルダで開く
 - New File / New Folder / Rename / Move to Trash / Reveal in Finder
+- 「このアプリケーションで開く」サブメニュー（候補アプリ一覧と「その他…」ピッカー）
 - 選択項目を zip ファイルに圧縮
 - zip ファイルを展開
 - Copy / Cut / Paste、Finder クリップボード互換、同名ファイル競合ダイアログ
