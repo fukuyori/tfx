@@ -4,6 +4,35 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.4.6] - 2026-05-16
+
+### Added
+
+- CSV / TSV preview (`CSVPreview`): the file is parsed with a built-in RFC 4180-ish `CSVParser` (handles quoted fields, escaped `""`, embedded newlines, and CRLF / LF line endings) and rendered as a scrollable monospaced table with the first row styled as a header. Falls back to status text on empty or unreadable files.
+- JSON preview (`JSONPreview`): the file is pretty-printed with `JSONSerialization` (`.prettyPrinted`, `.sortedKeys`, `.withoutEscapingSlashes`) into the same monospaced `NSTextView` used by `RawTextPreview`. Falls back to the raw bytes when JSON parsing fails.
+- Source / Rendered toggle now also covers CSV / TSV and JSON. The eye-icon button switches between the table / pretty-printed view and `RawTextPreview`, and the file-info strip is suppressed in rendered mode.
+- Plain-text preview kind: `.toml`, `.yaml`, `.yml`, `.ini`, `.cfg`, `.conf`, `.log`, `.txt`, and `.env` are now routed directly through `RawTextPreview` instead of relying on Quick Look's generator. The toggle is intentionally hidden for these because there is no separate rendered form.
+- Shared factory `MonospacedTextPreviewView.makeScrollView()` for the read-only monospaced `NSScrollView` used by `RawTextPreview` and `JSONPreview`.
+
+### Changed
+
+- `PreviewKind` gained `.csv`, `.json`, and `.text` cases; `DeferredPreviewPlaceholder` now uses `tablecells`, `curlybraces`, and `doc.plaintext` for their queued-state icons.
+- Updated the version to `0.4.6` and the build number to `21`.
+
+## [0.4.5] - 2026-05-16
+
+### Added
+
+- Source/Rendered toggle for Markdown and HTML previews. A small eye-icon button at the top of the preview pane switches between the rendered view (the existing `WKWebView` Markdown renderer or Quick Look for HTML) and a new `RawTextPreview` that shows the file contents in a read-only monospaced `NSTextView`. The button is shown only when the current preview contains a Markdown or HTML file. Toggle state is persisted in `Preview.showsRawSource`.
+- `View.cursor(_:)` helper in `Infrastructure/UIInfrastructure`. Drives `NSCursor.push` / `.pop` via `onHover` and respects any `contentShape` already applied to the view.
+
+### Changed
+
+- The preview pane's file-info strip (`PreviewFileInfoView`) is suppressed while a Markdown or HTML file is displayed in rendered mode, so the rendered content takes the full pane. The info strip reappears in source mode and for all other file kinds.
+- The toggle button uses background color to convey state: accent-filled with a white eye when rendered (parse on), transparent with a secondary-tinted eye when source (parse off).
+- Pane-boundary drag handles (`SplitDragHandle`) and the file-list NAME column resize handle now show the `resizeLeftRight` cursor while the pointer is over their hit area.
+- Updated the version to `0.4.5` and the build number to `20`.
+
 ## [0.4.4] - 2026-05-16
 
 ### Added

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.4.4**
+Version: **0.4.6**
 
 English | [日本語](README.ja.md)
 
@@ -27,6 +27,9 @@ English | [日本語](README.ja.md)
 - Backspace parent-folder navigation
 - Clickable breadcrumb path navigation
 - PDF, video, Markdown, and Quick Look previews
+- Toggle between rendered and source view for Markdown, HTML, CSV, and JSON previews
+- CSV / TSV preview as a scrollable table; JSON preview as pretty-printed text
+- Plain-text preview for TOML, YAML, INI, log, and similar config formats
 - Compact preview metadata for selected files and folders
 - Toggleable preview pane
 - Browse zip archives without extracting them

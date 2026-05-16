@@ -107,6 +107,12 @@ struct PreviewPane: View {
                 VideoPreview(url: url)
             case .markdown:
                 MarkdownPreview(url: url)
+            case .csv:
+                CSVPreview(url: url)
+            case .json:
+                JSONPreview(url: url)
+            case .text:
+                RawTextPreview(url: url)
             case .quickLook:
                 QuickLookPreview(url: url)
             }
@@ -161,11 +167,14 @@ struct PreviewPane: View {
         !showsRawSource && Self.supportsRawSourceToggle(url)
     }
 
-    /// True when the URL is a Markdown or HTML document — the only kinds for
-    /// which "Rendered vs Source" makes sense.
+    /// True when the URL has a rendered form that is meaningfully different
+    /// from its raw text. Markdown, HTML, CSV / TSV, and JSON all qualify.
     static func supportsRawSourceToggle(_ url: URL) -> Bool {
-        if PreviewKindCache.shared.kind(for: url) == .markdown {
+        switch PreviewKindCache.shared.kind(for: url) {
+        case .markdown, .csv, .json:
             return true
+        case .pdf, .video, .text, .quickLook:
+            break
         }
         let ext = url.pathExtension.lowercased()
         return ext == "html" || ext == "htm"

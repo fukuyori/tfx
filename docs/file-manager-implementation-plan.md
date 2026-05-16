@@ -55,6 +55,10 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - File row and empty-area context menus follow Finder's grouping with dividers between Open / destructive / manipulation / location / folder-specific groups.
 - Each file pane watches its current directory through a `DispatchSource`-based watcher and auto-refreshes when the contents change externally.
 - Same-directory reloads keep the existing items on screen and atomically swap in the new listing, instead of blanking the pane during the load.
+- Markdown, HTML, CSV / TSV, and JSON previews offer a rendered/source toggle (eye-icon button); the per-file info strip is hidden while these previews are rendered.
+- CSV / TSV previews render as a monospaced scrollable table with a header row; JSON previews render as pretty-printed text.
+- `.toml`, `.yaml`, `.yml`, `.ini`, `.cfg`, `.conf`, `.log`, `.txt`, and `.env` use the built-in plain-text preview rather than Quick Look.
+- Pane-boundary drag handles and the NAME-column resize handle show the `resizeLeftRight` cursor while the pointer is over their hit area.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

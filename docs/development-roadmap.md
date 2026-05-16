@@ -97,6 +97,20 @@ Project documentation should be written in English by default. `README.md` is th
 - Same-directory reloads (auto-refresh, manual reload, post-operation refresh) take a differential path that keeps existing items on screen while the new listing loads, and atomically swaps in the result on completion. Navigation to a different directory still uses the incremental display path.
 - `FileItem` directory detection avoids an unconditional `resolvedAliasURL` + `FileManager.fileExists` pair for non-alias entries, cutting per-item syscalls during directory loads.
 
+### 1.10 Preview Source Toggle and UI Polish
+
+- Markdown and HTML previews can be switched between rendered and raw-source views through an eye-icon toggle at the top of the preview pane. State is persisted in `Preview.showsRawSource`.
+- The per-file info strip is suppressed while a Markdown or HTML preview is rendered, so the rendered output takes the full pane.
+- A reusable `View.cursor(_:)` helper backs `resizeLeftRight` cursor feedback on pane-boundary drag handles (`SplitDragHandle`) and on the NAME-column resize handle.
+
+### 1.11 CSV / JSON / Text Previews
+
+- CSV / TSV files are parsed in-app and rendered as a monospaced scrollable table (`CSVPreview` + `CSVParser`). The first row is treated as a header.
+- JSON files are pretty-printed in a monospaced `NSTextView` (`JSONPreview`), falling back to raw bytes when parsing fails.
+- The Source / Rendered toggle now also covers CSV / TSV and JSON. The file-info strip is hidden in rendered mode for these kinds, matching the Markdown / HTML behavior.
+- `.toml`, `.yaml`, `.yml`, `.ini`, `.cfg`, `.conf`, `.log`, `.txt`, and `.env` use the built-in `RawTextPreview` instead of Quick Look, so previews work even when Quick Look has no generator for the extension. These do not participate in the toggle.
+- `RawTextPreview` and `JSONPreview` share the read-only monospaced `NSScrollView` configuration through `MonospacedTextPreviewView`.
+
 ## 2. Short-Term Work
 
 ### 2.1 Measurement-Based Performance Work

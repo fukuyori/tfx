@@ -35,6 +35,12 @@ struct DeferredPreviewPlaceholder: View {
             return "film"
         case .markdown:
             return "doc.text"
+        case .csv:
+            return "tablecells"
+        case .json:
+            return "curlybraces"
+        case .text:
+            return "doc.plaintext"
         case .quickLook:
             return "doc"
         }

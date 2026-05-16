@@ -6,6 +6,12 @@ enum PreviewKind {
     case pdf
     case video
     case markdown
+    case csv
+    case json
+    /// Plain-text formats with no separate rendered form — config files,
+    /// logs, and similar. Displayed directly through `RawTextPreview` so we
+    /// don't depend on Quick Look having a generator for the extension.
+    case text
     case quickLook
 
     nonisolated init(url: URL) {
@@ -14,6 +20,12 @@ enum PreviewKind {
 
         if ["md", "markdown", "mdown", "mkd"].contains(extensionName) {
             self = .markdown
+        } else if ["csv", "tsv"].contains(extensionName) {
+            self = .csv
+        } else if extensionName == "json" {
+            self = .json
+        } else if Self.plainTextExtensions.contains(extensionName) {
+            self = .text
         } else if type?.conforms(to: .pdf) == true {
             self = .pdf
         } else if type?.conforms(to: .movie) == true {
@@ -22,6 +34,18 @@ enum PreviewKind {
             self = .quickLook
         }
     }
+
+    /// Extensions routed to the built-in plain-text preview. Limited to
+    /// common config and log formats so we do not steal Quick Look's
+    /// syntax-highlighted source-code rendering for `.swift`, `.py`, etc.
+    private static let plainTextExtensions: Set<String> = [
+        "toml",
+        "yaml", "yml",
+        "ini", "cfg", "conf",
+        "log",
+        "txt",
+        "env",
+    ]
 }
 
 final class PreviewKindCache: @unchecked Sendable {

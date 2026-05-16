@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.4.4**
+Version: **0.4.6**
 
 [English](README.md) | 日本語
 
@@ -27,6 +27,9 @@ Version: **0.4.4**
 - Backspace による親フォルダ移動
 - クリック可能な breadcrumb パス移動
 - PDF / 動画 / Markdown / Quick Look プレビュー
+- Markdown / HTML / CSV / JSON プレビューの「描画」/「ソース」表示切り替え
+- CSV / TSV をスクロール可能なテーブルで表示、JSON は pretty-print 表示
+- TOML / YAML / INI / log などの設定ファイルをプレーンテキストでプレビュー
 - 選択中のファイル / フォルダのコンパクトなメタデータ表示
 - プレビュー表示のオン / オフ切り替え
 - zip ファイルを展開せずに閲覧

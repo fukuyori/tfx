@@ -29,6 +29,8 @@ Project documentation is written in English by default. `README.ja.md` is mainta
 - Reveal in Finder, copy path, and Terminal.app integration.
 - Search, hidden-file display, and sorting.
 - PDF, video, Markdown, and Quick Look previews.
+- Rendered previews for CSV / TSV (table) and JSON (pretty-print), plus plain-text previews for common config formats (TOML / YAML / INI / log / etc.).
+- Source / Rendered toggle for Markdown, HTML, CSV, and JSON previews.
 - Pinned folders and pinned-folder drag reordering.
 - Auto-refresh on external directory changes.
 - Persistent layout, column settings, window state, and folder state.
@@ -294,6 +296,31 @@ Markdown is converted to HTML with the built-in renderer and displayed in a `WKW
 
 Future Markdown extensions will cover ruby text, math rendering, Mermaid diagrams, custom syntax, and CSS customization through TOML configuration.
 
+#### Source / Rendered Toggle
+
+Markdown, HTML, CSV / TSV, and JSON files can be viewed in their rendered form or as raw source via `RawTextPreview`, an `NSTextView`-backed read-only monospaced view. The toggle is exposed as a small eye-icon button at the top of the preview pane and is shown only when at least one URL in the current preview supports it. The button uses background color to indicate state: accent-filled while rendered, transparent while showing source.
+
+| Kind | Rendered view | Source view |
+| --- | --- | --- |
+| Markdown | `MarkdownPreview` (HTML conversion + `WKWebView`) | `RawTextPreview` |
+| HTML | `QuickLookPreview` (Quick Look HTML rendering) | `RawTextPreview` |
+| CSV / TSV | `CSVPreview` (monospaced scrollable table) | `RawTextPreview` |
+| JSON | `JSONPreview` (pretty-printed `NSTextView`) | `RawTextPreview` |
+
+The persisted flag `Preview.showsRawSource` applies to all eligible files in both single-preview and multi-preview modes. While such a file is displayed in rendered mode, the per-file `PreviewFileInfoView` strip is suppressed so the rendered output takes the full pane; the strip reappears in source mode and for kinds that do not participate in the toggle.
+
+#### Plain-Text Preview Kind
+
+`.toml`, `.yaml`, `.yml`, `.ini`, `.cfg`, `.conf`, `.log`, `.txt`, and `.env` are routed directly through `RawTextPreview` instead of relying on Quick Look. These have no separate rendered form, so the toggle button is intentionally hidden and the file-info strip is shown normally. Source code extensions (`.swift`, `.py`, etc.) intentionally stay on the Quick Look path so they keep Quick Look's syntax highlighting.
+
+#### Renderer Internals
+
+`CSVPreview` parses with a small built-in `CSVParser` that handles the RFC 4180 essentials: delimited fields, quoted fields containing the delimiter, embedded newlines, escaped `""`, and both LF and CRLF row separators. The whole file is read into memory; streaming and locale-specific delimiter detection are out of scope.
+
+`JSONPreview` re-encodes the file with `JSONSerialization` using `[.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]`. If parsing fails, the raw bytes are displayed instead of an empty pane.
+
+`RawTextPreview` and `JSONPreview` share the read-only monospaced `NSScrollView` configuration through `MonospacedTextPreviewView.makeScrollView()`.
+
 ## 9. Persistence
 
 ### 9.1 UserDefaults Keys
@@ -312,6 +339,7 @@ Future Markdown extensions will cover ruby text, math rendering, Mermaid diagram
 | `TerminalFileManager.fileNameColumnWidth` | File name column width. |
 | `TerminalFileManager.fileColumnConfiguration` | Column visibility and order. |
 | `TerminalFileManager.pinnedFolders` | Pinned folder list. |
+| `Preview.showsRawSource` | Markdown / HTML preview shows raw source when true, rendered output when false. |
 
 Pinned folders are displayed in the saved array order. New pinned folders are appended. Drag reordering saves the reordered array.
 

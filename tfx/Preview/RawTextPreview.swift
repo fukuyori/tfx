@@ -2,17 +2,10 @@
 import AppKit
 import SwiftUI
 
-/// Read-only plain-text preview backed by an `NSTextView`.
-///
-/// Used as the "source" view for Markdown and HTML files when the preview
-/// pane's rendering toggle is off. The file contents are loaded off the main
-/// thread and assigned to the text view on the main queue once decoded.
-struct RawTextPreview: NSViewRepresentable {
-    let url: URL
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeNSView(context: Context) -> NSScrollView {
+/// Shared factory for the read-only monospaced `NSTextView` used by the
+/// raw-text and pretty-printed-JSON previews.
+enum MonospacedTextPreviewView {
+    static func makeScrollView() -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
@@ -37,6 +30,22 @@ struct RawTextPreview: NSViewRepresentable {
             textView.textContainer?.widthTracksTextView = true
         }
         return scrollView
+    }
+}
+
+/// Read-only plain-text preview backed by an `NSTextView`.
+///
+/// Used as the "source" view for Markdown, HTML, CSV, and JSON files when the
+/// preview pane's rendering toggle is off. The file contents are loaded off
+/// the main thread and assigned to the text view on the main queue once
+/// decoded.
+struct RawTextPreview: NSViewRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        MonospacedTextPreviewView.makeScrollView()
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {

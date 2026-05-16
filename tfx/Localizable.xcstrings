@@ -1223,6 +1223,40 @@
         }
       }
     },
+    "Empty file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty file"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空のファイル"
+          }
+        }
+      }
+    },
+    "Unable to read file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to read file"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルを読み込めません"
+          }
+        }
+      }
+    },
     "Other…" : {
       "extractionState" : "manual",
       "localizations" : {
