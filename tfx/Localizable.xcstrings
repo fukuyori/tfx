@@ -1189,6 +1189,40 @@
         }
       }
     },
+    "Show rendered preview" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show rendered preview"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "描画されたプレビューを表示"
+          }
+        }
+      }
+    },
+    "Show source" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show source"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ソースを表示"
+          }
+        }
+      }
+    },
     "Other…" : {
       "extractionState" : "manual",
       "localizations" : {

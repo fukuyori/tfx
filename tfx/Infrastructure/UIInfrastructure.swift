@@ -43,5 +43,21 @@ extension View {
         }
         .accessibilityHint(Text(resolved))
     }
+
+    /// Show `cursor` while the pointer is over this view.
+    ///
+    /// Uses `NSCursor.push` / `.pop` driven by `onHover`. The hit region is
+    /// whatever SwiftUI is currently using for events on this view, including
+    /// any `contentShape` overrides — so for thin resize bars, expand the
+    /// hit area with `contentShape(Rectangle().inset(by:))` first.
+    func cursor(_ cursor: NSCursor) -> some View {
+        onHover { isHovering in
+            if isHovering {
+                cursor.push()
+            } else {
+                NSCursor.pop()
+            }
+        }
+    }
 }
 #endif

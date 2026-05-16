@@ -31,6 +31,7 @@ struct FilePaneHeaderRow: View {
             }
             .frame(width: columnWidth(column), alignment: column.alignment)
             .contentShape(Rectangle())
+            .cursor(.resizeLeftRight)
             .gesture(
                 DragGesture(minimumDistance: 1)
                     .onChanged { value in

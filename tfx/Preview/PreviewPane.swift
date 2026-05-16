@@ -6,15 +6,28 @@ struct PreviewPane: View {
     @State private var selectedPreviewURLs: Set<URL> = []
     @State private var visibleMultiPreviewURLs: Set<URL> = []
     @State private var activeMultiPreviewURLs: Set<URL> = []
+    @AppStorage("Preview.showsRawSource") private var showsRawSource = false
     private let maxActiveMultiPreviews = 3
 
     var body: some View {
+        VStack(spacing: 0) {
+            if anyURLSupportsRawSourceToggle {
+                renderingModeToggle
+            }
+            content
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         Group {
             if urls.count == 1, let url = urls.first {
                 VStack(spacing: 0) {
                     preview(for: url)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    PreviewFileInfoView(url: url)
+                    if !shouldHideFileInfo(for: url) {
+                        PreviewFileInfoView(url: url)
+                    }
                 }
             } else if !urls.isEmpty {
                 ScrollView {
@@ -34,7 +47,9 @@ struct PreviewPane: View {
                             ) {
                                 preview(for: url)
                             } info: {
-                                PreviewFileInfoView(url: url)
+                                if !shouldHideFileInfo(for: url) {
+                                    PreviewFileInfoView(url: url)
+                                }
                             }
                         }
                     }
@@ -82,16 +97,78 @@ struct PreviewPane: View {
 
     @ViewBuilder
     private func preview(for url: URL) -> some View {
-        switch PreviewKindCache.shared.kind(for: url) {
-        case .pdf:
-            PDFPreview(url: url)
-        case .video:
-            VideoPreview(url: url)
-        case .markdown:
-            MarkdownPreview(url: url)
-        case .quickLook:
-            QuickLookPreview(url: url)
+        if shouldShowRawSource(for: url) {
+            RawTextPreview(url: url)
+        } else {
+            switch PreviewKindCache.shared.kind(for: url) {
+            case .pdf:
+                PDFPreview(url: url)
+            case .video:
+                VideoPreview(url: url)
+            case .markdown:
+                MarkdownPreview(url: url)
+            case .quickLook:
+                QuickLookPreview(url: url)
+            }
         }
+    }
+
+    private var renderingModeToggle: some View {
+        HStack {
+            Spacer()
+            Button {
+                showsRawSource.toggle()
+            } label: {
+                Image(systemName: "eye")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(showsRawSource ? Color.secondary : Color.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background {
+                        if !showsRawSource {
+                            RoundedRectangle(cornerRadius: 5)
+                                .fill(Color.accentColor)
+                        }
+                    }
+            }
+            .buttonStyle(.plain)
+            .help(toggleHelpText)
+            .accessibilityLabel(toggleHelpText)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color(nsColor: .textBackgroundColor))
+    }
+
+    private var toggleHelpText: Text {
+        // Describe what clicking the button will do, matching macOS toolbar
+        // conventions.
+        showsRawSource ? Text("Show rendered preview") : Text("Show source")
+    }
+
+    private var anyURLSupportsRawSourceToggle: Bool {
+        urls.contains { Self.supportsRawSourceToggle($0) }
+    }
+
+    private func shouldShowRawSource(for url: URL) -> Bool {
+        showsRawSource && Self.supportsRawSourceToggle(url)
+    }
+
+    /// Suppress the file-info strip when the rendered Markdown/HTML view is
+    /// taking over the pane. The strip reappears in source mode so the user
+    /// keeps file metadata visible while reading raw text.
+    private func shouldHideFileInfo(for url: URL) -> Bool {
+        !showsRawSource && Self.supportsRawSourceToggle(url)
+    }
+
+    /// True when the URL is a Markdown or HTML document — the only kinds for
+    /// which "Rendered vs Source" makes sense.
+    static func supportsRawSourceToggle(_ url: URL) -> Bool {
+        if PreviewKindCache.shared.kind(for: url) == .markdown {
+            return true
+        }
+        let ext = url.pathExtension.lowercased()
+        return ext == "html" || ext == "htm"
     }
 }
 
