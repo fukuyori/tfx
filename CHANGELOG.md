@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.4.4] - 2026-05-16
+
+### Added
+
+- Auto-refresh: each file pane now updates automatically when its current directory changes externally (Finder, shell, other apps). Backed by a `DispatchSource`-based `DirectoryWatcher` per pane with a ~250 ms debounce. Zip-archive virtual paths and missing directories are skipped. Watcher wiring lives in `FileBrowserModel+DirectoryWatch`.
+
+### Changed
+
+- Same-directory reloads (manual reload, auto-refresh, post-operation refresh) no longer blank the file pane. Existing items stay on screen while the new listing loads in the background, and the model atomically swaps in the result once the final batch arrives. Navigation to a different directory still uses the incremental display path.
+- `FileItem` directory detection skips an unconditional `resolvedAliasURL` + `FileManager.fileExists` pair when the entry is not a Finder alias, removing ~2 syscalls per non-directory file during directory loads.
+- Updated the version to `0.4.4` and the build number to `19`.
+
 ## [0.4.3] - 2026-05-12
 
 ### Added

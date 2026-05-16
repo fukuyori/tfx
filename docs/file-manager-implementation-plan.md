@@ -53,6 +53,8 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - Context menus are available for file rows and folder tree rows.
 - The file row context menu includes an "Open With" submenu listing applications that can open the file, plus an "Other…" picker for choosing an arbitrary application.
 - File row and empty-area context menus follow Finder's grouping with dividers between Open / destructive / manipulation / location / folder-specific groups.
+- Each file pane watches its current directory through a `DispatchSource`-based watcher and auto-refreshes when the contents change externally.
+- Same-directory reloads keep the existing items on screen and atomically swap in the new listing, instead of blanking the pane during the load.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

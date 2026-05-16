@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.4.3**
+Version: **0.4.4**
 
 [English](README.md) | 日本語
 
@@ -34,6 +34,7 @@ Version: **0.4.3**
 - Terminal.app を現在フォルダで開く
 - New File / New Folder / Rename / Move to Trash / Reveal in Finder
 - 「このアプリケーションで開く」サブメニュー（候補アプリ一覧と「その他…」ピッカー）
+- 自動更新: 外部からのディレクトリ変更を検知してファイル一覧を自動リフレッシュ
 - 選択項目を zip ファイルに圧縮
 - zip ファイルを展開
 - Copy / Cut / Paste、Finder クリップボード互換、同名ファイル競合ダイアログ

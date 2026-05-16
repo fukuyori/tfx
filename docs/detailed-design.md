@@ -30,6 +30,7 @@ Project documentation is written in English by default. `README.ja.md` is mainta
 - Search, hidden-file display, and sorting.
 - PDF, video, Markdown, and Quick Look previews.
 - Pinned folders and pinned-folder drag reordering.
+- Auto-refresh on external directory changes.
 - Persistent layout, column settings, window state, and folder state.
 
 ### 2.2 Out of Scope
@@ -196,6 +197,19 @@ Zip archive entries are represented as `FileItem` values with virtual URLs. Thes
 `FileBrowserModel.reload()` reads the current directory, builds `FileItem` values, updates free-space text, and applies filtering and sorting. Expensive work is kept away from the UI path and guarded by cancellation tokens so stale results are ignored.
 
 Directory read failures are reported through `show(_:)`, which updates model error state for display by the screen alert.
+
+`reload()` has two paths:
+
+- **Incremental display path**: used on navigation, app launch, and any reload where no items are currently on screen. `allItems` and `items` are cleared up front, and `FileBrowserDirectoryLoader` streams chunks back to the model so very large directories appear progressively.
+- **Differential reload path**: used when reloading the same directory that is already displayed (manual reload, auto-refresh, post-operation refresh). The existing `items` stay on screen, incoming chunks accumulate in `pendingLoadAccumulator`, and the new listing is swapped into `allItems` atomically when the final batch arrives. `applyFiltersAndSortAsync(pruneAfterUpdate: true)` then updates `items` and prunes selection entries that no longer exist.
+
+`shouldPreserveItemsForReload(of:)` chooses between the two paths by comparing the upcoming directory against `lastLoadedDirectory` and checking whether `allItems` is non-empty.
+
+#### Auto-Refresh
+
+Each `FileBrowserModel` owns a `DirectoryWatcher` that wraps `DispatchSource.makeFileSystemObjectSource` against the file descriptor of `currentDirectory`. The watcher fires on `.write`, `.extend`, `.delete`, `.rename`, and `.attrib`, debounces by ~250 ms, and calls `reload()` on the main queue. A Combine subscription on `$currentDirectory` in `FileBrowserModel.init` swaps watchers when navigation changes the current directory. Watcher wiring lives in `FileBrowserModel+DirectoryWatch`.
+
+The watcher is skipped for zip-archive virtual paths (immutable) and for paths that do not exist as directories at watch-start time. External changes made by tfx itself also trigger the watcher; the differential reload path absorbs the duplicate work without visible churn.
 
 ### 8.3 Filtering and Sorting
 

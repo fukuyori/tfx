@@ -91,6 +91,12 @@ Project documentation should be written in English by default. `README.md` is th
 - Mouse drag range selection is available in the file list.
 - The preview pane shows compact metadata for selected files and folders, including kind, size, location, dates, permissions, and code-signature status.
 
+### 1.9 Live Refresh and Reload
+
+- Each file pane watches its current directory through a `DispatchSource`-based `DirectoryWatcher` and reloads automatically when the contents change externally, with a ~250 ms debounce.
+- Same-directory reloads (auto-refresh, manual reload, post-operation refresh) take a differential path that keeps existing items on screen while the new listing loads, and atomically swaps in the result on completion. Navigation to a different directory still uses the incremental display path.
+- `FileItem` directory detection avoids an unconditional `resolvedAliasURL` + `FileManager.fileExists` pair for non-alias entries, cutting per-item syscalls during directory loads.
+
 ## 2. Short-Term Work
 
 ### 2.1 Measurement-Based Performance Work

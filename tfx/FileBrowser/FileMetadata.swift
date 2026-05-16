@@ -39,16 +39,34 @@ struct FileItem: Identifiable, Hashable {
     }
 
     nonisolated private static func isDirectoryOrDirectorySymlink(_ url: URL, values: URLResourceValues?) -> Bool {
+        // URLResourceValues.isDirectory follows POSIX symlinks, so plain
+        // symlink-to-directory entries are already reported as directories.
         if values?.isDirectory == true {
             return true
         }
 
-        if let aliasTarget = FileBrowserExternalActions.resolvedAliasURL(for: url) {
-            return FileBrowserExternalActions.isDirectory(aliasTarget)
+        // Finder aliases ("bookmark"-style aliases) are *not* POSIX symlinks
+        // and need an explicit resolve. The `.isAliasFileKey` value is
+        // pre-fetched in `FileItem.init`, so this branch only runs for actual
+        // aliases and avoids the cost of re-reading resource values.
+        if values?.isAliasFile == true,
+           let aliasTarget = try? URL(resolvingAliasFileAt: url, options: []) {
+            var targetIsDirectory: ObjCBool = false
+            return FileManager.default.fileExists(atPath: aliasTarget.path, isDirectory: &targetIsDirectory)
+                && targetIsDirectory.boolValue
         }
 
-        var isDirectory: ObjCBool = false
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+        // When `values` is nil the upstream resource-values fetch failed
+        // (typically a permission error). Fall back to a single stat as a
+        // defensive default so we still classify the entry correctly when we
+        // can read it via FileManager.
+        if values == nil {
+            var isDirectory: ObjCBool = false
+            return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+                && isDirectory.boolValue
+        }
+
+        return false
     }
 
     nonisolated init(url: URL) {

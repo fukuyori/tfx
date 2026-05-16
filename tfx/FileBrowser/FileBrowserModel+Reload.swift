@@ -7,7 +7,9 @@ extension FileBrowserModel {
         let generation = reloadGeneration
         let directory = currentDirectory
         let chunkSize = directoryLoadChunkSize
-        let cancellation = resetDirectoryLoadState()
+        let preservingExistingItems = shouldPreserveItemsForReload(of: directory)
+        let cancellation = resetDirectoryLoadState(preservingItems: preservingExistingItems)
+        pendingLoadAccumulator.removeAll(keepingCapacity: true)
 
         if hasActiveSubfolderSearchQuery {
             startSubfolderSearch()
@@ -27,13 +29,24 @@ extension FileBrowserModel {
                     isFinalBatch: isFinalBatch,
                     generation: generation,
                     directory: directory,
-                    cancellation: cancellation
+                    cancellation: cancellation,
+                    preservingExistingItems: preservingExistingItems
                 )
             }
         )
     }
 
-    private func resetDirectoryLoadState() -> DirectoryLoadCancellation {
+    /// Returns true when the upcoming load targets the directory we last
+    /// loaded successfully *and* we still have items on screen. In that case
+    /// we keep the current items visible and swap them atomically once the
+    /// new listing is complete, instead of blanking the file pane.
+    private func shouldPreserveItemsForReload(of directory: URL) -> Bool {
+        guard let lastLoadedDirectory else { return false }
+        guard !allItems.isEmpty else { return false }
+        return lastLoadedDirectory.standardizedFileURL == directory.standardizedFileURL
+    }
+
+    private func resetDirectoryLoadState(preservingItems: Bool) -> DirectoryLoadCancellation {
         directoryLoadCancellation?.cancel()
         let cancellation = DirectoryLoadCancellation()
         directoryLoadCancellation = cancellation
@@ -52,11 +65,13 @@ extension FileBrowserModel {
         metadataPrefetchCancellation = nil
         filterGeneration += 1
 
-        allItems = []
-        allItemLookup = [:]
-        items = []
-        refreshPreviewURLs()
-        availableCapacityText = "-"
+        if !preservingItems {
+            allItems = []
+            allItemLookup = [:]
+            items = []
+            refreshPreviewURLs()
+            availableCapacityText = "-"
+        }
         return cancellation
     }
 
@@ -90,7 +105,8 @@ extension FileBrowserModel {
         isFinalBatch: Bool,
         generation: Int,
         directory: URL,
-        cancellation: DirectoryLoadCancellation
+        cancellation: DirectoryLoadCancellation,
+        preservingExistingItems: Bool
     ) {
         DispatchQueue.main.async { [weak self] in
             guard
@@ -102,7 +118,17 @@ extension FileBrowserModel {
                 return
             }
 
-            self.appendLoadedDirectoryItems(batch, pruneAfterUpdate: isFinalBatch)
+            if preservingExistingItems {
+                self.pendingLoadAccumulator.append(contentsOf: batch)
+                if isFinalBatch {
+                    self.commitPreservedReload(directory: directory)
+                }
+            } else {
+                self.appendLoadedDirectoryItems(batch, pruneAfterUpdate: isFinalBatch)
+                if isFinalBatch {
+                    self.lastLoadedDirectory = directory
+                }
+            }
         }
     }
 
@@ -118,6 +144,25 @@ extension FileBrowserModel {
         } else {
             scheduleFilterAndSort(pruneAfterUpdate: false)
         }
+    }
+
+    /// Atomically swap in the newly loaded listing for a same-directory
+    /// reload. Until this runs, the existing `items` array remains on screen,
+    /// so SwiftUI animates from the old listing to the new one without
+    /// flashing an empty pane.
+    private func commitPreservedReload(directory: URL) {
+        let loadedItems = pendingLoadAccumulator
+        pendingLoadAccumulator.removeAll(keepingCapacity: true)
+
+        allItems = loadedItems
+        allItemLookup = FileBrowserDirectoryState.itemLookup(for: allItems)
+        refreshPreviewURLs()
+
+        // `applyFiltersAndSortAsync(pruneAfterUpdate: true)` updates `items`
+        // and prunes selection entries that no longer exist, mirroring the
+        // non-preserving final-batch path.
+        applyFiltersAndSortAsync(pruneAfterUpdate: true)
+        lastLoadedDirectory = directory
     }
 }
 

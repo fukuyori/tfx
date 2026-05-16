@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.4.3**
+Version: **0.4.4**
 
 English | [日本語](README.ja.md)
 
@@ -34,6 +34,7 @@ English | [日本語](README.ja.md)
 - Open Terminal.app at the current folder
 - New File, New Folder, Rename, Move to Trash, and Reveal in Finder
 - "Open With" submenu listing applications that can open the file, with an "Other…" picker
+- Auto-refresh: each file pane updates automatically when its directory changes externally
 - Compress selected items to a zip archive
 - Extract zip archives
 - Copy, Cut, Paste, Finder pasteboard interoperability, and same-name conflict handling

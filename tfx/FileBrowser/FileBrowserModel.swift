@@ -88,12 +88,18 @@ final class FileBrowserModel: ObservableObject {
     var pendingFileSelectionURL: URL?
     private var pinnedFoldersObserver: AnyCancellable?
     private var fileOperationObserver: AnyCancellable?
+    var currentDirectoryObserver: AnyCancellable?
+    var directoryWatcher: DirectoryWatcher?
     var directoryLoadCancellation: DirectoryLoadCancellation?
     var filterSortCancellation: FilterSortCancellation?
     var subfolderSearchCancellation: SubfolderSearchCancellation?
     var metadataPrefetchCancellation: MetadataPrefetchCancellation?
     var reloadGeneration = 0
     var filterGeneration = 0
+    /// Last directory whose load completed. Drives differential reload detection.
+    var lastLoadedDirectory: URL?
+    /// Staging buffer for differential reloads; see `FileBrowserModel+Reload`.
+    var pendingLoadAccumulator: [FileItem] = []
     var subfolderSearchGeneration = 0
     var folderChildrenLoadGenerations: [URL: Int] = [:]
     var folderChildrenLoadQueue: [URL] = []
@@ -125,6 +131,11 @@ final class FileBrowserModel: ObservableObject {
                 }
 
                 self.reload()
+            }
+        currentDirectoryObserver = $currentDirectory
+            .removeDuplicates()
+            .sink { [weak self] newURL in
+                self?.startWatchingDirectory(newURL)
             }
         loadPinnedFolders()
         reload()
