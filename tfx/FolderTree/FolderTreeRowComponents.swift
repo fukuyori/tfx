@@ -30,6 +30,10 @@ struct FolderTreeRowContextMenu: View {
     let activateTree: () -> Void
 
     var body: some View {
+        // Grouping mirrors the file-row context menu (added in 0.4.3):
+        // open, then location, then folder-management actions, with
+        // dividers between groups so the menu reads consistently across
+        // the file pane and the folder tree.
         Button("Open") {
             activateTree()
             model.selectFolderTree(url, in: selectionSection)
@@ -39,6 +43,8 @@ struct FolderTreeRowContextMenu: View {
             }
         }
 
+        Divider()
+
         Button("Reveal in Finder") {
             model.revealInFinder(url)
         }
@@ -46,6 +52,8 @@ struct FolderTreeRowContextMenu: View {
         Button("Copy Path") {
             model.copyPath(url)
         }
+
+        Divider()
 
         Button(model.isFolderPinned(url) ? "Unpin Folder" : "Pin Folder") {
             activateTree()

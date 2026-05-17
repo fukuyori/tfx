@@ -1,6 +1,14 @@
 #if os(macOS)
 import SwiftUI
 
+/// Context menu for a file row.
+///
+/// `FileRowInteractionView.rightMouseDown` has already called `activate()`
+/// and `selectForContextMenu(item)` before this menu opens, so the actions
+/// here can operate directly on the model's current selection without
+/// repeating that wiring. The `activate` closure is retained for the few
+/// actions (Paste Here) that need to refresh the active pane after a
+/// non-selection-based mutation.
 struct FileItemContextMenu: View {
     @ObservedObject var model: FileBrowserModel
     let item: FileItem
@@ -9,8 +17,6 @@ struct FileItemContextMenu: View {
     @ViewBuilder
     var body: some View {
         Button("Open") {
-            activate()
-            model.selectForContextMenu(item)
             model.openFromContextMenu(item)
         }
 
@@ -40,42 +46,30 @@ struct FileItemContextMenu: View {
         Divider()
 
         Button("Move to Trash") {
-            activate()
-            model.selectForContextMenu(item)
             model.moveSelectedItemsToTrash()
         }
 
         Divider()
 
         Button("Rename") {
-            activate()
-            model.selectForContextMenu(item)
             model.renameSelectedItem()
         }
 
         Button("Compress to Zip") {
-            activate()
-            model.selectForContextMenu(item)
             model.compressSelectedItemsToZip()
         }
 
         if ZipArchiveBrowser.isZipArchive(item.url) {
             Button("Extract Zip") {
-                activate()
-                model.selectForContextMenu(item)
                 model.extractZipArchive(item)
             }
         }
 
         Button("Copy Items") {
-            activate()
-            model.selectForContextMenu(item)
             model.copySelectedItems()
         }
 
         Button("Cut Items") {
-            activate()
-            model.selectForContextMenu(item)
             model.cutSelectedItems()
         }
 
@@ -88,8 +82,6 @@ struct FileItemContextMenu: View {
         Divider()
 
         Button("Reveal in Finder") {
-            activate()
-            model.selectForContextMenu(item)
             model.revealSelectedItemsInFinder()
         }
 
@@ -101,12 +93,10 @@ struct FileItemContextMenu: View {
             Divider()
 
             Button(model.isFolderPinned(item.url) ? "Unpin Folder" : "Pin Folder") {
-                activate()
                 model.togglePinnedFolder(item.url)
             }
 
             Button("Open Terminal Here") {
-                activate()
                 model.openTerminal(at: item.url)
             }
         }

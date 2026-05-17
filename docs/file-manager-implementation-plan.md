@@ -59,6 +59,8 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - CSV / TSV previews render as a monospaced scrollable table with a header row; JSON previews render as pretty-printed text.
 - `.toml`, `.yaml`, `.yml`, `.ini`, `.cfg`, `.conf`, `.log`, `.txt`, and `.env` use the built-in plain-text preview rather than Quick Look.
 - Pane-boundary drag handles and the NAME-column resize handle show the `resizeLeftRight` cursor while the pointer is over their hit area.
+- Right-clicking a file row activates the pane and updates the selection before the context menu opens.
+- File rows, the file-pane background, and folder-tree rows each have a single context menu (`FileItemContextMenu`, `EmptyFileAreaContextMenu`, and `FolderTreeRowContextMenu`), all using the same Finder grouping with dividers.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

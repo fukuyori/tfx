@@ -4,6 +4,21 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.0] - 2026-05-16
+
+This release closes out the short-term drag-and-drop / context-menu cleanup tracked in roadmap section 2.2. File movement, pinned-folder ordering, and folder-tree navigation now have a single clear path each, and the per-area context menus follow consistent Finder-grouped layouts.
+
+### Added
+
+- Right-clicking a file row now activates the pane and updates the selection before the context menu opens (`FileRowInteractionView.rightMouseDown` calls `activate()` and `selectForContextMenu(item)`). This matches Finder: the right-clicked row is reflected in the visual selection, the menu actions act on it, and an existing multi-selection that includes the row is preserved.
+
+### Changed
+
+- File-row context menus now always show `FileItemContextMenu`. The earlier conditional that swapped in `EmptyFileAreaContextMenu` when nothing was selected has been removed. Empty file-pane space is still served by the pane-level `EmptyFileAreaContextMenu`, so the two menus no longer overlap.
+- `FileItemContextMenu` button bodies are simpler: the redundant `activate()` and `selectForContextMenu(item)` calls have been removed now that `rightMouseDown` sets up the same state. Only `Paste Here` still calls `activate()` because it does not depend on selection.
+- Folder-tree row context menu (`FolderTreeRowContextMenu`) now uses the same Finder grouping introduced for file rows in 0.4.3: Open → Reveal in Finder / Copy Path → Pin Folder / Open Terminal Here, with explicit dividers between groups.
+- Updated the version to `0.5.0` and the build number to `22`.
+
 ## [0.4.6] - 2026-05-16
 
 ### Added

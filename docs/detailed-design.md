@@ -255,7 +255,13 @@ The `..` row is tracked separately through `isParentDirectorySelected`. Pressing
 
 After mutating operations, affected directories and folder-tree caches are refreshed where practical.
 
-Context menus for both file rows and the empty file-pane area follow Finder's grouping with dividers between groups: open actions (Open, Open With), destructive action (Move to Trash), manipulation (Rename, Compress, Extract, Copy/Cut/Paste), location (Reveal in Finder, Copy Path), and folder-only actions (Pin Folder, Open Terminal Here).
+Context menus have a single attachment per area:
+
+- File rows attach `FileItemContextMenu` unconditionally. `FileRowInteractionView.rightMouseDown` activates the pane and calls `selectForContextMenu(item)` before the menu opens, so the right-clicked row is reflected in the visual selection and the actions operate on it (preserving an existing multi-selection that already includes the row).
+- The file-pane background (the area outside any row, including the area below the last row) attaches `EmptyFileAreaContextMenu`.
+- Folder-tree rows attach `FolderTreeRowContextMenu` and use the same Finder grouping as file rows.
+
+All three menus follow Finder's grouping with dividers between groups: open actions (Open, Open With), destructive action (Move to Trash), manipulation (Rename, Compress, Extract, Copy/Cut/Paste), location (Reveal in Finder, Copy Path), and folder-only actions (Pin Folder, Open Terminal Here).
 
 ### 8.7 Zip Archive Browsing
 

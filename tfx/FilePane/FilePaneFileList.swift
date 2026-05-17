@@ -146,15 +146,18 @@ struct FilePaneFileList: View {
                 )
             )
             .contextMenu {
-                if !model.hasSelection && !model.isParentDirectorySelected {
-                    EmptyFileAreaContextMenu(model: model, activate: activate)
-                } else {
-                    FileItemContextMenu(
-                        model: model,
-                        item: item,
-                        activate: activate
-                    )
-                }
+                // Always show the per-row menu for file rows. The
+                // `FileRowInteractionView.rightMouseDown` handler already
+                // activates the pane and selects the right-clicked row
+                // (preserving an existing multi-selection that includes it),
+                // so the menu actions operate on the expected target. The
+                // empty-area menu is attached to the file pane background in
+                // `FilePane`, so right-clicks outside any row still reach it.
+                FileItemContextMenu(
+                    model: model,
+                    item: item,
+                    activate: activate
+                )
             }
         }
     }

@@ -76,6 +76,14 @@ final class FileRowInteractionView: NSView, NSDraggingSource {
     }
 
     override func rightMouseDown(with event: NSEvent) {
+        // Activate the pane and update the selection so the SwiftUI
+        // contextMenu opens with the right-clicked row reflected in the
+        // visual selection and the menu actions operate on the expected
+        // item. `selectForContextMenu` keeps the existing multi-selection if
+        // the right-clicked row is part of it, otherwise it narrows the
+        // selection to just this row.
+        activate()
+        model?.selectForContextMenu(item)
         nextResponder?.rightMouseDown(with: event)
     }
 
