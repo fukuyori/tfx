@@ -120,52 +120,25 @@ Project documentation should be written in English by default. `README.md` is th
 - Right-clicking a file row activates the pane and updates the selection before the menu opens, matching Finder.
 - Each area now has a single context menu: file rows always use `FileItemContextMenu`, the file-pane background uses `EmptyFileAreaContextMenu`, and folder-tree rows use `FolderTreeRowContextMenu` with the same Finder grouping as file rows.
 
+### 1.13 Test Foundation and CI
+
+- Swift Testing target (`tfxTests`) backed by a `PBXFileSystemSynchronizedRootGroup`. 50 tests cover the pure-logic types (`CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`) plus `FileBrowserModel` mutators (selection, navigation history, context-menu selection, parent-directory selection, pruning).
+- A `CSVParser` CRLF bug was caught and fixed by the new tests: Swift collapses `\r\n` into a single grapheme cluster during `Character` iteration, so the original `case "\n", "\r":` did not match Windows-style line endings.
+- GitHub Actions workflow `.github/workflows/build.yml` runs `xcodebuild build` plus `xcodebuild test` on `macos-latest` for every push to `main`, every pull request, and on manual dispatch. Failed runs upload `test-results.xcresult` and raw build / test logs as 7-day artifacts. `concurrency` cancels superseded runs on the same ref.
+- `docs/contributing.md` covers the test-running command, the `tfxTests/` layout convention, CI expectations, code-style rules, and a placeholder release-process section.
+
+### 1.14 Performance Measurement Infrastructure
+
+- `PerformanceTrace` honors a `UserDefaults`-backed flag (`Developer.showsPerformanceLogs`) in addition to the existing `TFX_PERFORMANCE_LOGS=1` environment variable. The env var still wins so CI and scripted runs do not have to flip the in-app toggle.
+- A `Developer` menu item is added through `DeveloperMenuCommands` and exposes a `Show Performance Logs` toggle (localized as 「パフォーマンスログを表示」 in Japanese).
+- `tfxTests/PerformanceBenchmarks.swift` adds five informational benchmarks against §3.1 scenarios: `FileItem` creation ×1k / ×5k, `loadHeader` 1k items, `filterAndSort` 1k items, `filterAndSort` 1k items + query. Timings are printed via `print` and **not** asserted — comparison is manual against rolling baselines on the same machine.
+- Benchmarks run as part of the regular test suite; a dedicated CI job was intentionally not split out. Should benchmarks become too noisy or slow, they can be moved behind a Swift Testing tag and a separate non-blocking CI job later.
+
 ## 2. Upcoming Work
 
 Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.1.
 
-### 2.1 Test Foundation and CI
-
-Goal:
-
-- Stand up a test suite and continuous integration so future feature work can be reviewed safely. This is the foundation that protects every subsequent item.
-
-Tasks:
-
-- Add a Swift Testing target (`tfxTests`) backed by a `PBXFileSystemSynchronizedRootGroup` for the `tfxTests/` directory.
-- Cover pure logic first: `CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`.
-- Add focused tests for `FileBrowserModel` mutators: selection updates, navigation history, the reload differential path.
-- Wire up a GitHub Actions workflow that runs `xcodebuild build` plus tests on a macOS runner for every push and PR.
-- Document the test-running command in a new `docs/contributing.md`.
-
-Done when:
-
-- `xcodebuild test` runs all tests successfully.
-- CI runs on every push to `main` and on every PR.
-- At least one test exists per file in the "pure logic" list above.
-
-### 2.2 Performance Measurement
-
-Goal:
-
-- Turn the §3.1 performance targets from aspirational into enforceable. Set this up early so every subsequent feature item can catch performance regressions as they appear, rather than rediscovering them weeks later. Builds on the test target from §2.1.
-
-Tasks:
-
-- Add a benchmark scheme that exercises §3.1 scenarios: cold launch, 1k-item folder load, 10k-item folder load, external change → auto-refresh latency. Reuse the §2.1 test target with measurement-only tests, or add a thin `tfxBenchmarks` target if isolation is needed.
-- Expose the existing `TFX_PERFORMANCE_LOGS` flag (§1.1) as a developer-mode UI toggle so the logs are accessible without an environment variable.
-- Document benchmark-running commands in `docs/contributing.md`.
-- Optional: a non-blocking CI job that runs the benchmark scheme and uploads results as artifacts. Strict pass/fail thresholds are avoided because CI hardware varies; comparisons are reviewed manually or against rolling baselines.
-
-After this lands, performance issues are addressed reactively: reproduce with the toggle, compare against the §3.1 targets, land a fix with a regression test where feasible.
-
-Done when:
-
-- A single `xcodebuild` invocation runs the benchmark scheme and prints per-scenario timings.
-- The developer toggle reveals perf logs from inside the app without an environment variable.
-- Regressions are visible in CI output or local logs (informational, not gating).
-
-### 2.3 macOS Tags
+### 2.1 macOS Tags
 
 Goal:
 
@@ -183,7 +156,7 @@ Done when:
 - Tags applied in tfx appear in Finder, and tags applied in Finder appear in tfx.
 - The tag column is toggleable through the existing file-list column settings.
 
-### 2.4 Git Status Indicators
+### 2.2 Git Status Indicators
 
 Goal:
 
@@ -201,7 +174,7 @@ Done when:
 - File rows in a Git working copy display accurate status badges that update on external changes.
 - Non-Git folders incur no `git` cost.
 
-### 2.5 Pane Tabs
+### 2.3 Pane Tabs
 
 Goal:
 
@@ -220,7 +193,7 @@ Done when:
 - Closing the last tab in a pane is handled deterministically (decide between "hide pane" and "empty-tab placeholder" during design).
 - Keyboard shortcuts work for new / close / next / previous tab.
 
-### 2.6 Built-in Terminal Pane
+### 2.4 Built-in Terminal Pane
 
 Goal:
 
@@ -238,7 +211,7 @@ Done when:
 - A terminal pane can be toggled on / off through a menu item and a keyboard shortcut.
 - Active pane folder changes drive a `cd` in the terminal when the follow-folder setting is on.
 
-### 2.7 Permissions and Owner Editing
+### 2.5 Permissions and Owner Editing
 
 Goal:
 
@@ -256,11 +229,11 @@ Done when:
 - A user can change permissions on a file they own without elevation.
 - Owner / group changes prompt for credentials when needed and roll back cleanly on cancel / failure.
 
-### 2.8 Built-in Color Themes
+### 2.6 Built-in Color Themes
 
 Goal:
 
-- Ship 3-4 built-in themes before user-defined TOML themes (§2.12), so users get visible variety without waiting for the configuration foundation.
+- Ship 3-4 built-in themes before user-defined TOML themes (§2.10), so users get visible variety without waiting for the configuration foundation.
 
 Tasks:
 
@@ -273,7 +246,7 @@ Done when:
 - Switching themes updates the main UI consistently and immediately.
 - Missing color tokens in a theme fall back to the default.
 
-### 2.9 Sparkle Auto-Update
+### 2.7 Sparkle Auto-Update
 
 Goal:
 
@@ -292,11 +265,11 @@ Done when:
 - The appcast feed, signing process, and channel layout are documented.
 - The direct-download distribution channel described in §3.3 is unblocked.
 
-### 2.10 Configuration Foundation
+### 2.8 Configuration Foundation
 
 Goal:
 
-- Introduce user-editable configuration so later items can build on it. This is the hub for §2.11, §2.12, §2.13, §2.14, and §2.15.
+- Introduce user-editable configuration so later items can build on it. This is the hub for §2.9, §2.10, §2.11, §2.12, and §2.13.
 
 Configuration directory:
 
@@ -327,11 +300,11 @@ Done when:
 - The app runs with built-in defaults when no configuration files exist.
 - TOML loading errors are surfaced clearly to the user.
 
-### 2.11 Shortcut Organization
+### 2.9 Shortcut Organization
 
 Goal:
 
-- Centralize shortcut definitions and prepare for user-defined shortcuts. Depends on §2.10.
+- Centralize shortcut definitions and prepare for user-defined shortcuts. Depends on §2.8.
 
 Tasks:
 
@@ -345,25 +318,25 @@ Done when:
 - Existing shortcuts can be reviewed from one action definition list.
 - User-defined shortcut conflicts are reported clearly.
 
-### 2.12 Theme Customization via TOML
+### 2.10 Theme Customization via TOML
 
-Builds on §2.10 and §2.8. Maps the TOML theme files to the same color tokens used by the built-in themes.
+Builds on §2.8 and §2.6. Maps the TOML theme files to the same color tokens used by the built-in themes.
 
 Done when:
 
 - A user-defined `themes/*.toml` file can override built-in themes and appears in the theme picker.
 - Missing tokens fall back to the active built-in default.
 
-### 2.13 Extension-Based Behavior
+### 2.11 Extension-Based Behavior
 
 Goal:
 
-- Allow extension-specific open behavior, preview behavior, and context-menu behavior. Depends on §2.10.
+- Allow extension-specific open behavior, preview behavior, and context-menu behavior. Depends on §2.8.
 
 Tasks:
 
 - Define extension rules in `filetypes.toml`.
-- Define precedence between built-in behavior, TOML rules, and Lua hooks (§2.14).
+- Define precedence between built-in behavior, TOML rules, and Lua hooks (§2.12).
 - Fall back to current built-in behavior for unknown extensions.
 
 Done when:
@@ -371,11 +344,11 @@ Done when:
 - The default preview / open behavior can be changed per extension.
 - Rule precedence is explicit and documented.
 
-### 2.14 Lua Extension API
+### 2.12 Lua Extension API
 
 Goal:
 
-- Allow extension behavior, shortcuts, and Markdown conversion to be customized with Lua, starting from the smallest useful API surface. Depends on §2.10 and is most useful after §2.11.
+- Allow extension behavior, shortcuts, and Markdown conversion to be customized with Lua, starting from the smallest useful API surface. Depends on §2.8 and is most useful after §2.9.
 
 Introduced incrementally. Each step ships and is reviewed before the next begins.
 
@@ -396,11 +369,11 @@ Done when:
 - Each step has its own "done when" gate; step 1 ships before step 2 begins.
 - Lua script errors never crash the app.
 
-### 2.15 Markdown Preview Extensions
+### 2.13 Markdown Preview Extensions
 
 Goal:
 
-- Let users extend Markdown preview behavior. Lowest current priority; address once §2.10 lands and concrete user demand surfaces, since the engineering cost (CSP, `WKWebView` content sandboxing, external library bundling) is significant.
+- Let users extend Markdown preview behavior. Lowest current priority; address once §2.8 lands and concrete user demand surfaces, since the engineering cost (CSP, `WKWebView` content sandboxing, external library bundling) is significant.
 
 Targets:
 
@@ -437,13 +410,15 @@ Done when:
 - Ruby, math, and Mermaid display settings can be loaded from TOML.
 - Unsafe HTML and script handling is explicitly controlled.
 
+Priority: lower than §2.12. Address once §2.8 lands and there is concrete user demand.
+
 ## 3. Cross-Cutting Concerns
 
 Constraints and policies that apply across every item in §2. These are not feature deliverables; they exist so feature work can refer to them.
 
 ### 3.1 Performance Targets
 
-Initial budgets. Revise once the measurement infrastructure in §2.2 provides real numbers from typical hardware.
+Initial budgets. Revise once the measurement infrastructure landed in §1.14 produces real numbers from typical hardware.
 
 | Path | Target |
 | --- | --- |
@@ -469,7 +444,7 @@ The distribution channel escalates as the app matures. Earlier channels do not p
 | --- | --- |
 | Local Xcode builds | Current state. Development only. |
 | TestFlight beta | Crash reports through App Store Connect; small known-tester pool. |
-| Direct download via release page | Developer ID signed + notarized; updates delivered through Sparkle (§2.9). |
+| Direct download via release page | Developer ID signed + notarized; updates delivered through Sparkle (§2.7). |
 | Mac App Store | Requires `ENABLE_APP_SANDBOX = YES`; large adjustment, not committed. |
 
 Decision points:
@@ -488,10 +463,19 @@ Decision points:
 
 - `UserDefaults` schema is additive: new keys ship with defaults; existing keys are never removed without an explicit migration step.
 - All persisted `UserDefaults` keys remain documented in `docs/detailed-design.md` §9.1.
-- Future TOML configuration files (§2.10) carry a top-level `version = N` field. The loader migrates older versions forward and keeps at least one prior version's migration code on hand.
+- Future TOML configuration files (§2.8) carry a top-level `version = N` field. The loader migrates older versions forward and keeps at least one prior version's migration code on hand.
 - Pinned folders, window state, and other user data are read-merge-write: never destructively rewritten on load when fields are missing.
 
-## 4. Documentation Work
+## 4. Performance Measurement (On-Demand)
+
+The proactive measurement infrastructure shipped in §1.14. This section is the reactive checklist for when slowness is reported or detected.
+
+- Reproduce with `TFX_PERFORMANCE_LOGS=1` (env var) or **Developer → Show Performance Logs** (in-app).
+- Compare timings against the §3.1 targets.
+- For repeatable scenarios, add a corresponding benchmark to `tfxTests/PerformanceBenchmarks.swift`.
+- Land the fix with a regression test where feasible.
+
+## 5. Documentation Work
 
 Tasks:
 
@@ -499,9 +483,10 @@ Tasks:
 - Keep `docs/file-manager-implementation-plan.md` current.
 - Keep `README.md` and `README.ja.md` aligned.
 - Keep `docs/README.md` aligned with the documentation set.
-- Add sample configuration files once §2.10 lands.
+- Keep `docs/contributing.md` (added by §1.13, extended by §1.14) current with the test, benchmark, CI, and release commands.
+- Add sample configuration files once §2.8 lands.
 - Convert remaining Japanese documentation to English, except for `README.ja.md`.
-- Maintain `docs/contributing.md` (added by §2.1, extended by §2.2) with test-running, benchmark-running, and CI expectations; expand with the release process once §2.9 lands.
+- Expand `docs/contributing.md` with the release process once §2.7 lands.
 
 Done when:
 

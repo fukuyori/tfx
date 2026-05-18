@@ -22,5 +22,10 @@ struct tfxApp: App {
                 }
 #endif
         }
+#if os(macOS)
+        .commands {
+            DeveloperMenuCommands()
+        }
+#endif
     }
 }

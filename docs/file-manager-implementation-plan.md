@@ -61,6 +61,9 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - Pane-boundary drag handles and the NAME-column resize handle show the `resizeLeftRight` cursor while the pointer is over their hit area.
 - Right-clicking a file row activates the pane and updates the selection before the context menu opens.
 - File rows, the file-pane background, and folder-tree rows each have a single context menu (`FileItemContextMenu`, `EmptyFileAreaContextMenu`, and `FolderTreeRowContextMenu`), all using the same Finder grouping with dividers.
+- Swift Testing target `tfxTests` covers the pure-logic types (`CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`) and `FileBrowserModel` mutators with 50 unit tests, plus five informational performance benchmarks.
+- GitHub Actions workflow runs `xcodebuild build` and `xcodebuild test` on every push and PR; failed runs upload the xcresult bundle and logs as artifacts.
+- In-app `Developer → Show Performance Logs` menu toggle enables `PerformanceTrace` output without an environment variable; `TFX_PERFORMANCE_LOGS=1` still wins.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

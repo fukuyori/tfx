@@ -4,12 +4,25 @@ import Foundation
 import SwiftUI
 
 enum PerformanceTrace {
+    /// `UserDefaults` key the Developer menu and `@AppStorage` bindings share.
+    /// `TFX_PERFORMANCE_LOGS=1` in the environment is honored independently —
+    /// it takes precedence for CI / scripted runs so the in-app toggle does
+    /// not have to be flipped first.
+    static let userDefaultsKey = "Developer.showsPerformanceLogs"
+
     nonisolated static func now() -> UInt64 {
         DispatchTime.now().uptimeNanoseconds
     }
 
+    nonisolated static func isEnabled() -> Bool {
+        if ProcessInfo.processInfo.environment["TFX_PERFORMANCE_LOGS"] == "1" {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: userDefaultsKey)
+    }
+
     nonisolated static func log(_ label: String, startedAt start: UInt64, detail: String = "") {
-        guard ProcessInfo.processInfo.environment["TFX_PERFORMANCE_LOGS"] == "1" else { return }
+        guard isEnabled() else { return }
 
         let elapsedMilliseconds = Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
         let suffix = detail.isEmpty ? "" : " \(detail)"

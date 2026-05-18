@@ -1223,6 +1223,23 @@
         }
       }
     },
+    "Developer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Developer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開発"
+          }
+        }
+      }
+    },
     "Empty file" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1236,6 +1253,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "空のファイル"
+          }
+        }
+      }
+    },
+    "Show Performance Logs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Performance Logs"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パフォーマンスログを表示"
           }
         }
       }

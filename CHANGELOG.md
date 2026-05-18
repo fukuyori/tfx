@@ -4,6 +4,28 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.1] - 2026-05-18
+
+Closes roadmap §2.1 (Test Foundation and CI) and §2.2 (Performance Measurement Infrastructure). Both move into Completed Work as §1.13 and §1.14 in the next roadmap revision.
+
+### Added
+
+- New `tfxTests` target (Swift Testing) backed by a `PBXFileSystemSynchronizedRootGroup`. 50 unit tests cover the pure-logic types (`CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`) and `FileBrowserModel` mutators (selection, navigation history, context-menu selection, parent-directory selection, pruning).
+- `.github/workflows/build.yml` runs `xcodebuild build` and `xcodebuild test` on `macos-latest` for every push to `main`, every pull request, and on manual dispatch. Concurrency cancels superseded runs. On failure the workflow uploads `test-results.xcresult` and the raw build / test logs as 7-day artifacts.
+- `PerformanceTrace` honors a `UserDefaults`-backed flag (`Developer.showsPerformanceLogs`) in addition to the existing `TFX_PERFORMANCE_LOGS=1` environment variable. The env var still wins so CI / scripted runs do not have to flip the in-app toggle.
+- `Developer` menu in the macOS menu bar exposes a `Show Performance Logs` toggle (Japanese: 「パフォーマンスログを表示」) backed by the new `DeveloperMenuCommands`.
+- `tfxTests/PerformanceBenchmarks.swift` adds five informational benchmarks for §3.1 scenarios: `FileItem` creation ×1k / ×5k, `loadHeader` 1k items, `filterAndSort` 1k items, `filterAndSort` 1k items + query. Timings are printed via `print` and not asserted; comparison is manual against rolling baselines.
+- New `docs/contributing.md` documents local build and test commands, the `tfxTests/` layout convention, performance benchmark instructions, CI expectations, code-style rules, and a placeholder release-process section.
+
+### Fixed
+
+- `CSVParser` now correctly handles Windows-style CRLF line endings. Swift collapses `\r\n` into a single grapheme cluster during `Character` iteration, so the original `case "\n", "\r":` did not match CRLF input. Surfaced by the new test suite.
+
+### Changed
+
+- `docs/development-roadmap.md` was restructured: item numbers now reflect recommended execution order, with §1.13 / §1.14 added for the work above and the remaining §2.x items renumbered into priority order.
+- Updated the version to `0.5.1` and the build number to `23`.
+
 ## [0.5.0] - 2026-05-16
 
 This release closes out the short-term drag-and-drop / context-menu cleanup tracked in roadmap section 2.2. File movement, pinned-folder ordering, and folder-tree navigation now have a single clear path each, and the per-area context menus follow consistent Finder-grouped layouts.

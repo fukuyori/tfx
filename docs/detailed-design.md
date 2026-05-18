@@ -56,8 +56,9 @@ The Swift sources are organized by feature responsibility:
 | `tfx/FolderTree` | Folder tree UI and pinned-folder UI. |
 | `tfx/Preview` | Preview pane, preview type selection, Markdown/PDF/video/Quick Look previews, and multi-preview UI. |
 | `tfx/Infrastructure` | Small reusable SwiftUI and AppKit helpers. |
+| `tfxTests` | Swift Testing unit tests and informational performance benchmarks (synchronized through `PBXFileSystemSynchronizedRootGroup`). |
 
-See `docs/code-organization.md` for file naming and placement rules.
+See `docs/code-organization.md` for file naming and placement rules, and `docs/contributing.md` for test-running, benchmark, and CI commands.
 
 ## 4. Technology Stack
 
@@ -346,6 +347,7 @@ The persisted flag `Preview.showsRawSource` applies to all eligible files in bot
 | `TerminalFileManager.fileColumnConfiguration` | Column visibility and order. |
 | `TerminalFileManager.pinnedFolders` | Pinned folder list. |
 | `Preview.showsRawSource` | Markdown / HTML preview shows raw source when true, rendered output when false. |
+| `Developer.showsPerformanceLogs` | Enables `PerformanceTrace` output from inside the running app. Honored alongside the `TFX_PERFORMANCE_LOGS=1` environment variable, which takes precedence for CI / scripted runs. |
 
 Pinned folders are displayed in the saved array order. New pinned folders are appended. Drag reordering saves the reordered array.
 

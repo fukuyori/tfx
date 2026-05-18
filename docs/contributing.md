@@ -78,6 +78,22 @@ From the roadmap (`docs/development-roadmap.md` §3.2 Quality Gates):
 - Pure-logic types (`CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`) keep coverage of their main behaviors. New cases should land with new tests.
 - Bug fixes that were caught by a test should keep that test as a regression check.
 
+## Performance Benchmarks
+
+`tfxTests/PerformanceBenchmarks.swift` contains informational benchmarks that exercise the §3.1 performance targets in `docs/development-roadmap.md`. They run as part of the regular test suite and print per-scenario timings via `print` (visible in the xcresult bundle and in Xcode's test output). The benchmarks deliberately do **not** assert thresholds — CI hardware varies, so comparisons are reviewed manually or against rolling baselines on the same machine.
+
+Run benchmarks in isolation:
+
+```sh
+xcodebuild test \
+    -scheme tfx \
+    -destination 'platform=macOS' \
+    -only-testing:tfxTests/PerformanceBenchmarks \
+    CODE_SIGNING_ALLOWED=NO
+```
+
+For in-app performance logging during interactive runs, enable **Developer → Show Performance Logs** in the menu bar (or set the `TFX_PERFORMANCE_LOGS=1` environment variable, which still wins regardless of the menu setting). Logs print to stdout in the form `[tfx perf] <label> <ms>ms <detail>`.
+
 ## Continuous Integration
 
 GitHub Actions runs `.github/workflows/build.yml` on every push to `main` and every PR targeting `main`. The workflow runs `xcodebuild build` and `xcodebuild test` against `macos-latest`.
