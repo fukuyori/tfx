@@ -138,14 +138,15 @@ enum CSVParser {
                 case delimiter:
                     current.append(field)
                     field = ""
-                case "\n", "\r":
+                case "\n", "\r", "\r\n":
+                    // Swift collapses `\r\n` into a single grapheme cluster
+                    // when iterating Character-by-Character, so an explicit
+                    // CRLF case is required in addition to the lone LF / CR
+                    // cases above. No manual lookahead is needed.
                     current.append(field)
                     rows.append(current)
                     current = []
                     field = ""
-                    if c == "\r", i + 1 < characters.count, characters[i + 1] == "\n" {
-                        i += 1
-                    }
                 default:
                     field.append(c)
                 }

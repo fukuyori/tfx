@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		4A5B6C012F9E0A1000FAEB09 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3C844CD42F9DBA5E00DB2F6D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3C844CDB2F9DBA5E00DB2F6D;
+			remoteInfo = tfx;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		3C844CDC2F9DBA5E00DB2F6D /* tfx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tfx.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A5B6C012F9E0A1000FAEB02 /* tfxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = tfxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = tfx;
 			sourceTree = "<group>";
 		};
+		4A5B6C012F9E0A1000FAEB03 /* tfxTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = tfxTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		3C844CD92F9DBA5E00DB2F6D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4A5B6C012F9E0A1000FAEB05 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				3C844CDE2F9DBA5E00DB2F6D /* tfx */,
+				4A5B6C012F9E0A1000FAEB03 /* tfxTests */,
 				3C844CDD2F9DBA5E00DB2F6D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				3C844CDC2F9DBA5E00DB2F6D /* tfx.app */,
+				4A5B6C012F9E0A1000FAEB02 /* tfxTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +95,28 @@
 			productReference = 3C844CDC2F9DBA5E00DB2F6D /* tfx.app */;
 			productType = "com.apple.product-type.application";
 		};
+		4A5B6C012F9E0A1000FAEB01 /* tfxTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4A5B6C012F9E0A1000FAEB06 /* Build configuration list for PBXNativeTarget "tfxTests" */;
+			buildPhases = (
+				4A5B6C012F9E0A1000FAEB04 /* Sources */,
+				4A5B6C012F9E0A1000FAEB05 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4A5B6C012F9E0A1000FAEB0A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4A5B6C012F9E0A1000FAEB03 /* tfxTests */,
+			);
+			name = tfxTests;
+			packageProductDependencies = (
+			);
+			productName = tfxTests;
+			productReference = 4A5B6C012F9E0A1000FAEB02 /* tfxTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +129,10 @@
 				TargetAttributes = {
 					3C844CDB2F9DBA5E00DB2F6D = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					4A5B6C012F9E0A1000FAEB01 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 3C844CDB2F9DBA5E00DB2F6D;
 					};
 				};
 			};
@@ -101,6 +152,7 @@
 			projectRoot = "";
 			targets = (
 				3C844CDB2F9DBA5E00DB2F6D /* tfx */,
+				4A5B6C012F9E0A1000FAEB01 /* tfxTests */,
 			);
 		};
 /* End PBXProject section */
@@ -123,7 +175,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4A5B6C012F9E0A1000FAEB04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4A5B6C012F9E0A1000FAEB0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3C844CDB2F9DBA5E00DB2F6D /* tfx */;
+			targetProxy = 4A5B6C012F9E0A1000FAEB09 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		3C844CE52F9DBA5F00DB2F6D /* Debug */ = {
@@ -330,6 +397,46 @@
 			};
 			name = Release;
 		};
+		4A5B6C012F9E0A1000FAEB07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Q6GG27UYG5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				PRODUCT_BUNDLE_IDENTIFIER = org.spumoni.tfxTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/tfx.app/Contents/MacOS/tfx";
+			};
+			name = Debug;
+		};
+		4A5B6C012F9E0A1000FAEB08 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Q6GG27UYG5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				PRODUCT_BUNDLE_IDENTIFIER = org.spumoni.tfxTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/tfx.app/Contents/MacOS/tfx";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -347,6 +454,15 @@
 			buildConfigurations = (
 				3C844CE82F9DBA5F00DB2F6D /* Debug */,
 				3C844CE92F9DBA5F00DB2F6D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4A5B6C012F9E0A1000FAEB06 /* Build configuration list for PBXNativeTarget "tfxTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4A5B6C012F9E0A1000FAEB07 /* Debug */,
+				4A5B6C012F9E0A1000FAEB08 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -113,82 +113,30 @@ Project documentation should be written in English by default. `README.md` is th
 
 ### 1.12 Drag-and-Drop and Context Menu Cleanup
 
-Closes the short-term work that was tracked as section 2.2.
-
-- File-view to folder-tree drops are wired through `FileBrowserDropDelegate` with target highlighting (carried over from 1.3).
+- File-view to folder-tree drops are wired through `FileBrowserDropDelegate` with target highlighting.
 - Folder-tree rows expose no drag source, so folder-to-folder movement inside the tree is structurally impossible.
 - Pinned-folder reordering remains a display-order-only behavior driven by a local `DragGesture`; no file-system mutation.
 - Drop highlights are cleared on every exit path: `dropExited`, `performDrop`'s `defer`, and navigation through `clearDropTargetDirectory(nil)`.
 - Right-clicking a file row activates the pane and updates the selection before the menu opens, matching Finder.
 - Each area now has a single context menu: file rows always use `FileItemContextMenu`, the file-pane background uses `EmptyFileAreaContextMenu`, and folder-tree rows use `FolderTreeRowContextMenu` with the same Finder grouping as file rows.
 
-## 2. Quality, Distribution, and Compatibility
+## 2. Upcoming Work
 
-Cross-cutting constraints that any feature work has to respect. These are not feature deliverables in themselves; they exist so the feature sections below can refer to them.
+Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.1.
 
-### 2.1 Performance Targets
-
-Initial budgets. They will be revised once measurement instrumentation (section 6) gives us real numbers from typical hardware and real folders.
-
-| Path | Target |
-| --- | --- |
-| Cold launch on Apple Silicon | < 1.0 s |
-| Directory load — 1k items | first paint < 100 ms, complete < 300 ms |
-| Directory load — 10k items | first paint < 200 ms, complete < 1.0 s |
-| External change → auto-refresh visible | < 350 ms (250 ms watcher debounce + load) |
-| Typical session memory | < 200 MB |
-
-### 2.2 Reliability and Quality Gates
-
-- No data loss from drag / drop / move operations. Same-name conflicts must surface the resolver.
-- Permission and read errors are surfaced through `show(_:)`, never swallowed.
-- CI build + tests must pass before any release tag is cut.
-- Every new public mutator on `FileBrowserModel` ships with at least one focused test.
-- No new SwiftUI or Swift compiler warnings introduced.
-
-### 2.3 Distribution Plan
-
-| Phase | Channel | Notes |
-| --- | --- | --- |
-| A (current) | Local Xcode builds | Development only. |
-| B | TestFlight beta | Crash reports through App Store Connect; small known-tester pool. |
-| C | Direct download via release page | Developer ID signed + notarized; updates delivered through Sparkle (section 3.3). |
-| D (optional) | Mac App Store | Requires `ENABLE_APP_SANDBOX = YES`; large adjustment, not committed. |
-
-Decision points:
-
-- TestFlight and direct download are not mutually exclusive — TestFlight for beta cycles, direct download with Sparkle for stable. Plan for both.
-- Mac App Store is blocked today by the disabled App Sandbox. Revisit only if MAS reach becomes important enough to justify sandboxing.
-
-### 2.4 macOS and Hardware Compatibility
-
-- Deployment target: macOS 26.4 during development. Re-evaluate lowering to N-1 when distribution starts (section 2.3 phase B).
-- Apple Silicon native. No Intel build is planned at this deployment target.
-- Public-release support window: current macOS plus one prior major version, applied from the first non-beta release onward.
-- Locales: English (source) and Japanese are actively maintained. Additional locales accepted by PR with translation review.
-
-### 2.5 Data and Configuration Migration
-
-- `UserDefaults` schema is additive: new keys ship with defaults; existing keys are never removed without an explicit migration step.
-- All persisted `UserDefaults` keys remain documented in `docs/detailed-design.md` §9.1.
-- Future TOML configuration files (section 4.1) carry a top-level `version = N` field. The loader migrates older versions forward and keeps at least one prior version's migration code on hand.
-- Pinned folders, window state, and other user data are read-merge-write: never destructively rewritten on load when fields are missing.
-
-## 3. Short-Term Work
-
-### 3.1 Test Foundation and CI
+### 2.1 Test Foundation and CI
 
 Goal:
 
-- Stand up a test suite and continuous integration so future feature work can be reviewed safely.
+- Stand up a test suite and continuous integration so future feature work can be reviewed safely. This is the foundation that protects every subsequent item.
 
 Tasks:
 
-- Add a Swift Testing target for unit tests.
+- Add a Swift Testing target (`tfxTests`) backed by a `PBXFileSystemSynchronizedRootGroup` for the `tfxTests/` directory.
 - Cover pure logic first: `CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`.
 - Add focused tests for `FileBrowserModel` mutators: selection updates, navigation history, the reload differential path.
 - Wire up a GitHub Actions workflow that runs `xcodebuild build` plus tests on a macOS runner for every push and PR.
-- Document the test-running command in `docs/code-organization.md` (or a new `docs/contributing.md`).
+- Document the test-running command in a new `docs/contributing.md`.
 
 Done when:
 
@@ -196,7 +144,64 @@ Done when:
 - CI runs on every push to `main` and on every PR.
 - At least one test exists per file in the "pure logic" list above.
 
-### 3.2 Pane Tabs
+### 2.2 Performance Measurement
+
+Goal:
+
+- Turn the §3.1 performance targets from aspirational into enforceable. Set this up early so every subsequent feature item can catch performance regressions as they appear, rather than rediscovering them weeks later. Builds on the test target from §2.1.
+
+Tasks:
+
+- Add a benchmark scheme that exercises §3.1 scenarios: cold launch, 1k-item folder load, 10k-item folder load, external change → auto-refresh latency. Reuse the §2.1 test target with measurement-only tests, or add a thin `tfxBenchmarks` target if isolation is needed.
+- Expose the existing `TFX_PERFORMANCE_LOGS` flag (§1.1) as a developer-mode UI toggle so the logs are accessible without an environment variable.
+- Document benchmark-running commands in `docs/contributing.md`.
+- Optional: a non-blocking CI job that runs the benchmark scheme and uploads results as artifacts. Strict pass/fail thresholds are avoided because CI hardware varies; comparisons are reviewed manually or against rolling baselines.
+
+After this lands, performance issues are addressed reactively: reproduce with the toggle, compare against the §3.1 targets, land a fix with a regression test where feasible.
+
+Done when:
+
+- A single `xcodebuild` invocation runs the benchmark scheme and prints per-scenario timings.
+- The developer toggle reveals perf logs from inside the app without an environment variable.
+- Regressions are visible in CI output or local logs (informational, not gating).
+
+### 2.3 macOS Tags
+
+Goal:
+
+- Display and edit Finder-compatible color tags. High visible impact for low engineering cost; the macOS API is straightforward.
+
+Tasks:
+
+- Read tags through `URLResourceKey.tagNamesKey`.
+- Optional tag-color column in the file list (toggleable through existing column settings).
+- Context-menu "Tags…" submenu listing the user's existing tags plus an "Add Tag…" picker.
+- Multi-selection batch tagging.
+
+Done when:
+
+- Tags applied in tfx appear in Finder, and tags applied in Finder appear in tfx.
+- The tag column is toggleable through the existing file-list column settings.
+
+### 2.4 Git Status Indicators
+
+Goal:
+
+- Surface Git status next to files inside a Git working copy. A meaningful differentiator for the developer audience that requires no new infrastructure.
+
+Tasks:
+
+- Detect the Git root for the current directory; cache results.
+- Run `git status --porcelain=v2 --untracked-files=normal` on a background queue when entering a Git working copy and on `DirectoryWatcher` events.
+- Decorate file rows with status badges: `M` modified, `A` added, `?` untracked, `D` deleted, `!` ignored.
+- Display the current branch in the title bar / status line.
+
+Done when:
+
+- File rows in a Git working copy display accurate status badges that update on external changes.
+- Non-Git folders incur no `git` cost.
+
+### 2.5 Pane Tabs
 
 Goal:
 
@@ -204,11 +209,10 @@ Goal:
 
 Tasks:
 
-- Model: introduce a per-pane tab container that owns multiple `FileBrowserModel` instances and tracks the active one.
-- UI: horizontal tab strip above each file pane. Click to switch; `⌘W` closes; `⌘T` opens a new tab pointed at the active folder; `⌘⇧[` / `⌘⇧]` cycles.
-- Persistence: per-pane tab list (paths + active index) under new `UserDefaults` keys, following the additive policy in §2.5.
+- Introduce a per-pane tab container that owns multiple `FileBrowserModel` instances and tracks the active one.
+- Horizontal tab strip above each file pane. Click to switch; `⌘W` closes; `⌘T` opens a new tab at the active folder; `⌘⇧[` / `⌘⇧]` cycles.
+- Persistence: per-pane tab list (paths + active index) under new `UserDefaults` keys, following the additive policy in §3.5.
 - Folder tree, preview, and search controls follow the active tab.
-- Future enhancement: drag tabs between panes (not required for the first cut).
 
 Done when:
 
@@ -216,35 +220,83 @@ Done when:
 - Closing the last tab in a pane is handled deterministically (decide between "hide pane" and "empty-tab placeholder" during design).
 - Keyboard shortcuts work for new / close / next / previous tab.
 
-### 3.3 Sparkle Auto-Update
+### 2.6 Built-in Terminal Pane
 
 Goal:
 
-- Make direct distribution (section 2.3 phase C) viable by enabling in-app updates.
+- Add a collapsible shell pane at the bottom of the file-manager window. Aligns with the project's terminal-inspired identity (section 0).
+
+Tasks:
+
+- Embed a PTY-backed terminal view (evaluate SwiftTerm or a similar library before writing custom).
+- Default shell from `$SHELL`; working directory follows the active pane's current folder (configurable, default on).
+- Commands: toggle terminal pane, focus terminal pane, run command on selected files.
+- Persistence: visibility, height, font size.
+
+Done when:
+
+- A terminal pane can be toggled on / off through a menu item and a keyboard shortcut.
+- Active pane folder changes drive a `cd` in the terminal when the follow-folder setting is on.
+
+### 2.7 Permissions and Owner Editing
+
+Goal:
+
+- Provide POSIX permission and owner / group editing through the UI.
+
+Tasks:
+
+- "Get Info" sheet showing chmod-style permission bits and current owner / group.
+- Permission edits apply through `FileManager.setAttributes(_:ofItemAtPath:)`.
+- Owner / group edits prompt for admin credentials when elevation is required (privileged helper or `AuthorizationServices`).
+- Failures (permission denied, requires admin, etc.) surface through `show(_:)`.
+
+Done when:
+
+- A user can change permissions on a file they own without elevation.
+- Owner / group changes prompt for credentials when needed and roll back cleanly on cancel / failure.
+
+### 2.8 Built-in Color Themes
+
+Goal:
+
+- Ship 3-4 built-in themes before user-defined TOML themes (§2.12), so users get visible variety without waiting for the configuration foundation.
+
+Tasks:
+
+- Define a theme token table (file pane, folder tree, selected rows, drop targets, active borders, status lines, preview backgrounds).
+- Implement 3-4 hardcoded themes (e.g., terminal-classic, light, solarized-ish, monokai-ish).
+- Add a "Theme" menu / settings entry to switch between built-in themes.
+
+Done when:
+
+- Switching themes updates the main UI consistently and immediately.
+- Missing color tokens in a theme fall back to the default.
+
+### 2.9 Sparkle Auto-Update
+
+Goal:
+
+- Enable direct distribution by supporting in-app updates. Scheduled here because the infrastructure is only useful once a public release is imminent; landing it earlier means maintaining unused plumbing.
 
 Tasks:
 
 - Integrate Sparkle 2 via Swift Package Manager.
 - Generate an Ed25519 signing keypair. Ship the public key in the app; keep the private key offline for release signing.
 - Define the appcast feed URL and channel layout (stable / beta).
-- Add a "Check for Updates…" menu item that calls into Sparkle.
-- Add a user-visible toggle for automatic checks (`SUEnableAutomaticChecks`).
+- Add a "Check for Updates…" menu item and a user-visible toggle for automatic checks (`SUEnableAutomaticChecks`).
 
 Done when:
 
 - A test release pushed through the appcast can be installed in-app.
 - The appcast feed, signing process, and channel layout are documented.
+- The direct-download distribution channel described in §3.3 is unblocked.
 
-## 4. Mid-Term Work
-
-Ordered roughly by dependency. Several entries (terminal pane, Git status, Tags, permissions) can run independently and may be scheduled around the configuration / theming track.
-
-### 4.1 Configuration Foundation
+### 2.10 Configuration Foundation
 
 Goal:
 
-- Introduce user-editable configuration that the later mid-term items can build on.
-- Provide the foundation for themes, file-type rules, shortcuts, Markdown extensions, and Lua extensions.
+- Introduce user-editable configuration so later items can build on it. This is the hub for §2.11, §2.12, §2.13, §2.14, and §2.15.
 
 Configuration directory:
 
@@ -266,7 +318,7 @@ markdown/preview.css
 Tasks:
 
 - Pick and integrate a TOML parser.
-- Define `version = N` at the top of every TOML file; carry forward at least one prior version's migration code (§2.5).
+- Define `version = N` at the top of every TOML file; carry forward at least one prior version's migration code (§3.5).
 - Built-in defaults remain in code; TOML overrides are merged on top.
 
 Done when:
@@ -275,109 +327,11 @@ Done when:
 - The app runs with built-in defaults when no configuration files exist.
 - TOML loading errors are surfaced clearly to the user.
 
-### 4.2 Built-in Color Themes
+### 2.11 Shortcut Organization
 
 Goal:
 
-- Ship 3-4 built-in themes before user-defined TOML themes (§4.7), so users get visible variety without waiting for the full configuration foundation.
-
-Tasks:
-
-- Define a theme token table (file pane, folder tree, selected rows, drop targets, active borders, status lines, preview backgrounds).
-- Implement 3-4 hardcoded themes (e.g., terminal-classic, light, solarized-ish, monokai-ish).
-- Add a "Theme" menu / settings entry to switch between built-in themes.
-
-Done when:
-
-- Switching themes updates the main UI consistently and immediately.
-- Missing color tokens in a theme fall back to the default.
-
-### 4.3 Built-in Terminal Pane
-
-Goal:
-
-- Add a collapsible shell pane at the bottom of the file-manager window. Aligns with the project's terminal-inspired identity (section 0).
-
-Tasks:
-
-- Embed a PTY-backed terminal view (evaluate SwiftTerm or a similar library before writing custom).
-- Default shell from `$SHELL`; working directory follows the active pane's current folder (configurable, default on).
-- Commands: toggle terminal pane, focus terminal pane, run command on selected files.
-- Persistence: visibility, height, font size.
-
-Done when:
-
-- A terminal pane can be toggled on / off through a menu item and a keyboard shortcut.
-- Active pane folder changes drive a `cd` in the terminal when the follow-folder setting is on.
-
-### 4.4 Git Status Indicators
-
-Goal:
-
-- Surface Git status next to files inside a Git working copy.
-
-Tasks:
-
-- Detect the Git root for the current directory; cache results.
-- Run `git status --porcelain=v2 --untracked-files=normal` on a background queue when entering a Git working copy and on `DirectoryWatcher` events.
-- Decorate file rows with status badges: `M` modified, `A` added, `?` untracked, `D` deleted, `!` ignored.
-- Display the current branch in the title bar / status line.
-
-Done when:
-
-- File rows in a Git working copy display accurate status badges that update on external changes.
-- Non-Git folders incur no `git` cost.
-
-### 4.5 macOS Tags
-
-Goal:
-
-- Display and edit Finder-compatible color tags.
-
-Tasks:
-
-- Read tags through `URLResourceKey.tagNamesKey`.
-- Optional tag-color column in the file list (toggleable through existing column settings).
-- Context-menu "Tags…" submenu listing the user's existing tags plus an "Add Tag…" picker.
-- Multi-selection batch tagging.
-
-Done when:
-
-- Tags applied in tfx appear in Finder, and tags applied in Finder appear in tfx.
-- The tag column is toggleable through the existing file-list column settings.
-
-### 4.6 Permissions and Owner Editing
-
-Goal:
-
-- Provide POSIX permission and owner / group editing through the UI.
-
-Tasks:
-
-- "Get Info" sheet showing chmod-style permission bits and current owner / group.
-- Permission edits apply through `FileManager.setAttributes(_:ofItemAtPath:)`.
-- Owner / group edits prompt for admin credentials when elevation is required (privileged helper or `AuthorizationServices`).
-- Failures (permission denied, requires admin, etc.) surface through `show(_:)`.
-
-Done when:
-
-- A user can change permissions on a file they own without elevation.
-- Owner / group changes prompt for credentials when needed and roll back cleanly on cancel / failure.
-
-### 4.7 Theme Customization via TOML
-
-Builds on §4.1 and §4.2. Maps the TOML theme files to the same color tokens used by the built-in themes.
-
-Done when:
-
-- A user-defined `themes/*.toml` file can override built-in themes and appears in the theme picker.
-- Missing tokens fall back to the active built-in default.
-
-### 4.8 Shortcut Organization
-
-Goal:
-
-- Centralize shortcut definitions and prepare for user-defined shortcuts.
+- Centralize shortcut definitions and prepare for user-defined shortcuts. Depends on §2.10.
 
 Tasks:
 
@@ -391,16 +345,25 @@ Done when:
 - Existing shortcuts can be reviewed from one action definition list.
 - User-defined shortcut conflicts are reported clearly.
 
-### 4.9 Extension-Based Behavior
+### 2.12 Theme Customization via TOML
+
+Builds on §2.10 and §2.8. Maps the TOML theme files to the same color tokens used by the built-in themes.
+
+Done when:
+
+- A user-defined `themes/*.toml` file can override built-in themes and appears in the theme picker.
+- Missing tokens fall back to the active built-in default.
+
+### 2.13 Extension-Based Behavior
 
 Goal:
 
-- Allow extension-specific open behavior, preview behavior, and context-menu behavior.
+- Allow extension-specific open behavior, preview behavior, and context-menu behavior. Depends on §2.10.
 
 Tasks:
 
 - Define extension rules in `filetypes.toml`.
-- Define precedence between built-in behavior, TOML rules, and Lua hooks (§5.1).
+- Define precedence between built-in behavior, TOML rules, and Lua hooks (§2.14).
 - Fall back to current built-in behavior for unknown extensions.
 
 Done when:
@@ -408,22 +371,20 @@ Done when:
 - The default preview / open behavior can be changed per extension.
 - Rule precedence is explicit and documented.
 
-## 5. Long-Term Work
-
-### 5.1 Lua Extension API (Incremental)
+### 2.14 Lua Extension API
 
 Goal:
 
-- Allow extension behavior, shortcuts, and Markdown conversion to be customized with Lua, starting from the smallest useful API surface.
+- Allow extension behavior, shortcuts, and Markdown conversion to be customized with Lua, starting from the smallest useful API surface. Depends on §2.10 and is most useful after §2.11.
 
-Phases:
+Introduced incrementally. Each step ships and is reviewed before the next begins.
 
-1. **Read-only inspection.** A Lua script reads current folder / selection / extension info and returns a value (filter, label, classification).
-2. **Markdown post-processing.** Lua filters Markdown source before conversion or HTML after conversion. Output is sanitized before being shown.
-3. **Shortcut bindings.** Lua callbacks bound to shortcut TOML actions.
-4. **Open / preview hooks.** Lua decides how a file is opened or previewed, within the sandbox.
+1. Read-only inspection. A Lua script reads current folder / selection / extension info and returns a value (filter, label, classification).
+2. Markdown post-processing. Lua filters Markdown source before conversion or HTML after conversion. Output is sanitized before being shown.
+3. Shortcut bindings. Lua callbacks bound to shortcut TOML actions.
+4. Open / preview hooks. Lua decides how a file is opened or previewed, within the sandbox.
 
-Initial restrictions (preserved across all phases):
+Restrictions preserved across all steps:
 
 - No file mutation.
 - No external command execution.
@@ -432,14 +393,14 @@ Initial restrictions (preserved across all phases):
 
 Done when:
 
-- Each phase has its own "done when" gate; Phase 1 ships before Phase 2 begins.
+- Each step has its own "done when" gate; step 1 ships before step 2 begins.
 - Lua script errors never crash the app.
 
-### 5.2 Markdown Preview Extensions
+### 2.15 Markdown Preview Extensions
 
 Goal:
 
-- Let users extend Markdown preview behavior.
+- Let users extend Markdown preview behavior. Lowest current priority; address once §2.10 lands and concrete user demand surfaces, since the engineering cost (CSP, `WKWebView` content sandboxing, external library bundling) is significant.
 
 Targets:
 
@@ -476,20 +437,61 @@ Done when:
 - Ruby, math, and Mermaid display settings can be loaded from TOML.
 - Unsafe HTML and script handling is explicitly controlled.
 
-Priority: lower than §5.1. Address once §4.1 lands and there is concrete user demand, since the engineering cost (CSP, sandboxing of `WKWebView` content, external library bundling) is significant.
+## 3. Cross-Cutting Concerns
 
-## 6. Performance Measurement (On-Demand)
+Constraints and policies that apply across every item in §2. These are not feature deliverables; they exist so feature work can refer to them.
 
-Performance work is not on the main timeline anymore — auto-refresh and the differential reload landed in 1.9, and no specific user-facing slowness is currently open. This section exists as a reusable checklist rather than a queued task.
+### 3.1 Performance Targets
 
-When user-reported slowness or measurement reveals a hotspot:
+Initial budgets. Revise once the measurement infrastructure in §2.2 provides real numbers from typical hardware.
 
-- Reproduce with `TFX_PERFORMANCE_LOGS=1`.
-- Compare timings against the §2.1 targets.
-- Land the fix with a regression test where feasible.
-- Consider a developer setting for enabling performance logs from the UI if the workflow is repeated often.
+| Path | Target |
+| --- | --- |
+| Cold launch on Apple Silicon | < 1.0 s |
+| Directory load — 1k items | first paint < 100 ms, complete < 300 ms |
+| Directory load — 10k items | first paint < 200 ms, complete < 1.0 s |
+| External change → auto-refresh visible | < 350 ms (250 ms watcher debounce + load) |
+| Typical session memory | < 200 MB |
 
-## 7. Documentation Work
+### 3.2 Reliability and Quality Gates
+
+- No data loss from drag / drop / move operations. Same-name conflicts must surface the resolver.
+- Permission and read errors are surfaced through `show(_:)`, never swallowed.
+- CI build + tests must pass before any release tag is cut.
+- Every new public mutator on `FileBrowserModel` ships with at least one focused test.
+- No new SwiftUI or Swift compiler warnings introduced.
+
+### 3.3 Distribution Plan
+
+The distribution channel escalates as the app matures. Earlier channels do not preclude later ones; TestFlight and direct download can run in parallel.
+
+| Channel | Notes |
+| --- | --- |
+| Local Xcode builds | Current state. Development only. |
+| TestFlight beta | Crash reports through App Store Connect; small known-tester pool. |
+| Direct download via release page | Developer ID signed + notarized; updates delivered through Sparkle (§2.9). |
+| Mac App Store | Requires `ENABLE_APP_SANDBOX = YES`; large adjustment, not committed. |
+
+Decision points:
+
+- TestFlight and direct download are not mutually exclusive — TestFlight for beta cycles, direct download with Sparkle for stable. Plan for both.
+- Mac App Store is blocked today by the disabled App Sandbox. Revisit only if MAS reach becomes important enough to justify sandboxing.
+
+### 3.4 macOS and Hardware Compatibility
+
+- Deployment target: macOS 26.4 during development. Re-evaluate lowering to N-1 when distribution starts (§3.3, TestFlight channel).
+- Apple Silicon native. No Intel build is planned at this deployment target.
+- Public-release support window: current macOS plus one prior major version, applied from the first non-beta release onward.
+- Locales: English (source) and Japanese are actively maintained. Additional locales accepted by PR with translation review.
+
+### 3.5 Data and Configuration Migration
+
+- `UserDefaults` schema is additive: new keys ship with defaults; existing keys are never removed without an explicit migration step.
+- All persisted `UserDefaults` keys remain documented in `docs/detailed-design.md` §9.1.
+- Future TOML configuration files (§2.10) carry a top-level `version = N` field. The loader migrates older versions forward and keeps at least one prior version's migration code on hand.
+- Pinned folders, window state, and other user data are read-merge-write: never destructively rewritten on load when fields are missing.
+
+## 4. Documentation Work
 
 Tasks:
 
@@ -497,12 +499,12 @@ Tasks:
 - Keep `docs/file-manager-implementation-plan.md` current.
 - Keep `README.md` and `README.ja.md` aligned.
 - Keep `docs/README.md` aligned with the documentation set.
-- Add sample configuration files once §4.1 lands.
+- Add sample configuration files once §2.10 lands.
 - Convert remaining Japanese documentation to English, except for `README.ja.md`.
-- Maintain a contributor-facing entry point that covers test running, CI expectations, and release process once §3.1 and §3.3 land.
+- Maintain `docs/contributing.md` (added by §2.1, extended by §2.2) with test-running, benchmark-running, and CI expectations; expand with the release process once §2.9 lands.
 
 Done when:
 
 - The implementation plan, detailed design, and READMEs do not contradict each other.
 - Users can start basic customization from the configuration examples.
-- New contributors can run tests and understand the release process from the documentation.
+- New contributors can run tests and benchmarks and understand the release process from the documentation.
