@@ -357,13 +357,14 @@ Pinned folders are displayed in the saved array order. New pinned folders are ap
 
 ## 10. Keyboard Design
 
-`KeyboardEventHandler` bridges AppKit `keyDown(with:)` into SwiftUI. Custom key handling is disabled while the search field is focused.
+`KeyboardEventHandler` bridges AppKit `keyDown(with:)` into SwiftUI. Custom key handling is disabled while the search field is focused. The central `Shortcuts` registry in `Infrastructure/ShortcutInfo.swift` is the single source of truth for the bindings used by the toolbar and the `View` menu; each entry exposes the `KeyEquivalent` + `EventModifiers` for `.keyboardShortcut(_:)` and a `displayString` (for example `⌘R`, `⌘⇧X`, `⌘\\`, `⌘↑`) used in hover help.
 
 | Key | Behavior |
 | --- | --- |
 | Up / Down | Move selection in the active file pane or folder tree. |
 | Shift + Up / Down | Extend file-pane selection range. |
-| Left / Right | Move focus between folder tree and file panes, or between left and right panes. |
+| Left / Right | Scroll the active file list horizontally (60 pt per press, clamped to the document bounds). |
+| Tab / Shift + Tab | Cycle keyboard focus across folder tree → left file pane → right file pane (when split is on) → folder tree. Shift cycles in reverse. |
 | Enter | Open selected file or navigate into selected folder. |
 | Command + [ / ] | Back / Forward. |
 | Command + Up | Parent folder. |
@@ -376,8 +377,15 @@ Pinned folders are displayed in the saved array order. New pinned folders are ap
 | Command + Option + V | Move-paste when pasteboard file URLs are available. |
 | Command + A | Select all visible items. |
 | Command + R | Reload. |
-| Command + Shift + T | Open Terminal.app. |
+| Command + T | Open Terminal.app at the current folder. |
+| Command + P | Toggle the preview pane. |
+| Command + \\ | Toggle split view. |
+| Command + Shift + X | Swap the left and right panes (split view only). Handled directly in `handleKeyEvent` so the shortcut fires reliably even when the `View` menu binding is suppressed by the menu item's disabled state. |
 | Command + Shift + . | Toggle hidden files. |
+
+`Tab` cycling is driven by `cycleKeyboardFocus(reverse:)` in `TerminalFileManagerKeyboard`. Left / right arrow scrolling is wired through `FileBrowserModel.horizontalScrollHandler`, which is registered by a small `NSViewRepresentable` (`HorizontalScrollAccess`) that resolves the enclosing `NSScrollView` and clamps scrolling to the document bounds.
+
+On first appear the left file pane is activated and the `..` parent-folder row is pre-selected when `leftModel.canGoUp` is true. A pending open-from-Finder request always takes precedence and sets its own focus.
 
 ## 11. Error Handling
 

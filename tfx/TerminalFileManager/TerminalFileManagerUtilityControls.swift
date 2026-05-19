@@ -10,8 +10,8 @@ extension TerminalFileManagerView {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut("r", modifiers: .command)
-            .quickHelp("Reload", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.reload)
+            .quickHelp("Reload", shortcut: Shortcuts.reload, text: $hoverHelpText)
 
             Button {
                 model.openTerminal()
@@ -19,25 +19,37 @@ extension TerminalFileManagerView {
                 Image(systemName: "terminal")
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-            .quickHelp("Open Terminal here", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.openTerminal)
+            .quickHelp("Open Terminal here", shortcut: Shortcuts.openTerminal, text: $hoverHelpText)
 
             Toggle(isOn: $isPreviewVisible) {
                 Image(systemName: "sidebar.right")
             }
             .toggleStyle(.button)
-            .keyboardShortcut("p", modifiers: [.command, .option])
-            .quickHelp(isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"), text: $hoverHelpText)
+            .quickHelp(
+                isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"),
+                shortcut: Shortcuts.togglePreview,
+                text: $hoverHelpText
+            )
 
-            Toggle(isOn: Binding(
-                get: { isSplitViewVisible },
-                set: { setSplitViewVisible($0) }
-            )) {
+            Toggle(isOn: $isSplitViewVisible) {
                 Image(systemName: "rectangle.split.2x1")
             }
             .toggleStyle(.button)
-            .keyboardShortcut("s", modifiers: [.command, .option])
-            .quickHelp(isSplitViewVisible ? LocalizedStringResource("Use single pane") : LocalizedStringResource("Use split panes"), text: $hoverHelpText)
+            .quickHelp(
+                isSplitViewVisible ? LocalizedStringResource("Use single pane") : LocalizedStringResource("Use split panes"),
+                shortcut: Shortcuts.toggleSplit,
+                text: $hoverHelpText
+            )
+
+            Button {
+                swapPanes()
+            } label: {
+                Image(systemName: "arrow.left.arrow.right")
+            }
+            .buttonStyle(.borderless)
+            .disabled(!isSplitViewVisible)
+            .quickHelp("Swap left and right panes", shortcut: Shortcuts.swapPanes, text: $hoverHelpText)
 
             Button {
                 isFileListSettingsPresented = true

@@ -24,6 +24,7 @@ struct tfxApp: App {
         }
 #if os(macOS)
         .commands {
+            ViewMenuCommands()
             DeveloperMenuCommands()
         }
 #endif

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.5.1**
+Version: **0.5.2**
 
 English | [日本語](README.ja.md)
 
@@ -55,7 +55,8 @@ English | [日本語](README.ja.md)
 
 - `Up / Down`: Move selection in the active file pane or folder tree
 - `Shift + Up / Down`: Extend the file-pane selection range
-- `Left / Right`: Move focus between the folder tree and file panes
+- `Left / Right`: Scroll the file list horizontally
+- `Tab` / `Shift + Tab`: Cycle keyboard focus across folder tree → left file pane → right file pane
 - `Enter`: Open the selected file or enter the selected folder
 - `Command + [` / `Command + ]`: Back / Forward
 - `Command + Up`: Parent folder
@@ -68,7 +69,10 @@ English | [日本語](README.ja.md)
 - `Command + Option + V`: Move-paste
 - `Command + A`: Select all
 - `Command + R`: Reload
-- `Command + Shift + T`: Open Terminal.app here
+- `Command + T`: Open Terminal.app here
+- `Command + P`: Toggle preview pane
+- `Command + \`: Toggle split view
+- `Command + Shift + X`: Swap left and right panes (split view only)
 - `Command + Shift + .`: Toggle hidden files
 
 ## Command Line Launch

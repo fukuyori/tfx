@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.5.1**
+Version: **0.5.2**
 
 [English](README.md) | 日本語
 
@@ -55,7 +55,8 @@ Version: **0.5.1**
 
 - `↑ / ↓`: アクティブなファイルビューまたはフォルダツリーの選択移動
 - `Shift + ↑ / ↓`: ファイルビューの範囲選択
-- `← / →`: フォルダツリーとファイルビュー間のフォーカス移動
+- `← / →`: ファイル一覧を左右にスクロール
+- `Tab` / `Shift + Tab`: フォルダツリー → 左ファイル一覧 → 右ファイル一覧 のフォーカス循環
 - `Enter`: ファイルを開く、またはフォルダへ移動
 - `Command + [` / `Command + ]`: 戻る / 進む
 - `Command + ↑`: 親フォルダへ移動
@@ -68,7 +69,10 @@ Version: **0.5.1**
 - `Command + Option + V`: 移動ペースト
 - `Command + A`: すべて選択
 - `Command + R`: 再読み込み
-- `Command + Shift + T`: 現在フォルダで Terminal.app を開く
+- `Command + T`: 現在フォルダで Terminal.app を開く
+- `Command + P`: プレビューペイン表示切り替え
+- `Command + \`: スプリット表示切り替え
+- `Command + Shift + X`: 左右ペインを入れ替え（スプリット表示時のみ）
 - `Command + Shift + .`: 隠しファイル表示切り替え
 
 ## コマンドラインから起動

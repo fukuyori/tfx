@@ -65,17 +65,44 @@ extension TerminalFileManagerView {
 
     func setSplitViewVisible(_ isVisible: Bool) {
         guard isSplitViewVisible != isVisible else { return }
-
-        if isVisible {
-            let sourceModel = activeModel
-            let targetModel = activePane == .left ? rightModel : leftModel
-            targetModel.navigate(
-                to: sourceModel.currentDirectory,
-                recordsHistory: false
-            )
-        }
-
         isSplitViewVisible = isVisible
+        // The directory-sync side effect now lives in `onSplitViewVisibilityChange`
+        // so the same behavior runs whether the flag is flipped from the toolbar,
+        // the View menu, or a keyboard shortcut.
     }
+
+    /// Side-effect handler for `isSplitViewVisible` changes. Invoked from
+    /// `.onChange` in the view body so toolbar, menu, and shortcut paths all
+    /// converge here.
+    func onSplitViewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
+        guard oldValue != newValue else { return }
+        guard newValue else { return }
+
+        // Activating split — bring the other pane onto the same directory.
+        let sourceModel = activeModel
+        let targetModel = activePane == .left ? rightModel : leftModel
+        targetModel.navigate(
+            to: sourceModel.currentDirectory,
+            recordsHistory: false
+        )
+    }
+
+    /// Swap the left and right pane directories. No-op when split is off or
+    /// both panes are already on the same directory. Navigation records
+    /// history on both sides so `Cmd+[` rolls back the swap.
+    func swapPanes() {
+        guard isSplitViewVisible else { return }
+        let leftDirectory = leftModel.currentDirectory
+        let rightDirectory = rightModel.currentDirectory
+        guard leftDirectory.standardizedFileURL != rightDirectory.standardizedFileURL else { return }
+        leftModel.navigate(to: rightDirectory)
+        rightModel.navigate(to: leftDirectory)
+    }
+}
+
+extension Notification.Name {
+    /// Posted by `ViewMenuCommands` to request a left ⇄ right pane swap.
+    /// Observed by `TerminalFileManagerView`.
+    static let terminalFileManagerSwapPanes = Notification.Name("TerminalFileManager.swapPanes")
 }
 #endif

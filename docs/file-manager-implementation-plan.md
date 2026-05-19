@@ -64,6 +64,10 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - Swift Testing target `tfxTests` covers the pure-logic types (`CSVParser`, `FileBrowserFilterSort`, `FileBrowserNavigationHistory`, `FileBrowserSelectionSupport`, `FileBrowserDirectoryState`) and `FileBrowserModel` mutators with 50 unit tests, plus five informational performance benchmarks.
 - GitHub Actions workflow runs `xcodebuild build` and `xcodebuild test` on every push and PR; failed runs upload the xcresult bundle and logs as artifacts.
 - In-app `Developer → Show Performance Logs` menu toggle enables `PerformanceTrace` output without an environment variable; `TFX_PERFORMANCE_LOGS=1` still wins.
+- Left and right file panes can be swapped through a toolbar button, `View → Swap Left and Right Panes`, and `⌘⇧X`.
+- `Tab` / `Shift+Tab` cycle keyboard focus across folder tree → left pane → right pane; `Left` / `Right` arrows scroll the active file list horizontally.
+- Toolbar icons show their keyboard shortcut on hover (`Reload  ⌘R`, `Open Terminal here  ⌘T`, etc.) via a centralized `Shortcuts` registry.
+- On first launch the left file pane is focused and the `..` parent-folder row is pre-selected when navigation up is possible.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

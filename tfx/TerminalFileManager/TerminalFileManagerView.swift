@@ -21,6 +21,7 @@ struct TerminalFileManagerView: View {
     @State var fileSplitDragStartRatio: Double?
     @State var isFileListSettingsPresented = false
     @State var hoverHelpText = ""
+    @State private var hasAppliedStartupFocus = false
     @FocusState var isSearchFocused: Bool
 
     init(initialDirectory: URL? = AppLaunchArguments.initialDirectory()) {
@@ -96,6 +97,7 @@ struct TerminalFileManagerView: View {
         .background(Color(nsColor: .textBackgroundColor))
         .onAppear {
             openRequestedDirectoryIfNeeded()
+            applyStartupFocusIfNeeded()
         }
         .onChange(of: openDirectoryRouter.request) {
             openRequestedDirectoryIfNeeded()
@@ -107,6 +109,12 @@ struct TerminalFileManagerView: View {
         .onChange(of: rightModel.currentDirectory) {
             UserDefaults.standard.set(rightModel.currentDirectory.path, forKey: "TerminalFileManager.rightDirectory")
             isSearchFocused = false
+        }
+        .onChange(of: isSplitViewVisible) { oldValue, newValue in
+            onSplitViewVisibilityChange(from: oldValue, to: newValue)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerSwapPanes)) { _ in
+            swapPanes()
         }
         .alert(activeErrorTitle, isPresented: Binding(
             get: { leftModel.isShowingError || rightModel.isShowingError },
@@ -136,6 +144,25 @@ struct TerminalFileManagerView: View {
 
     private var activeErrorMessage: String {
         leftModel.isShowingError ? leftModel.errorMessage : rightModel.errorMessage
+    }
+
+    /// Set the initial keyboard focus to the left file pane with the `..`
+    /// row pre-selected (when navigation up is possible). Runs once on the
+    /// first appear so subsequent re-entries — including window restoration
+    /// — do not clobber the user's selection.
+    private func applyStartupFocusIfNeeded() {
+        guard !hasAppliedStartupFocus else { return }
+        hasAppliedStartupFocus = true
+
+        // Pending an open-from-Finder request always wins; that path sets
+        // its own focus through `openRequestedDirectoryIfNeeded`.
+        guard openDirectoryRouter.request == nil else { return }
+
+        activePane = .left
+        activeArea = .files
+        if leftModel.canGoUp {
+            leftModel.isParentDirectorySelected = true
+        }
     }
 
     private func openRequestedDirectoryIfNeeded() {

@@ -57,6 +57,26 @@ extension View {
         .accessibilityHint(Text(resolved))
     }
 
+    /// Hover-help variant that appends the keyboard shortcut display string
+    /// after the label, separated by two spaces (matching macOS menu items).
+    func quickHelp(
+        _ message: LocalizedStringResource,
+        shortcut: ShortcutInfo,
+        text: Binding<String>
+    ) -> some View {
+        let resolved = String(localized: message)
+        let combined = "\(resolved)  \(shortcut.displayString)"
+        return onHover { isHovering in
+            text.wrappedValue = isHovering ? combined : ""
+        }
+        .accessibilityHint(Text(combined))
+    }
+
+    /// Apply a `ShortcutInfo` as a `.keyboardShortcut` binding.
+    func keyboardShortcut(_ info: ShortcutInfo) -> some View {
+        keyboardShortcut(info.key, modifiers: info.modifiers)
+    }
+
     /// Show `cursor` while the pointer is over this view.
     ///
     /// Uses `NSCursor.push` / `.pop` driven by `onHover`. The hit region is

@@ -4,6 +4,33 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.2] - 2026-05-18
+
+Keyboard / focus / swap feature work plus shortcut remapping with hover discoverability.
+
+### Added
+
+- Left and right file panes can be swapped with a new toolbar button (`arrow.left.arrow.right` icon, disabled when split is off), a `View → Swap Left and Right Panes` menu item, and `⌘⇧X`. Internally drives both panes through `navigate(to:)` so history records the swap and `⌘[` rolls it back. Lives in `TerminalFileManagerState.swapPanes()`.
+- `Tab` cycles keyboard focus across the visible targets — folder tree → left file pane → right file pane (when split is on) → folder tree — and `Shift+Tab` cycles in reverse. Implemented through `cycleKeyboardFocus(reverse:)` in `TerminalFileManagerKeyboard`.
+- `View` menu (`ViewMenuCommands`) collects the layout toggles: `Show Preview Pane (⌘P)`, `Split View (⌘\\)`, and `Swap Left and Right Panes (⌘⇧X)`. The swap entry is disabled when split is off; the swap action is also handled directly in `handleKeyEvent` so the shortcut fires reliably regardless of menu binding quirks.
+- `HorizontalScrollAccess` (`Infrastructure/HorizontalScrollAccess.swift`) bridges the file-pane `ScrollView` to its underlying `NSScrollView` and registers a clamped horizontal-scroll closure on `FileBrowserModel.horizontalScrollHandler`.
+- `Shortcuts` registry (`Infrastructure/ShortcutInfo.swift`) is the single source of truth for keyboard bindings used in the toolbar and `View` menu. Each entry exposes both the `KeyEquivalent` + `EventModifiers` for `.keyboardShortcut(_:)` and a `displayString` (e.g. `⌘R`, `⌘⇧X`, `⌘\\`, `⌘↑`) for hover help.
+- Toolbar icons now show their keyboard shortcut alongside the label on hover (e.g. `Reload  ⌘R`, `Open Terminal here  ⌘T`). Driven by a new `quickHelp(_:shortcut:text:)` overload.
+- Startup focus: on first appear the left file pane is activated and the `..` parent-folder row is pre-selected when navigation up is possible. Pending `open` requests from Finder still win and set their own focus.
+
+### Changed
+
+- Keyboard shortcuts remapped:
+  - `⌘T` opens the terminal (was `⌘⇧T`).
+  - `⌘P` toggles the preview pane (was `⌘⌥P`).
+  - `⌘\\` toggles the split view (was `⌘⌥S`).
+  - `⌘⇧X` swaps the left and right panes (was `⌘⌥X`).
+  - Old slots (`⌘⇧T`, `⌘⌥P`, `⌘⌥S`, `⌘⌥X`) are released and intentionally unassigned.
+- `Left` / `Right` arrow keys now scroll the active file list horizontally (60 pt per press, clamped to the document bounds) instead of moving keyboard focus. Focus movement is on `Tab` / `Shift+Tab` (see above).
+- `TerminalFileManagerUtilityControls`, `TerminalFileManagerNavigationControls`, and `TerminalFileManagerSearchControls` apply shortcuts through the central `Shortcuts` registry, so renaming or remapping a shortcut now touches one place.
+- Split-view directory sync (the other pane follows the active pane when split is enabled) moved from `setSplitViewVisible(_:)` to an `.onChange(of: isSplitViewVisible)` handler on the view body, so every entry point (toolbar toggle, menu, shortcut) produces the same behavior.
+- Updated the version to `0.5.2` and the build number to `24`.
+
 ## [0.5.1] - 2026-05-18
 
 Closes roadmap §2.1 (Test Foundation and CI) and §2.2 (Performance Measurement Infrastructure). Both move into Completed Work as §1.13 and §1.14 in the next roadmap revision.

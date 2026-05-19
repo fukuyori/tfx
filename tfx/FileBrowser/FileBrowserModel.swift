@@ -100,6 +100,16 @@ final class FileBrowserModel: ObservableObject {
     var lastLoadedDirectory: URL?
     /// Staging buffer for differential reloads; see `FileBrowserModel+Reload`.
     var pendingLoadAccumulator: [FileItem] = []
+    /// Closure registered by the file pane's `HorizontalScrollAccess` view so
+    /// the keyboard handler can drive horizontal scrolling without depending
+    /// on SwiftUI's scroll view internals.
+    var horizontalScrollHandler: ((CGFloat) -> Void)?
+
+    /// Request a horizontal scroll on this pane's file list. No-op when the
+    /// view hierarchy has not yet registered a handler.
+    func scrollHorizontally(by delta: CGFloat) {
+        horizontalScrollHandler?(delta)
+    }
     var subfolderSearchGeneration = 0
     var folderChildrenLoadGenerations: [URL: Int] = [:]
     var folderChildrenLoadQueue: [URL] = []

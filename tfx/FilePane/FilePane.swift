@@ -44,6 +44,7 @@ struct FilePane: View {
                     activate: activate
                 )
                 .frame(minWidth: rowMinWidth)
+                .background(HorizontalScrollAccess(model: model))
             }
             .scrollIndicators(.visible, axes: .horizontal)
             .background(ScrollViewScrollerConfiguration(axes: .horizontal, autohidesScrollers: false))

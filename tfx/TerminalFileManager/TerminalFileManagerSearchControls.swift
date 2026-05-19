@@ -44,8 +44,8 @@ extension TerminalFileManagerView {
                 Image(systemName: "magnifyingglass")
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut("f", modifiers: .command)
-            .quickHelp("Focus search", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.focusSearch)
+            .quickHelp("Focus search", shortcut: Shortcuts.focusSearch, text: $hoverHelpText)
         }
     }
 
@@ -84,8 +84,8 @@ extension TerminalFileManagerView {
                 Image(systemName: "eye")
             }
             .toggleStyle(.button)
-            .keyboardShortcut(".", modifiers: [.command, .shift])
-            .quickHelp("Show hidden files", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.toggleHidden)
+            .quickHelp("Show hidden files", shortcut: Shortcuts.toggleHidden, text: $hoverHelpText)
         }
     }
 }

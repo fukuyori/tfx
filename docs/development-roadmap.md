@@ -134,6 +134,16 @@ Project documentation should be written in English by default. `README.md` is th
 - `tfxTests/PerformanceBenchmarks.swift` adds five informational benchmarks against §3.1 scenarios: `FileItem` creation ×1k / ×5k, `loadHeader` 1k items, `filterAndSort` 1k items, `filterAndSort` 1k items + query. Timings are printed via `print` and **not** asserted — comparison is manual against rolling baselines on the same machine.
 - Benchmarks run as part of the regular test suite; a dedicated CI job was intentionally not split out. Should benchmarks become too noisy or slow, they can be moved behind a Swift Testing tag and a separate non-blocking CI job later.
 
+### 1.15 Pane Swap, Focus Cycling, and Shortcut Polish
+
+- Left and right file panes can be swapped through a toolbar button (`arrow.left.arrow.right`, disabled when split is off), the `View → Swap Left and Right Panes` menu item, and `⌘⇧X`. `swapPanes()` in `TerminalFileManagerState` runs both panes through `navigate(to:)` so the swap records into history and `⌘[` rolls it back.
+- `Tab` and `Shift+Tab` cycle keyboard focus across folder tree → left file pane → right file pane (when split is on). Driven by `cycleKeyboardFocus(reverse:)` in `TerminalFileManagerKeyboard`.
+- `Left` / `Right` arrow keys now scroll the active file list horizontally instead of moving focus. `HorizontalScrollAccess` resolves the enclosing `NSScrollView` and registers a clamped-scroll closure on `FileBrowserModel.horizontalScrollHandler`.
+- Keyboard shortcuts remapped to be shorter and more discoverable: `⌘T` (terminal), `⌘P` (preview), `⌘\\` (split), `⌘⇧X` (swap). Old slots (`⌘⇧T`, `⌘⌥P`, `⌘⌥S`, `⌘⌥X`) are released.
+- `Shortcuts` (`Infrastructure/ShortcutInfo.swift`) is the single source of truth for toolbar and menu shortcuts. Each entry produces both the `.keyboardShortcut(_:)` binding and a `displayString` used by the new `quickHelp(_:shortcut:text:)` overload, so toolbar icons show their shortcut on hover (e.g. `Reload  ⌘R`, `Swap left and right panes  ⌘⇧X`).
+- `View` menu (`ViewMenuCommands`) collects the layout toggles and the swap entry so they show up in the menu bar with their shortcuts. The swap shortcut is also wired directly in `handleKeyEvent` so it fires reliably even when the menu binding is suppressed by the menu item's disabled state.
+- On first appear the left file pane is activated and the `..` row is pre-selected when navigation up is possible; a pending open-from-Finder request still wins.
+
 ## 2. Upcoming Work
 
 Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.1.

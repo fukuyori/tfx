@@ -11,8 +11,8 @@ extension TerminalFileManagerView {
             }
             .buttonStyle(.borderless)
             .disabled(!model.canGoBack)
-            .keyboardShortcut("[", modifiers: .command)
-            .quickHelp("Back", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.goBack)
+            .quickHelp("Back", shortcut: Shortcuts.goBack, text: $hoverHelpText)
 
             Button {
                 model.goForward()
@@ -21,8 +21,8 @@ extension TerminalFileManagerView {
             }
             .buttonStyle(.borderless)
             .disabled(!model.canGoForward)
-            .keyboardShortcut("]", modifiers: .command)
-            .quickHelp("Forward", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.goForward)
+            .quickHelp("Forward", shortcut: Shortcuts.goForward, text: $hoverHelpText)
 
             Button {
                 model.goUp()
@@ -30,8 +30,8 @@ extension TerminalFileManagerView {
                 Image(systemName: "arrow.up")
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut(.upArrow, modifiers: .command)
-            .quickHelp("Parent folder", text: $hoverHelpText)
+            .keyboardShortcut(Shortcuts.goUp)
+            .quickHelp("Parent folder", shortcut: Shortcuts.goUp, text: $hoverHelpText)
 
             Button {
                 model.pickFolder()
