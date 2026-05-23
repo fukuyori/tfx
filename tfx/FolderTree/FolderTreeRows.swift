@@ -10,6 +10,7 @@ struct FolderTreeRow: View {
     let selectionSection: FolderTreeSelectionSection
     var allowsExpansion = true
     let activateTree: () -> Void
+    @Environment(\.theme) private var theme
 
     private var isCurrent: Bool {
         model.currentDirectory.standardizedFileURL == url.standardizedFileURL
@@ -77,7 +78,7 @@ struct FolderTreeRow: View {
             )
 
             Image(systemName: "folder")
-                .foregroundStyle(.cyan)
+                .foregroundStyle(theme.folderTreeFolderIcon)
                 .frame(width: 16)
 
             Text(displayName(for: url))
@@ -86,7 +87,7 @@ struct FolderTreeRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.system(size: 12, design: .monospaced))
-        .foregroundStyle((isCurrent || isSelected) ? .white : .primary)
+        .foregroundStyle((isCurrent || isSelected) ? theme.folderTreeSelectedForeground : theme.folderTreeForeground)
         .padding(.leading, CGFloat(depth * 14 + 8))
         .padding(.trailing, 8)
         .padding(.vertical, 5)
@@ -146,18 +147,18 @@ struct FolderTreeRow: View {
 
     private var rowBackground: Color {
         if isDropTarget {
-            return Color.green.opacity(0.55)
+            return theme.fileListRowDropTarget
         }
 
         if isTreeActive && isSelected {
-            return Color.green.opacity(0.45)
+            return theme.folderTreeSelectedActive
         }
 
         if isSelected {
-            return Color.gray.opacity(0.35)
+            return theme.folderTreeSelectedInactive
         }
 
-        return Color.black
+        return theme.folderTreeBackground
     }
 }
 #endif

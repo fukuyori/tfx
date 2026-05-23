@@ -296,7 +296,19 @@ The file list has a `.gitStatus` column (10pt, tightest possible width for one m
 
 `reload()` triggers `refreshGitStatus()` in parallel with the directory load, so badges appear as soon as both reads complete. The `DirectoryWatcher` already routes external changes through `reload()`, so badges update on local volumes when the working copy changes; network volumes still rely on the manual `⌘R` path described in §8.4.
 
-### 8.9 Zip Archive Browsing
+### 8.9 Color Themes
+
+Color tokens are surfaced through `Theme` (`tfx/Theme/Theme.swift`), a struct with semantic properties (`fileListBackground`, `paneBorderKeyboardTarget`, `gitModified`, …) rather than positional colors. Each built-in theme is a `static let` factory that assigns every token; adding a new token always carries a default so older themes remain valid.
+
+`ThemeStore` (`tfx/Theme/ThemeStore.swift`) is an `@MainActor`-isolated `ObservableObject` held by `tfxApp` via `@StateObject`. Selecting a theme through `ThemeStore.select(_:)` updates the published `activeTheme` and writes the new id to `UserDefaults` under `TerminalFileManager.activeTheme`. Missing or unknown ids on load fall back to `Theme.default` (Terminal Classic), so old preference files and theme renames degrade gracefully.
+
+Views read the active theme via `@Environment(\.theme)`. `tfxApp` injects the value with `.environment(\.theme, themeStore.activeTheme)`, so a single publish from the store re-renders every reader in one pass — no per-view subscription bookkeeping needed.
+
+The `View → Theme` submenu (`ViewMenuCommands`) iterates `Theme.allThemes` and uses a check-mark glyph on the currently active row. Switching is immediate; there is no app-level refresh hop.
+
+`GitFileStatus` does not carry colors; `Theme.color(for:)` resolves the per-theme palette so file-row code reads `theme.color(for: status)` once and renders the badge in the active theme's vocabulary.
+
+### 8.10 Zip Archive Browsing
 
 Zip archives are exposed as virtual directories. Opening a real `.zip` file navigates into the archive without extracting the whole archive into the current folder.
 
@@ -304,7 +316,7 @@ Zip archives are exposed as virtual directories. Opening a real `.zip` file navi
 
 Copying from a zip archive extracts the selected virtual entries into the paste target. Cutting from a zip archive behaves as copy because the archive is not modified.
 
-### 8.10 Copy, Cut, and Paste
+### 8.11 Copy, Cut, and Paste
 
 Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs and the preferred operation to `NSPasteboard`. Paste first uses the app-local clipboard when available, and otherwise reads file URLs from the macOS pasteboard so files copied in Finder can be pasted into tfx. `Command + Option + V` performs move-paste for file URLs when available.
 
@@ -319,7 +331,7 @@ Same-name conflicts are resolved through a user prompt:
 
 The app-local clipboard is cleared after a successful move operation.
 
-### 8.11 Drag and Drop
+### 8.12 Drag and Drop
 
 File rows, file-pane blank space, and folder-tree rows accept `UTType.fileURL` drops. `FileBrowserDropDelegate` calls `FileBrowserModel.moveDroppedFiles(_:to:completion:)`.
 
@@ -327,7 +339,7 @@ File drops move files into the target directory by default. Holding Option reque
 
 If a dropped URL requires security-scoped access, access is started only for the duration of the move.
 
-### 8.12 Preview
+### 8.13 Preview
 
 Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look. `PreviewFileInfoView` loads metadata asynchronously so metadata display does not block preview layout.
 

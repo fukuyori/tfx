@@ -13,6 +13,8 @@ struct FileRow: View {
     /// after navigating into a repo is still in flight.
     let gitStatus: GitFileStatus?
 
+    @Environment(\.theme) private var theme
+
     var body: some View {
         HStack(spacing: 12) {
             ForEach(columns) { column in
@@ -34,23 +36,23 @@ struct FileRow: View {
         case .mode:
             Text(item.mode)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(item.isDirectory ? .cyan : .secondary)
+                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.secondaryForeground)
         case .name:
             Text(item.name)
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(item.isDirectory ? .cyan : .primary)
+                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
         case .size:
             Text(item.sizeText)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         case .kind:
             Text(item.kindText)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         case .tags:
             tagsCell
                 .frame(width: columnWidth(column), alignment: column.alignment)
@@ -60,15 +62,15 @@ struct FileRow: View {
         case .modified:
             Text(item.modifiedText)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         case .created:
             Text(item.createdText)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         case .permissions:
             Text(item.permissionsText)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         }
     }
 
@@ -83,7 +85,7 @@ struct FileRow: View {
         HStack(spacing: 3) {
             ForEach(Array(item.tags.enumerated()), id: \.offset) { _, tag in
                 Circle()
-                    .fill(tag.color ?? Color.secondary)
+                    .fill(tag.color ?? theme.secondaryForeground)
                     .frame(width: 9, height: 9)
                     .help(tag.name)
             }
@@ -98,7 +100,7 @@ struct FileRow: View {
     private var gitStatusCell: some View {
         if let gitStatus {
             Text(gitStatus.badge)
-                .foregroundStyle(gitStatus.color)
+                .foregroundStyle(theme.color(for: gitStatus))
                 .help(gitStatus.badge)
         } else {
             Color.clear
@@ -107,14 +109,14 @@ struct FileRow: View {
 
     private var rowBackground: Color {
         if isDropTarget {
-            return Color.green.opacity(0.55)
+            return theme.fileListRowDropTarget
         }
 
         if isSelected {
-            return Color.accentColor.opacity(0.55)
+            return theme.fileListRowSelected
         }
 
-        return Color.black
+        return theme.fileListBackground
     }
 }
 

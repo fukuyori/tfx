@@ -4,6 +4,28 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.6] - 2026-05-23
+
+Built-in color themes.
+
+### Added
+
+- `tfx/Theme/Theme.swift` defines a semantic token table (~30 tokens covering file pane, folder tree, status line, pane borders, split handle, and Git status badge colors).
+- Four built-in themes, each built around a small canonical palette layered into a deep-to-bright background ladder so the file pane, chrome, and selection lift read as one family:
+  - **Terminal Classic** — phosphor-CRT green family (`#070A07` → `#1C261C` ladder, `#4ADD7C` accent, amber/cyan/coral git signals).
+  - **Solarized Dark** — Ethan Schoonover canonical palette with an added `#001820` abyss shade below `base03` so the file list sits one layer below chrome; `base3 #FDF6E3` for body text for ~14:1 contrast, `#4AABF3` for directory names.
+  - **Monokai Pro (Filter Octagon)** — `#2D2A2E` base, `#FFD866` yellow as the alert accent, soft coral `#FF6188` reserved for git delete/conflict only. Replaces the original `F92672`-heavy Monokai mock-up.
+  - **Dracula** — official `#282A36` background with `currentLine #44475A` selection, pink `#FF79C6` alert hue, purple/cyan navigation.
+- `tfx/Theme/ThemeStore.swift` is an `@MainActor`-isolated `ObservableObject` that holds the active theme and persists the selected id under `TerminalFileManager.activeTheme`. Missing or unknown ids fall back to Terminal Classic.
+- SwiftUI `EnvironmentKey` exposes the active theme via `@Environment(\.theme)`, so any view can read tokens without holding its own store reference.
+- `View → Theme` submenu lets users switch between built-in themes. Switching is instant — `@Published` updates flow through the environment value to every view that reads it.
+
+### Changed
+
+- Migrated `FileRow`, `FilePane`, `FilePaneTitleBar`, `FilePaneStatusLine`, `FilePaneHeaderRow`, `FilePaneFileList`, `ParentDirectoryRow`, `FolderTreeRow`, `FolderTreePane`, `FolderTreeSectionHeader`, `PinnedFolderInsertionSlot`, and `SplitDragHandle` to read colors from the active theme instead of hardcoded `Color.*` literals.
+- `GitFileStatus` no longer carries a `color` property; the badge color now comes from `Theme.color(for:)` so each theme can tune its Git palette.
+- Updated the version to `0.5.6` and the build number to `28`.
+
 ## [0.5.5] - 2026-05-23
 
 Git status badges and branch indicator in the file pane.

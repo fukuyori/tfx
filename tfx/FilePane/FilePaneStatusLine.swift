@@ -10,6 +10,7 @@ struct FilePaneStatusLine: View {
     /// local load does not flicker the indicator.
     @State private var showsLoadingHint = false
     @State private var loadingHintTask: Task<Void, Never>?
+    @Environment(\.theme) private var theme
 
     var body: some View {
         HStack {
@@ -36,10 +37,10 @@ struct FilePaneStatusLine: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
         }
         .font(.system(size: 12, design: .monospaced))
-        .foregroundStyle(isKeyboardTarget ? .green : .secondary)
+        .foregroundStyle(isKeyboardTarget ? theme.statusLineForegroundActive : theme.statusLineForegroundInactive)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.statusLineBackground)
         .contentShape(Rectangle())
         .onTapGesture {
             activate()

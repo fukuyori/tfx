@@ -11,6 +11,7 @@ import SwiftUI
 struct ViewMenuCommands: Commands {
     @AppStorage("TerminalFileManager.isPreviewVisible") private var isPreviewVisible = true
     @AppStorage("TerminalFileManager.isSplitViewVisible") private var isSplitViewVisible = true
+    @ObservedObject var themeStore: ThemeStore
 
     var body: some Commands {
         CommandMenu("View") {
@@ -27,6 +28,26 @@ struct ViewMenuCommands: Commands {
             }
             .keyboardShortcut(Shortcuts.swapPanes)
             .disabled(!isSplitViewVisible)
+
+            Divider()
+
+            // Theme submenu — built-in themes only. Selecting one
+            // persists to UserDefaults via `ThemeStore.select`, and the
+            // checkmark on the active row keeps the menu in sync with
+            // the current store state.
+            Menu("Theme") {
+                ForEach(Theme.allThemes) { theme in
+                    Button {
+                        themeStore.select(theme)
+                    } label: {
+                        if theme == themeStore.activeTheme {
+                            Label(theme.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(theme.displayName)
+                        }
+                    }
+                }
+            }
         }
     }
 }

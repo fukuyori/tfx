@@ -7,10 +7,11 @@ struct SplitDragHandle: View {
     let onEnded: () -> Void
 
     @State private var isDragging = false
+    @Environment(\.theme) private var theme
 
     var body: some View {
         Rectangle()
-            .fill(isDragging ? Color.green.opacity(0.8) : Color(nsColor: .separatorColor))
+            .fill(isDragging ? theme.splitHandleActive : theme.splitHandleIdle)
             .frame(width: isDragging ? 3 : 1)
             .contentShape(Rectangle().inset(by: -4))
             .cursor(.resizeLeftRight)

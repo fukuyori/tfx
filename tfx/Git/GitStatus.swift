@@ -44,21 +44,6 @@ enum GitFileStatus: Int, Comparable {
         }
     }
 
-    /// Color hint for the badge. Picked to read against the dark file
-    /// pane background while matching Finder-adjacent conventions
-    /// (modified = warm, added = green, deleted = red, untracked = dim).
-    var color: Color {
-        switch self {
-        case .modified:   return .yellow
-        case .added:      return .green
-        case .deleted:    return .red
-        case .renamed:    return .cyan
-        case .untracked:  return .gray
-        case .ignored:    return Color.gray.opacity(0.5)
-        case .conflicted: return .red
-        }
-    }
-
     /// Pick the more noteworthy of two statuses. Conflicts win over
     /// everything; otherwise the higher raw value wins. Used to fold
     /// an XY pair (staged + worktree) into the single value the badge

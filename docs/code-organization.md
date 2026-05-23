@@ -47,6 +47,12 @@ Use this directory for preview rendering and preview-specific interaction.
 
 Use this directory for additional Git integration (branch operations, diff display, etc.) that needs to call out to `git` or parse its output.
 
+### `tfx/Theme`
+
+`Theme` token table, `ThemeStore` (active-theme `ObservableObject` + UserDefaults persistence), and the `EnvironmentKey` that surfaces the active theme to every view via `@Environment(\.theme)`.
+
+Use this directory for adding new built-in themes, new theme tokens, or alternative theme distribution paths (e.g. user-defined TOML themes from §2.10 when the configuration foundation is in place).
+
 ### `tfx/Infrastructure`
 
 Small reusable UI and platform helpers that are not owned by one feature.

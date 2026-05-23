@@ -6,6 +6,7 @@ struct ParentDirectoryRow: View {
     let isSelected: Bool
     let columns: [FileListColumn]
     let fileNameColumnWidth: Double
+    @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -16,7 +17,7 @@ struct ParentDirectoryRow: View {
         .font(.system(size: 13, design: .monospaced))
         .padding(.horizontal, 12)
         .padding(.vertical, 5)
-        .background(isSelected ? Color.green.opacity(0.35) : Color.black)
+        .background(isSelected ? theme.folderTreeSelectedActive.opacity(0.8) : theme.fileListBackground)
         .opacity(isEnabled ? 1 : 0.45)
     }
 
@@ -26,27 +27,27 @@ struct ParentDirectoryRow: View {
         case .icon:
             Image(systemName: "arrow.turn.up.left")
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(isEnabled ? .cyan : .secondary)
+                .foregroundStyle(isEnabled ? theme.directoryForeground : theme.secondaryForeground)
         case .mode:
             Text("drwx")
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(isEnabled ? .cyan : .secondary)
+                .foregroundStyle(isEnabled ? theme.directoryForeground : theme.secondaryForeground)
         case .name:
             Text("..")
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(isEnabled ? .cyan : .secondary)
+                .foregroundStyle(isEnabled ? theme.directoryForeground : theme.secondaryForeground)
         case .size:
             Text("-")
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         case .kind:
             Text("Parent Folder")
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         case .tags:
             // The parent placeholder row never carries macOS Finder tags.
             Color.clear
@@ -59,7 +60,7 @@ struct ParentDirectoryRow: View {
         case .modified, .created, .permissions:
             Text("-")
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
         }
     }
 

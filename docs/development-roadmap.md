@@ -162,6 +162,15 @@ Project documentation should be written in English by default. `README.md` is th
 - Tag changes support multi-selection and are written through `URLResourceValues.tagNames`, so Finder and tfx see the same tag metadata after reload.
 - Tagged folders use the first colored tag to tint the folder icon; regular files keep their standard icons and show tags in the tag column.
 
+### 1.19 Built-in Color Themes
+
+- `tfx/Theme/Theme.swift` defines a semantic token table covering the file pane, folder tree, selection / drop highlights, pane borders, status line, split handle, and per-Git-status badge colors.
+- Four built-in themes ship, each designed around a small canonical palette layered into a deep-to-bright background ladder: **Terminal Classic** (phosphor-CRT green family), **Solarized Dark** (canonical Ethan Schoonover palette with an added abyss shade for the file list and `base3` body text), **Monokai Pro (Filter Octagon)** (`#2D2A2E` base with `#FFD866` yellow as the alert accent and `#FF6188` red reserved for delete/conflict), and **Dracula** (`#282A36` base with `currentLine` selection and pink/purple identity). All cases of `Color.*` in the file pane and folder tree views were migrated to token lookups so adding a new theme is purely additive.
+- `ThemeStore` is an `@MainActor`-isolated `ObservableObject` held by `tfxApp`. The active theme is persisted under the `TerminalFileManager.activeTheme` `UserDefaults` key; unknown ids fall back to Terminal Classic.
+- SwiftUI `EnvironmentKey` exposes the active theme via `@Environment(\.theme)` so any view can read tokens without holding its own store reference. Switching themes from the menu triggers a single `@Published` write that propagates to every view in one publish.
+- `View → Theme` submenu lets users switch between the four built-in themes. The current theme carries a check-mark glyph; selecting another writes through `ThemeStore.select(_:)` and refreshes instantly.
+- `GitFileStatus` no longer carries its own `color`; `Theme.color(for:)` resolves the per-theme palette so light-leaning themes can adjust the warm Git colors without each view branching.
+
 ### 1.18 Git Status Indicators
 
 - `tfx/Git/GitStatus.swift` defines `GitFileStatus` cases (modified, added, deleted, renamed, untracked, conflicted, ignored) with single-character badges and color hints chosen to read against the dark file pane.
@@ -229,23 +238,6 @@ Done when:
 
 - A user can change permissions on a file they own without elevation.
 - Owner / group changes prompt for credentials when needed and roll back cleanly on cancel / failure.
-
-### 2.6 Built-in Color Themes
-
-Goal:
-
-- Ship 3-4 built-in themes before user-defined TOML themes (§2.10), so users get visible variety without waiting for the configuration foundation.
-
-Tasks:
-
-- Define a theme token table (file pane, folder tree, selected rows, drop targets, active borders, status lines, preview backgrounds).
-- Implement 3-4 hardcoded themes (e.g., terminal-classic, light, solarized-ish, monokai-ish).
-- Add a "Theme" menu / settings entry to switch between built-in themes.
-
-Done when:
-
-- Switching themes updates the main UI consistently and immediately.
-- Missing color tokens in a theme fall back to the default.
 
 ### 2.7 Sparkle Auto-Update
 

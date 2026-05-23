@@ -8,6 +8,7 @@ struct FolderTreePane: View {
 
     @State private var pinnedContentHeight: CGFloat = 0
     private let pinnedSectionMaxHeight: CGFloat = 240
+    @Environment(\.theme) private var theme
 
     private var roots: [URL] {
         [URL(fileURLWithPath: "/").standardizedFileURL]
@@ -27,7 +28,7 @@ struct FolderTreePane: View {
         }
         .overlay(
             RoundedRectangle(cornerRadius: 0)
-                .stroke(isActive ? Color.green : Color.gray.opacity(0.35), lineWidth: isActive ? 2 : 1)
+                .stroke(isActive ? theme.paneBorderKeyboardTarget : theme.paneBorderInactive, lineWidth: isActive ? 2 : 1)
         )
     }
 
@@ -45,10 +46,10 @@ struct FolderTreePane: View {
             .help("Reload")
         }
         .font(.system(size: 12, weight: .semibold, design: .monospaced))
-        .foregroundStyle(.green)
+        .foregroundStyle(theme.headerForeground)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(isActive ? Color.green.opacity(0.16) : Color.black)
+        .background(isActive ? theme.titleBarBackgroundActive : theme.folderTreeBackground)
     }
 
     private var pinnedSection: some View {
@@ -92,7 +93,7 @@ struct FolderTreePane: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(theme.folderTreeBackground)
     }
 
     private var folderTreeSection: some View {
@@ -127,7 +128,7 @@ struct FolderTreePane: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(theme.folderTreeBackground)
         .contentShape(Rectangle())
         .onTapGesture {
             activate()

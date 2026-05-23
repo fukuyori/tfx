@@ -11,6 +11,7 @@ struct FilePaneFileList: View {
     @Binding var fileNameColumnWidth: Double
     let activate: () -> Void
     @State private var blankSelectionStartY: CGFloat?
+    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,7 +42,7 @@ struct FilePaneFileList: View {
                     }
                 }
             }
-            .background(Color.black)
+            .background(theme.fileListBackground)
         }
     }
 

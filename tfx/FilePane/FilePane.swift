@@ -13,6 +13,8 @@ struct FilePane: View {
     let activate: () -> Void
     let reloadRelatedPanes: () -> Void
 
+    @Environment(\.theme) private var theme
+
     private var visibleColumns: [FileListColumn] {
         columnConfiguration.visibleOrderedColumns
     }
@@ -72,10 +74,15 @@ struct FilePane: View {
                 activate: activate
             )
         }
-        .background(Color.black)
+        .background(theme.fileListBackground)
         .overlay(
             RoundedRectangle(cornerRadius: 0)
-                .stroke(isKeyboardTarget ? Color.green : (isActivePane ? Color.green.opacity(0.45) : Color.gray.opacity(0.35)), lineWidth: isKeyboardTarget ? 2 : 1)
+                .stroke(
+                    isKeyboardTarget
+                        ? theme.paneBorderKeyboardTarget
+                        : (isActivePane ? theme.paneBorderActive : theme.paneBorderInactive),
+                    lineWidth: isKeyboardTarget ? 2 : 1
+                )
         )
         .onAppear {
             model.prefetchVisibleMetadata(for: visibleColumns)

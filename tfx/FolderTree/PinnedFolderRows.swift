@@ -51,10 +51,11 @@ struct PinnedFolderTreeRow: View {
 
 struct PinnedFolderInsertionSlot: View {
     let isVisible: Bool
+    @Environment(\.theme) private var theme
 
     var body: some View {
         Rectangle()
-            .fill(Color.green.opacity(isVisible ? 0.75 : 0))
+            .fill(theme.paneBorderKeyboardTarget.opacity(isVisible ? 0.75 : 0))
             .frame(height: isVisible ? 10 : 0)
             .padding(.horizontal, isVisible ? 10 : 0)
             .animation(.easeOut(duration: 0.08), value: isVisible)
