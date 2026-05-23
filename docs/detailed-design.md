@@ -208,11 +208,23 @@ Directory read failures are reported through `show(_:)`, which updates model err
 
 `shouldPreserveItemsForReload(of:)` chooses between the two paths by comparing the upcoming directory against `lastLoadedDirectory` and checking whether `allItems` is non-empty.
 
+`FileBrowserDirectoryReader.loadHeader` prefetches `.isDirectoryKey`, `.fileSizeKey`, `.contentModificationDateKey`, `.creationDateKey`, `.isHiddenKey`, and `.isAliasFileKey` through `contentsOfDirectory(at:includingPropertiesForKeys:)`. The per-item `resourceValues(forKeys:)` call inside `FileItem.init` reads every key it needs from this prefetched cache, so the loader makes one `getattrlistbulk` round trip per directory rather than one per file — critical on network volumes.
+
+`volumeAvailableCapacity` is **not** fetched inline by `loadHeader`. The header reports `"-"` immediately and `FileBrowserModel+Reload.fetchVolumeCapacity(for:generation:)` schedules an asynchronous follow-up that updates `availableCapacityText` once the answer arrives. This keeps the initial file-list paint independent of a potentially slow `statvfs` call on network mounts.
+
+While a non-preserving reload is waiting for its first batch, `isLoadingDirectory` is set on the model. `FilePaneStatusLine` waits 500 ms before flipping its `showsLoadingHint` flag, so quick local loads do not flicker a "Loading…" string; slow network loads do.
+
 #### Auto-Refresh
 
 Each `FileBrowserModel` owns a `DirectoryWatcher` that wraps `DispatchSource.makeFileSystemObjectSource` against the file descriptor of `currentDirectory`. The watcher fires on `.write`, `.extend`, `.delete`, `.rename`, and `.attrib`, debounces by ~250 ms, and calls `reload()` on the main queue. A Combine subscription on `$currentDirectory` in `FileBrowserModel.init` swaps watchers when navigation changes the current directory. Watcher wiring lives in `FileBrowserModel+DirectoryWatch`.
 
-The watcher is skipped for zip-archive virtual paths (immutable) and for paths that do not exist as directories at watch-start time. External changes made by tfx itself also trigger the watcher; the differential reload path absorbs the duplicate work without visible churn.
+The watcher is skipped for:
+
+- Zip-archive virtual paths (immutable).
+- Paths that do not exist as directories at watch-start time.
+- Non-local volumes (`URLResourceKey.volumeIsLocalKey == false`). `DispatchSource` does not receive events from remote SMB / AFP / NFS servers, so installing a watcher on a network mount would only hold a never-firing file descriptor. Users on network shares refresh with `⌘R` or rely on post-operation reloads.
+
+External changes made by tfx itself also trigger the watcher; the differential reload path absorbs the duplicate work without visible churn.
 
 ### 8.3 Filtering and Sorting
 

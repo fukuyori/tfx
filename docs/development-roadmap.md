@@ -144,6 +144,16 @@ Project documentation should be written in English by default. `README.md` is th
 - `View` menu (`ViewMenuCommands`) collects the layout toggles and the swap entry so they show up in the menu bar with their shortcuts. The swap shortcut is also wired directly in `handleKeyEvent` so it fires reliably even when the menu binding is suppressed by the menu item's disabled state.
 - On first appear the left file pane is activated and the `..` row is pre-selected when navigation up is possible; a pending open-from-Finder request still wins.
 
+### 1.16 Directory-Load Optimizations and Network-Friendly Behavior
+
+- `FileItem` defines explicit `==` and `hash(into:)` based on URL + size + modified + isHidden + isDirectory. SwiftUI `ForEach` diffing no longer walks 13+ String properties per row.
+- `FileIconCache` is `nonisolated` and exposes `prefetch(for:cancellation:)`. The metadata prefetch worker warms the icon cache before the file pane asks for icons, removing the on-main-thread `NSWorkspace.shared.icon(forFile:)` calls during the first paint.
+- `FileItem.init` skips `FolderDisplayNameCache.shared.displayName(for:)` for plain files and reads `url.lastPathComponent` directly. `displayName` only meaningfully differs for localized system directories.
+- `FileBrowserDirectoryReader.loadHeader` adds `.isAliasFileKey` to the `contentsOfDirectory(at:includingPropertiesForKeys:)` prefetch. The per-item `resourceValues(forKeys:)` call in `FileItem.init` now reads every key it needs from the prefetched cache instead of issuing a kernel call per item — most impactful on network volumes.
+- `volumeAvailableCapacity` is fetched asynchronously through `FileBrowserModel+Reload.fetchVolumeCapacity(for:generation:)` after the header lands, so a slow `statvfs` on a network share no longer blocks the initial file-list paint.
+- `FileBrowserModel+DirectoryWatch.startWatchingDirectory(_:)` skips installing a `DirectoryWatcher` on non-local volumes (`URLResourceKey.volumeIsLocalKey == false`); `DispatchSource` events never arrive from remote file systems.
+- A `Loading…` hint appears in `FilePaneStatusLine` when a non-preserving reload is still waiting for its first batch after 500 ms (`FileBrowserModel.isLoadingDirectory` + a `Task`-based grace period). Quick local loads do not flicker the indicator; differential reloads skip it entirely.
+
 ## 2. Upcoming Work
 
 Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.1.

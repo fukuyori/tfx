@@ -3,14 +3,14 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-final class FileIconCache {
-    static let shared = FileIconCache()
+final class FileIconCache: @unchecked Sendable {
+    nonisolated static let shared = FileIconCache()
 
-    private let cache = NSCache<NSString, NSImage>()
+    nonisolated(unsafe) private let cache = NSCache<NSString, NSImage>()
 
     private init() {}
 
-    func icon(for url: URL, cacheKey _: String?, size: CGFloat = 18) -> NSImage {
+    nonisolated func icon(for url: URL, cacheKey _: String?, size: CGFloat = 18) -> NSImage {
         let resolvedSize = max(size, 1)
         let pathCacheKey = "path:\(url.standardizedFileURL.path)"
         let key = NSString(string: "\(pathCacheKey):\(Int(resolvedSize))")
@@ -25,7 +25,20 @@ final class FileIconCache {
         return icon
     }
 
-    private func fallbackIcon(for url: URL) -> NSImage {
+    /// Background-friendly bulk prefetch. Warms the cache for the given
+    /// items at the default row icon size so the first SwiftUI render path
+    /// does not need to call `NSWorkspace.shared.icon(forFile:)` on the
+    /// main thread. Bails out periodically when the cancellation signals.
+    nonisolated func prefetch(for items: [FileItem], cancellation: MetadataPrefetchCancellation) {
+        for (index, item) in items.enumerated() {
+            if index.isMultiple(of: 64), cancellation.isCancelled {
+                return
+            }
+            _ = icon(for: item.url, cacheKey: item.iconCacheKey)
+        }
+    }
+
+    nonisolated private func fallbackIcon(for url: URL) -> NSImage {
         if let contentType = UTType(filenameExtension: url.pathExtension) {
             return NSWorkspace.shared.icon(for: contentType)
         }

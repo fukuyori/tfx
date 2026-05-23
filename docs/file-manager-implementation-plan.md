@@ -68,6 +68,7 @@ This document tracks the implementation plan for turning `tfx` into a practical 
 - `Tab` / `Shift+Tab` cycle keyboard focus across folder tree → left pane → right pane; `Left` / `Right` arrows scroll the active file list horizontally.
 - Toolbar icons show their keyboard shortcut on hover (`Reload  ⌘R`, `Open Terminal here  ⌘T`, etc.) via a centralized `Shortcuts` registry.
 - On first launch the left file pane is focused and the `..` parent-folder row is pre-selected when navigation up is possible.
+- `FileItem` uses an explicit `==` / `hash(into:)` on URL + size + modified + isHidden + isDirectory; the metadata prefetch worker warms the icon cache before the first paint; `loadHeader` prefetches `.isAliasFileKey` so `FileItem.init` no longer triggers a per-item kernel call; `volumeAvailableCapacity` is fetched asynchronously; `DirectoryWatcher` is skipped on non-local volumes; the status line shows a "Loading…" hint after a 500 ms grace period when a non-preserving reload is still waiting.
 - Current-folder search, hidden file toggle, and sorting are available.
 - Subfolder search is available with progress reporting, incremental results, and cancellation.
 - Multiple selection is available with Command-click.

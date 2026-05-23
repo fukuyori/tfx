@@ -11,7 +11,7 @@ struct TerminalFileManagerView: View {
     @AppStorage("TerminalFileManager.activePane") var activePaneRawValue = BrowserPaneID.left.rawValue
     @AppStorage("TerminalFileManager.activeArea") var activeAreaRawValue = ActiveArea.files.rawValue
     @AppStorage("TerminalFileManager.folderTreeWidth") private var folderTreeWidth = 250.0
-    @AppStorage("TerminalFileManager.previewWidth") private var previewWidth = 320.0
+    @AppStorage("TerminalFileManager.previewWidth") var previewWidth = 320.0
     @AppStorage("TerminalFileManager.fileSplitRatio") var fileSplitRatio = 0.5
     @AppStorage("TerminalFileManager.fileNameColumnWidth") var fileNameColumnWidth = 320.0
     @AppStorage("TerminalFileManager.fileColumnConfiguration") var fileColumnConfigurationRaw = FileListColumnConfiguration.defaultRawValue
@@ -112,6 +112,9 @@ struct TerminalFileManagerView: View {
         }
         .onChange(of: isSplitViewVisible) { oldValue, newValue in
             onSplitViewVisibilityChange(from: oldValue, to: newValue)
+        }
+        .onChange(of: isPreviewVisible) { oldValue, newValue in
+            onPreviewVisibilityChange(from: oldValue, to: newValue)
         }
         .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerSwapPanes)) { _ in
             swapPanes()

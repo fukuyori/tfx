@@ -13,6 +13,18 @@ extension FileBrowserModel {
         directoryWatcher = nil
 
         guard ZipArchiveBrowser.location(for: url) == nil else { return }
+
+        // `DispatchSource.makeFileSystemObjectSource` only receives events
+        // for local file systems — the kernel does not get notifications
+        // from remote SMB / AFP / NFS servers. Skipping the watcher on
+        // network volumes avoids holding an open file descriptor that
+        // never fires, and makes the behavior explicit. Users on network
+        // shares still refresh through `⌘R` or any post-operation reload.
+        if let values = try? url.resourceValues(forKeys: [.volumeIsLocalKey]),
+           values.volumeIsLocal == false {
+            return
+        }
+
         var isDirectory: ObjCBool = false
         guard
             FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),

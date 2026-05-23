@@ -7,9 +7,10 @@ enum FileBrowserMetadataPrefetch {
         columns: [FileListColumn],
         setCancellation: @escaping (MetadataPrefetchCancellation) -> Void
     ) -> DispatchWorkItem? {
+        let needsIcon = columns.contains(.icon)
         let needsKind = columns.contains(.kind)
         let needsPermissions = columns.contains(.permissions)
-        guard needsKind || needsPermissions, !items.isEmpty else {
+        guard needsIcon || needsKind || needsPermissions, !items.isEmpty else {
             return nil
         }
 
@@ -24,6 +25,15 @@ enum FileBrowserMetadataPrefetch {
 
             DispatchQueue.global(qos: .utility).async {
                 let prefetchStart = PerformanceTrace.now()
+                guard !cancellation.isCancelled else { return }
+
+                if needsIcon {
+                    // Warm the icon cache so `FileIcon.body` does not have
+                    // to call `NSWorkspace.shared.icon(forFile:)` on the
+                    // main thread during the first paint.
+                    FileIconCache.shared.prefetch(for: itemsToPrefetch, cancellation: cancellation)
+                }
+
                 guard !cancellation.isCancelled else { return }
 
                 if needsKind {

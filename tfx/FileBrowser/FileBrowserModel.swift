@@ -66,6 +66,11 @@ final class FileBrowserModel: ObservableObject {
     @Published var expandedFolders: Set<URL> = []
     @Published var folderChildrenCache: [URL: [URL]] = [:]
     @Published var availableCapacityText = "-"
+    /// True while a directory reload is still waiting for its first batch.
+    /// The status line shows a "Loading…" hint when this stays true beyond
+    /// a brief grace period, so users on slow network shares know that the
+    /// app is doing something instead of looking at an empty pane.
+    @Published var isLoadingDirectory = false
     @Published var pinnedFolders: [URL] = []
     @Published var pinnedFolderInsertionIndex: Int?
     @Published private(set) var highlightedDropDirectory: URL?

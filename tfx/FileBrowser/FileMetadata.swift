@@ -1,6 +1,14 @@
 #if os(macOS)
 import Foundation
 
+/// One row in the file list.
+///
+/// Equality and hashing are explicit (rather than synthesized) so SwiftUI's
+/// `ForEach(model.items)` diff only inspects fields that affect the visible
+/// row. The synthesized comparison would walk all 13+ String properties on
+/// every row on every diff pass; URL + size + modified + isHidden +
+/// isDirectory is enough to catch external mutations while keeping the
+/// per-row comparison cheap.
 struct FileItem: Identifiable, Hashable {
     let url: URL
     let isDirectory: Bool
@@ -69,6 +77,18 @@ struct FileItem: Identifiable, Hashable {
         return false
     }
 
+    nonisolated static func == (lhs: FileItem, rhs: FileItem) -> Bool {
+        lhs.url == rhs.url
+            && lhs.size == rhs.size
+            && lhs.modified == rhs.modified
+            && lhs.isHidden == rhs.isHidden
+            && lhs.isDirectory == rhs.isDirectory
+    }
+
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+    }
+
     nonisolated init(url: URL) {
         self.url = url
 
@@ -78,8 +98,19 @@ struct FileItem: Identifiable, Hashable {
         size = Int64(values?.fileSize ?? 0)
         modified = values?.contentModificationDate
         created = values?.creationDate
-        let localizedName = FolderDisplayNameCache.shared.displayName(for: url)
-        nameValue = localizedName.isEmpty ? (url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent) : localizedName
+        // `FileManager.displayName(atPath:)` is only meaningfully different
+        // from `lastPathComponent` for system / localized directories
+        // (e.g. Documents → 「書類」). For plain files it returns the same
+        // string after a relatively expensive locale-aware lookup — skip it
+        // entirely there. Especially impactful on network volumes where
+        // each `displayName` call costs a round trip.
+        let fallbackName = url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent
+        if isDirectory {
+            let localizedName = FolderDisplayNameCache.shared.displayName(for: url)
+            nameValue = localizedName.isEmpty ? fallbackName : localizedName
+        } else {
+            nameValue = fallbackName
+        }
         searchNameValue = nameValue.localizedLowercase
         let extensionName = url.pathExtension.lowercased()
         iconCacheKeyValue = isDirectory ? "directory" : (extensionName.isEmpty ? "file" : "file.\(extensionName)")

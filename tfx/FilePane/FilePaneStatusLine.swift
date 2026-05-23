@@ -5,6 +5,11 @@ struct FilePaneStatusLine: View {
     @ObservedObject var model: FileBrowserModel
     let isKeyboardTarget: Bool
     let activate: () -> Void
+    /// True after the model has been loading long enough that a hint is
+    /// worth showing. Driven by a `Task`-based delay below so a snappy
+    /// local load does not flicker the indicator.
+    @State private var showsLoadingHint = false
+    @State private var loadingHintTask: Task<Void, Never>?
 
     var body: some View {
         HStack {
@@ -32,10 +37,26 @@ struct FilePaneStatusLine: View {
         .onTapGesture {
             activate()
         }
+        .onChange(of: model.isLoadingDirectory, initial: true) { _, isLoading in
+            loadingHintTask?.cancel()
+            if isLoading {
+                let task = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(500))
+                    if !Task.isCancelled {
+                        showsLoadingHint = true
+                    }
+                }
+                loadingHintTask = task
+            } else {
+                showsLoadingHint = false
+            }
+        }
     }
 
     private var statusText: Text {
-        if let subfolderSearchStatusText = model.subfolderSearchStatusText {
+        if showsLoadingHint && model.isLoadingDirectory {
+            Text("Loading…")
+        } else if let subfolderSearchStatusText = model.subfolderSearchStatusText {
             Text(subfolderSearchStatusText)
         } else {
             Text("\(model.items.count) of \(model.allItemCount) items")

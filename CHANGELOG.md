@@ -4,6 +4,25 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.3] - 2026-05-18
+
+Directory-load performance pass, with extra attention to network-mounted volumes.
+
+### Added
+
+- "Loading…" hint in the file-pane status line when a directory load is still waiting for its first batch after a 500 ms grace period (Japanese: 「読み込み中…」). The hint is driven by a new `FileBrowserModel.isLoadingDirectory` flag and a delayed `Task` in `FilePaneStatusLine`, so quick local loads do not flicker the indicator. Differential reloads (existing items still on screen) skip the hint.
+- `FileIconCache.prefetch(for:cancellation:)`. The metadata-prefetch worker now warms the icon cache before the file pane starts asking for icons, removing the on-main-thread `NSWorkspace.shared.icon(forFile:)` calls during the first paint.
+
+### Changed
+
+- `FileItem` declares an explicit `==` and `hash(into:)` that compare URL + size + modified + isHidden + isDirectory. SwiftUI's `ForEach(model.items)` diff no longer walks 13+ String properties per row, reducing per-diff cost on large directories.
+- `FileItem.init` skips `FolderDisplayNameCache.shared.displayName(for:)` for plain files and uses `url.lastPathComponent` directly. The `displayName` API only meaningfully differs from `lastPathComponent` for localized system directories, so the lookup is now limited to directories. On network volumes this removes one round trip per file.
+- `FileBrowserDirectoryReader.loadHeader` adds `.isAliasFileKey` to the `contentsOfDirectory(at:includingPropertiesForKeys:)` prefetch list. The per-item `resourceValues(forKeys:)` call in `FileItem.init` now reads every key it needs from the prefetched cache instead of issuing a kernel call per item.
+- `volumeAvailableCapacity` is no longer fetched inline by `loadHeader`. The header reports `"-"` for free space immediately; `FileBrowserModel+Reload` schedules an asynchronous follow-up that updates `availableCapacityText` once `statvfs`-equivalent calls return. On network volumes this removes a 100–500 ms hitch from the initial paint.
+- `FileBrowserModel+DirectoryWatch.startWatchingDirectory(_:)` skips installing a `DirectoryWatcher` on non-local volumes (`URLResourceKey.volumeIsLocalKey == false`). `DispatchSource.makeFileSystemObjectSource` does not receive events from remote SMB / AFP / NFS servers, so the file descriptor was held without ever firing. Manual reload via `⌘R` or post-operation refresh still works on network shares.
+- `FileIconCache` is now `@unchecked Sendable`, its singleton and methods are `nonisolated`, and the underlying `NSCache` is `nonisolated(unsafe)` so the metadata-prefetch worker can warm it from a background queue.
+- Updated the version to `0.5.3` and the build number to `25`.
+
 ## [0.5.2] - 2026-05-18
 
 Keyboard / focus / swap feature work plus shortcut remapping with hover discoverability.

@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import Foundation
 
 extension TerminalFileManagerView {
@@ -85,6 +86,55 @@ extension TerminalFileManagerView {
             to: sourceModel.currentDirectory,
             recordsHistory: false
         )
+    }
+
+    /// Side-effect handler for `isPreviewVisible` changes. Resizes the
+    /// window so that toggling preview reveals or hides the pane by
+    /// growing / shrinking the window to the right, rather than squeezing
+    /// the existing folder-tree and file-pane widths.
+    func onPreviewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
+        guard oldValue != newValue else { return }
+        guard let window = previewToggleTargetWindow() else { return }
+
+        // The preview area takes `previewWidth` plus the 1pt drag-handle
+        // separator that sits between the file area and the preview pane.
+        let delta = CGFloat(previewWidth) + 1
+        var frame = window.frame
+
+        if newValue {
+            // Showing preview — extend the window to the right. Try to keep
+            // the window's left edge in place; if doing so pushes the right
+            // edge off the visible screen, shift left as needed.
+            frame.size.width += delta
+            if let visibleFrame = window.screen?.visibleFrame {
+                if frame.maxX > visibleFrame.maxX {
+                    let shiftedX = max(visibleFrame.minX, visibleFrame.maxX - frame.size.width)
+                    frame.origin.x = shiftedX
+                }
+                if frame.size.width > visibleFrame.width {
+                    frame.size.width = visibleFrame.width
+                    frame.origin.x = visibleFrame.minX
+                }
+            }
+        } else {
+            // Hiding preview — pull the right edge back. Floor the width so
+            // the window cannot collapse below something usable.
+            frame.size.width = max(Self.minimumPreviewToggleWindowWidth, frame.size.width - delta)
+        }
+
+        window.setFrame(frame, display: true, animate: true)
+    }
+
+    /// Minimum width preserved when shrinking the window after the preview
+    /// pane is hidden. Roughly: folder tree minimum (180) + drag handle (1)
+    /// + file pane minimum (360) + window chrome / margins.
+    static let minimumPreviewToggleWindowWidth: CGFloat = 600
+
+    /// Resolve the window the preview-visibility resize should target. We
+    /// prefer `NSApp.keyWindow` so the resize follows the user's active
+    /// window when multiple tfx windows are open.
+    private func previewToggleTargetWindow() -> NSWindow? {
+        NSApp.keyWindow ?? NSApp.mainWindow
     }
 
     /// Swap the left and right pane directories. No-op when split is off or

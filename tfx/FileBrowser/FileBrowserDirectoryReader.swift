@@ -10,19 +10,29 @@ enum FileBrowserDirectoryReader {
                 return .success(DirectoryHeader(urls: urls, availableCapacityText: "-"))
             }
 
+            // Pre-fetch every URL resource key that `FileItem.init` reads,
+            // so the per-item `resourceValues(forKeys:)` call inside the
+            // loader returns cached values with no extra syscall — critical
+            // on network volumes where each missing key would be a round
+            // trip. `.volumeAvailableCapacity` is intentionally not fetched
+            // here; see the deferred fetch below.
             let urls = try FileManager.default.contentsOfDirectory(
                 at: directory,
-                includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey, .creationDateKey, .isHiddenKey],
+                includingPropertiesForKeys: [
+                    .isDirectoryKey,
+                    .fileSizeKey,
+                    .contentModificationDateKey,
+                    .creationDateKey,
+                    .isHiddenKey,
+                    .isAliasFileKey,
+                ],
                 options: [.skipsPackageDescendants]
             )
-            let values = try? directory.resourceValues(forKeys: [.volumeAvailableCapacityKey])
-            let availableCapacityText: String
-            if let availableCapacity = values?.volumeAvailableCapacity {
-                availableCapacityText = FileDisplayTextCache.shared.sizeText(byteCount: Int64(availableCapacity))
-            } else {
-                availableCapacityText = "-"
-            }
-            return .success(DirectoryHeader(urls: urls, availableCapacityText: availableCapacityText))
+            // Volume capacity is fetched asynchronously through
+            // `availableCapacityText(for:)` after the header lands, so a
+            // slow `statvfs` on a network share does not block the initial
+            // file-list paint.
+            return .success(DirectoryHeader(urls: urls, availableCapacityText: "-"))
         } catch {
             return .failure(error)
         }

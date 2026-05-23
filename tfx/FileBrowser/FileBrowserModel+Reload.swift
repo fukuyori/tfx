@@ -10,8 +10,13 @@ extension FileBrowserModel {
         let preservingExistingItems = shouldPreserveItemsForReload(of: directory)
         let cancellation = resetDirectoryLoadState(preservingItems: preservingExistingItems)
         pendingLoadAccumulator.removeAll(keepingCapacity: true)
+        // Surface the "Loading…" hint only when items are not already on
+        // screen — preserving reloads keep the previous listing visible so
+        // there is no empty pane to label.
+        isLoadingDirectory = !preservingExistingItems
 
         if hasActiveSubfolderSearchQuery {
+            isLoadingDirectory = false
             startSubfolderSearch()
             return
         }
@@ -93,9 +98,31 @@ extension FileBrowserModel {
             switch result {
             case let .success(header):
                 self.availableCapacityText = header.availableCapacityText
+                // Volume capacity is no longer fetched inline by
+                // `loadHeader` because the underlying `statvfs` can be slow
+                // on network volumes. Fire a deferred fetch here so the
+                // status-line "Free X" updates once the answer arrives.
+                self.fetchVolumeCapacity(for: directory, generation: generation)
             case let .failure(error):
                 self.show(error)
                 cancellation.cancel()
+                self.isLoadingDirectory = false
+            }
+        }
+    }
+
+    private func fetchVolumeCapacity(for directory: URL, generation: Int) {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let capacityText = FileBrowserDirectoryReader.availableCapacityText(for: directory)
+            DispatchQueue.main.async { [weak self] in
+                guard
+                    let self,
+                    self.reloadGeneration == generation,
+                    self.currentDirectory.standardizedFileURL == directory.standardizedFileURL
+                else {
+                    return
+                }
+                self.availableCapacityText = capacityText
             }
         }
     }
@@ -125,6 +152,9 @@ extension FileBrowserModel {
                 }
             } else {
                 self.appendLoadedDirectoryItems(batch, pruneAfterUpdate: isFinalBatch)
+                // First items have landed (or the load completed with
+                // zero items) — drop the "Loading…" hint.
+                self.isLoadingDirectory = false
                 if isFinalBatch {
                     self.lastLoadedDirectory = directory
                 }
