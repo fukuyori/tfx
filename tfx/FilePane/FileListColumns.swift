@@ -8,6 +8,7 @@ enum FileListColumn: String, CaseIterable, Identifiable {
     case size
     case kind
     case tags
+    case gitStatus
     case modified
     case created
     case permissions
@@ -28,6 +29,8 @@ enum FileListColumn: String, CaseIterable, Identifiable {
             return "Kind"
         case .tags:
             return "Tags"
+        case .gitStatus:
+            return "Git"
         case .modified:
             return "Modified"
         case .created:
@@ -53,6 +56,10 @@ enum FileListColumn: String, CaseIterable, Identifiable {
             // The tag column shows colored dots, not text — keep the
             // header empty so the cell does not need to be wide enough
             // to accommodate a label.
+            return ""
+        case .gitStatus:
+            // Single-character badge column; the header is empty so the
+            // column width can stay tight against the badge itself.
             return ""
         case .modified:
             return "MODIFIED"
@@ -80,6 +87,11 @@ enum FileListColumn: String, CaseIterable, Identifiable {
             // with multiple tags truncate after the first — most files
             // carry zero or one tag so this keeps the file row dense.
             return 16
+        case .gitStatus:
+            // One-character badge ("M", "A", "?", …). 13pt monospaced
+            // glyphs are ~8pt wide; 10pt is the tightest width that
+            // still renders the full character without clipping.
+            return 10
         case .modified, .created:
             return 160
         case .permissions:

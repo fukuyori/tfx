@@ -51,6 +51,11 @@ struct ParentDirectoryRow: View {
             // The parent placeholder row never carries macOS Finder tags.
             Color.clear
                 .frame(width: columnWidth(column), alignment: column.alignment)
+        case .gitStatus:
+            // ".." has no meaningful Git status — leave the cell blank
+            // so the column stays aligned with the file rows below.
+            Color.clear
+                .frame(width: columnWidth(column), alignment: column.alignment)
         case .modified, .created, .permissions:
             Text("-")
                 .frame(width: columnWidth(column), alignment: column.alignment)

@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.5] - 2026-05-23
+
+Git status badges and branch indicator in the file pane.
+
+### Added
+
+- `tfx/Git/GitStatus.swift` defines `GitFileStatus` (modified, added, deleted, renamed, untracked, conflicted, ignored) with one-character badges and color hints.
+- `tfx/Git/GitStatusReader.swift` resolves the working-tree root with `git rev-parse --show-toplevel` and reads `git status --porcelain=v2 -b -z --untracked-files=normal --ignored=no` off the main thread. It runs `/usr/bin/git` with `LC_ALL=C` and `GIT_OPTIONAL_LOCKS=0` so output is stable and `.git/index.lock` is not touched.
+- `FileBrowserModel.gitRepositoryStatus` is published after a fetch lands, and a per-directory work-tree-root cache (`gitRootCache`) makes navigation inside a single repository cost zero `rev-parse` calls.
+- New `.gitStatus` file-list column shows the per-file badge in its status color. Column width is tightened to 10pt, just enough for a single monospaced character.
+- File pane status line gains a `⎇ branch` segment when the current directory is inside a Git working copy. Detached HEAD falls back to a short SHA.
+
+### Changed
+
+- The default column order now includes `.gitStatus` between `.tags` and `.modified`. Existing user configurations are migrated additively so a missing entry inherits the default placement.
+- Reloading a directory now triggers a parallel Git status refresh, so badges appear as soon as both the directory load and the status read complete. The directory watcher already triggers `reload()`, so external edits update badges automatically on local volumes.
+- Updated the version to `0.5.5` and the build number to `27`.
+
 ## [0.5.4] - 2026-05-23
 
 Finder-compatible tag display and editing.

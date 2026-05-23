@@ -41,6 +41,12 @@ Preview pane, preview kind selection, Markdown rendering, PDF/video/Quick Look p
 
 Use this directory for preview rendering and preview-specific interaction.
 
+### `tfx/Git`
+
+`GitFileStatus` enum, `GitRepositoryStatus` aggregate, and `GitStatusReader` (background `git rev-parse` / `git status --porcelain=v2` invocations). The model wiring lives in `FileBrowser/FileBrowserModel+GitStatus.swift`; this directory keeps the platform-facing Git plumbing isolated.
+
+Use this directory for additional Git integration (branch operations, diff display, etc.) that needs to call out to `git` or parse its output.
+
 ### `tfx/Infrastructure`
 
 Small reusable UI and platform helpers that are not owned by one feature.

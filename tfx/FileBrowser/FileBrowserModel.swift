@@ -75,6 +75,12 @@ final class FileBrowserModel: ObservableObject {
     @Published var pinnedFolderInsertionIndex: Int?
     @Published private(set) var highlightedDropDirectory: URL?
     @Published var previewURLs: [URL] = []
+    /// Latest Git status snapshot for `currentDirectory`. Nil when the
+    /// directory is outside any Git work tree, when `git` is missing,
+    /// or while the first status fetch for a freshly opened repo is
+    /// still in flight. The file pane reads this to decorate rows and
+    /// render the branch indicator in the status line.
+    @Published var gitRepositoryStatus: GitRepositoryStatus?
 
     var allItems: [FileItem] = []
     var allItemLookup: [FileItem.ID: FileItem] = [:]
@@ -99,6 +105,12 @@ final class FileBrowserModel: ObservableObject {
     var filterSortCancellation: FilterSortCancellation?
     var subfolderSearchCancellation: SubfolderSearchCancellation?
     var metadataPrefetchCancellation: MetadataPrefetchCancellation?
+    var gitStatusCancellation: GitStatusCancellation?
+    /// Caches per-directory Git root resolution so re-entering a
+    /// previously visited folder skips the `git rev-parse` cost. The
+    /// optional value distinguishes "outside any work tree" (`.some(nil)`)
+    /// from "not yet probed" (`absent`).
+    var gitRootCache: [URL: URL?] = [:]
     var reloadGeneration = 0
     var filterGeneration = 0
     /// Last directory whose load completed. Drives differential reload detection.

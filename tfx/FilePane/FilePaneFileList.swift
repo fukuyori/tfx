@@ -123,7 +123,8 @@ struct FilePaneFileList: View {
                 isSelected: model.isSelected(item),
                 isDropTarget: item.isDirectory && model.isDropTargetDirectory(item.url),
                 columns: visibleColumns,
-                fileNameColumnWidth: fileNameColumnWidth
+                fileNameColumnWidth: fileNameColumnWidth,
+                gitStatus: model.gitStatus(for: item)
             )
             .id(FileListRowID.item(item.id))
             .contentShape(Rectangle())

@@ -286,7 +286,17 @@ The file list includes a `Tags` column that renders each tag as a compact colore
 
 `FileBrowserModel+Tags` writes tag updates through `URLResourceValues.tagNames`. Standard color tags toggle by color ID. Custom tags toggle by name, and `Add Custom Tag…` prompts for a new uncolored name before appending it to each selected item that does not already have it. Tag editing is disabled for zip-archive virtual entries because those URLs are not mutable file-system locations.
 
-### 8.8 Zip Archive Browsing
+### 8.8 Git Status Indicators
+
+Git status is surfaced through `tfx/Git/GitStatus.swift` (`GitFileStatus` enum + `GitRepositoryStatus` aggregate) and `tfx/Git/GitStatusReader.swift` (background `Process` invocations of `/usr/bin/git`). The reader runs `git rev-parse --show-toplevel` to resolve the work-tree root and `git status --porcelain=v2 -b -z --untracked-files=normal --ignored=no` to read the status table. `LC_ALL=C` and `GIT_OPTIONAL_LOCKS=0` are set so output is locale-stable and `.git/index.lock` is not touched.
+
+`FileBrowserModel.gitRepositoryStatus` is `@Published` and assigned only when the most recent fetch lands. Stale fetches are guarded by `GitStatusCancellation` and a re-check that `currentDirectory` still matches the directory the fetch was started for. A per-directory cache (`gitRootCache`) memoizes the work-tree root; `cachedGitRoot(for:)` walks up ancestors so navigating inside a single repository skips `rev-parse` after the first probe.
+
+The file list has a `.gitStatus` column (10pt, tightest possible width for one monospaced character) that renders the per-file badge in `GitFileStatus.color`. `FilePaneStatusLine` appends a `⎇ branch` segment when `gitRepositoryStatus` is non-nil; detached HEAD falls back to a 7-char SHA via `GitRepositoryStatus.branchDisplayText`.
+
+`reload()` triggers `refreshGitStatus()` in parallel with the directory load, so badges appear as soon as both reads complete. The `DirectoryWatcher` already routes external changes through `reload()`, so badges update on local volumes when the working copy changes; network volumes still rely on the manual `⌘R` path described in §8.4.
+
+### 8.9 Zip Archive Browsing
 
 Zip archives are exposed as virtual directories. Opening a real `.zip` file navigates into the archive without extracting the whole archive into the current folder.
 
@@ -294,7 +304,7 @@ Zip archives are exposed as virtual directories. Opening a real `.zip` file navi
 
 Copying from a zip archive extracts the selected virtual entries into the paste target. Cutting from a zip archive behaves as copy because the archive is not modified.
 
-### 8.9 Copy, Cut, and Paste
+### 8.10 Copy, Cut, and Paste
 
 Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs and the preferred operation to `NSPasteboard`. Paste first uses the app-local clipboard when available, and otherwise reads file URLs from the macOS pasteboard so files copied in Finder can be pasted into tfx. `Command + Option + V` performs move-paste for file URLs when available.
 
@@ -309,7 +319,7 @@ Same-name conflicts are resolved through a user prompt:
 
 The app-local clipboard is cleared after a successful move operation.
 
-### 8.10 Drag and Drop
+### 8.11 Drag and Drop
 
 File rows, file-pane blank space, and folder-tree rows accept `UTType.fileURL` drops. `FileBrowserDropDelegate` calls `FileBrowserModel.moveDroppedFiles(_:to:completion:)`.
 
@@ -317,7 +327,7 @@ File drops move files into the target directory by default. Holding Option reque
 
 If a dropped URL requires security-scoped access, access is started only for the duration of the move.
 
-### 8.11 Preview
+### 8.12 Preview
 
 Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look. `PreviewFileInfoView` loads metadata asynchronously so metadata display does not block preview layout.
 

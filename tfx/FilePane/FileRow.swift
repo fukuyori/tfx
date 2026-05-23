@@ -7,6 +7,11 @@ struct FileRow: View {
     let isDropTarget: Bool
     let columns: [FileListColumn]
     let fileNameColumnWidth: Double
+    /// Git status for this row, looked up by the file pane before the
+    /// view is constructed. Nil when the directory is not in a Git work
+    /// tree, when the file is clean, or while the first status fetch
+    /// after navigating into a repo is still in flight.
+    let gitStatus: GitFileStatus?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -49,6 +54,9 @@ struct FileRow: View {
         case .tags:
             tagsCell
                 .frame(width: columnWidth(column), alignment: column.alignment)
+        case .gitStatus:
+            gitStatusCell
+                .frame(width: columnWidth(column), alignment: column.alignment)
         case .modified:
             Text(item.modifiedText)
                 .frame(width: columnWidth(column), alignment: column.alignment)
@@ -80,6 +88,20 @@ struct FileRow: View {
                     .help(tag.name)
             }
             Spacer(minLength: 0)
+        }
+    }
+
+    /// Single-character Git status badge in the row's status color.
+    /// Stays empty when the row carries no status, which is the common
+    /// case both outside Git repos and for clean files inside them.
+    @ViewBuilder
+    private var gitStatusCell: some View {
+        if let gitStatus {
+            Text(gitStatus.badge)
+                .foregroundStyle(gitStatus.color)
+                .help(gitStatus.badge)
+        } else {
+            Color.clear
         }
     }
 

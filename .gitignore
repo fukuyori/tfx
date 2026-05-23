@@ -42,3 +42,4 @@ scripts/build_release_pkg.sh
 # Local environment
 .env
 .env.*
+*.profraw

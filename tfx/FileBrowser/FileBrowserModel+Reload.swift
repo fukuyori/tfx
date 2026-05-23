@@ -7,6 +7,11 @@ extension FileBrowserModel {
         let generation = reloadGeneration
         let directory = currentDirectory
         let chunkSize = directoryLoadChunkSize
+        // Kick off Git status resolution in parallel with the file
+        // listing — the two are independent on disk, and the row
+        // decorations should appear as soon as both land regardless of
+        // which finishes first.
+        refreshGitStatus()
         let preservingExistingItems = shouldPreserveItemsForReload(of: directory)
         let cancellation = resetDirectoryLoadState(preservingItems: preservingExistingItems)
         pendingLoadAccumulator.removeAll(keepingCapacity: true)

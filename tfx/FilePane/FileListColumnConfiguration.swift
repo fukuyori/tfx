@@ -5,7 +5,7 @@ struct FileListColumnConfiguration {
     private(set) var orderedColumns: [FileListColumn]
     private(set) var visibleColumns: Set<FileListColumn>
 
-    static let defaultColumns: [FileListColumn] = [.mode, .icon, .name, .size, .kind, .tags, .modified, .created, .permissions]
+    static let defaultColumns: [FileListColumn] = [.mode, .icon, .name, .size, .kind, .tags, .gitStatus, .modified, .created, .permissions]
     static let defaultRawValue = defaultColumns.map { "\($0.rawValue):1" }.joined(separator: ",")
 
     init(rawValue: String) {

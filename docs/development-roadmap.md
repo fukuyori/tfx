@@ -162,27 +162,18 @@ Project documentation should be written in English by default. `README.md` is th
 - Tag changes support multi-selection and are written through `URLResourceValues.tagNames`, so Finder and tfx see the same tag metadata after reload.
 - Tagged folders use the first colored tag to tint the folder icon; regular files keep their standard icons and show tags in the tag column.
 
+### 1.18 Git Status Indicators
+
+- `tfx/Git/GitStatus.swift` defines `GitFileStatus` cases (modified, added, deleted, renamed, untracked, conflicted, ignored) with single-character badges and color hints chosen to read against the dark file pane.
+- `tfx/Git/GitStatusReader.swift` resolves the working-tree root with `git rev-parse --show-toplevel` and reads `git status --porcelain=v2 -b -z --untracked-files=normal --ignored=no` off the main thread. `LC_ALL=C` and `GIT_OPTIONAL_LOCKS=0` keep output stable and avoid touching `.git/index.lock`.
+- `FileBrowserModel.gitRepositoryStatus` is `@Published` after a fetch lands. A per-directory work-tree-root cache (`gitRootCache`) walks up ancestors so navigating inside a single repository costs zero `rev-parse` calls after the first probe.
+- The file list has a `.gitStatus` column that shows the per-file badge in its status color. Column width is tightened to 10pt — enough for a single monospaced character without clipping.
+- `FilePaneStatusLine` gains a `⎇ branch` segment when the current directory is inside a Git working copy. Detached HEAD falls back to a short SHA.
+- `reload()` triggers Git status refresh in parallel with the directory load, so badges appear as soon as both complete. The `DirectoryWatcher` already routes external changes through `reload()`, so badges update automatically on local volumes; network volumes still rely on manual `⌘R`.
+
 ## 2. Upcoming Work
 
-Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.2.
-
-### 2.2 Git Status Indicators
-
-Goal:
-
-- Surface Git status next to files inside a Git working copy. A meaningful differentiator for the developer audience that requires no new infrastructure.
-
-Tasks:
-
-- Detect the Git root for the current directory; cache results.
-- Run `git status --porcelain=v2 --untracked-files=normal` on a background queue when entering a Git working copy and on `DirectoryWatcher` events.
-- Decorate file rows with status badges: `M` modified, `A` added, `?` untracked, `D` deleted, `!` ignored.
-- Display the current branch in the title bar / status line.
-
-Done when:
-
-- File rows in a Git working copy display accurate status badges that update on external changes.
-- Non-Git folders incur no `git` cost.
+Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.3.
 
 ### 2.3 Pane Tabs
 

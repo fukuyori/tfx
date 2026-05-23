@@ -19,6 +19,13 @@ struct FilePaneStatusLine: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             Text("| Free \(model.availableCapacityText)")
                 .fixedSize(horizontal: true, vertical: false)
+            if let gitStatus = model.gitRepositoryStatus {
+                // The branch indicator only renders for directories
+                // inside a Git work tree. Detached HEAD falls back to a
+                // short SHA via `GitRepositoryStatus.branchDisplayText`.
+                Text("| \(gitStatus.branchDisplayText)")
+                    .fixedSize(horizontal: true, vertical: false)
+            }
             if model.selectionCount > 0 {
                 Text("| \(model.selectionCount) selected")
                     .fixedSize(horizontal: true, vertical: false)
