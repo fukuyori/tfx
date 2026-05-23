@@ -49,6 +49,55 @@ struct FileItemContextMenu: View {
             model.moveSelectedItemsToTrash()
         }
 
+        Menu("Tags") {
+            Button("Add Custom Tag…") {
+                model.addCustomTagFromPrompt()
+            }
+
+            Divider()
+
+            ForEach(FileTag.systemTagOptions) { option in
+                Button {
+                    model.toggleSystemTag(colorID: option.colorID)
+                } label: {
+                    Label {
+                        Text(option.localizedName)
+                    } icon: {
+                        // `Image(nsImage:)` with a non-template image
+                        // preserves the baked-in color in the menu;
+                        // `Image(systemName:)` + `.foregroundStyle()` gets
+                        // re-tinted by macOS to the menu foreground color.
+                        Image(nsImage: option.menuIcon)
+                    }
+                }
+            }
+
+            // Custom tags surfaced from items currently loaded in this
+            // pane. We intentionally do not enumerate the user's full tag
+            // library (would require Spotlight or Finder's private plist) —
+            // surfacing the in-view tags is enough to re-apply them to
+            // sibling files without leaving tfx.
+            let customTags = model.customTagsInCurrentDirectory
+            if !customTags.isEmpty {
+                Divider()
+                ForEach(customTags, id: \.name) { tag in
+                    Button {
+                        model.toggleCustomTag(tag)
+                    } label: {
+                        if let icon = tag.menuIcon {
+                            Label {
+                                Text(tag.name)
+                            } icon: {
+                                Image(nsImage: icon)
+                            }
+                        } else {
+                            Text(tag.name)
+                        }
+                    }
+                }
+            }
+        }
+
         Divider()
 
         Button("Rename") {

@@ -4,6 +4,22 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.4] - 2026-05-23
+
+Finder-compatible tag display and editing.
+
+### Added
+
+- File rows now read macOS Finder tags through `URLResourceKey.tagNamesKey` and expose them through `FileItem.tags`.
+- The file list has a toggleable `Tags` column. It renders tag colors as compact dots and is included in the default column set.
+- File-row context menus now include a `Tags` submenu with the seven standard Finder color tags, custom tags already visible in the current directory, and `Add Custom Tag…` for assigning an arbitrary tag name to the selected items.
+- Tag operations support multi-selection and write through `URLResourceValues.tagNames`, so tags added in tfx appear in Finder and tags added in Finder appear in tfx after reload.
+
+### Changed
+
+- Folder rows use the first colored tag to tint the folder icon, matching Finder's visual emphasis while regular files keep their standard icons.
+- Updated the version to `0.5.4` and the build number to `26`.
+
 ## [0.5.3] - 2026-05-18
 
 Directory-load performance pass, with extra attention to network-mounted volumes.

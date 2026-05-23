@@ -25,6 +25,7 @@ enum FileBrowserDirectoryReader {
                     .creationDateKey,
                     .isHiddenKey,
                     .isAliasFileKey,
+                    .tagNamesKey,
                 ],
                 options: [.skipsPackageDescendants]
             )

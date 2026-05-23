@@ -47,6 +47,10 @@ struct ParentDirectoryRow: View {
                 .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
                 .foregroundStyle(.secondary)
+        case .tags:
+            // The parent placeholder row never carries macOS Finder tags.
+            Color.clear
+                .frame(width: columnWidth(column), alignment: column.alignment)
         case .modified, .created, .permissions:
             Text("-")
                 .frame(width: columnWidth(column), alignment: column.alignment)

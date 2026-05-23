@@ -50,13 +50,49 @@ final class FileIconCache: @unchecked Sendable {
 struct FileIcon: View {
     let url: URL
     var cacheKey: String? = nil
+    /// Override that, when non-nil, renders the row icon as a colored
+    /// `folder.fill` SF Symbol instead of the standard `NSWorkspace` icon.
+    /// Used to mimic Finder's behavior of tinting the folder body with
+    /// the primary tag color.
+    var folderTagColor: Color? = nil
+
+    /// Legacy convenience initializer for callers that do not have a
+    /// `FileItem` in scope (preview panes, drag images, etc.).
+    init(url: URL, cacheKey: String? = nil) {
+        self.url = url
+        self.cacheKey = cacheKey
+        self.folderTagColor = nil
+    }
+
+    /// File-row initializer that resolves the primary tag color when the
+    /// item is a directory. Files keep the standard icon — their tags
+    /// remain visible through the tag-column dots.
+    init(item: FileItem) {
+        self.url = item.url
+        self.cacheKey = item.iconCacheKey
+        if item.isDirectory, let color = item.tags.first(where: { $0.color != nil })?.color {
+            self.folderTagColor = color
+        } else {
+            self.folderTagColor = nil
+        }
+    }
 
     var body: some View {
-        Image(nsImage: FileIconCache.shared.icon(for: url, cacheKey: cacheKey))
-            .renderingMode(.original)
-            .resizable()
-            .frame(width: 18, height: 18)
-            .accessibilityHidden(true)
+        if let folderTagColor {
+            Image(systemName: "folder.fill")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .foregroundStyle(folderTagColor)
+                .frame(width: 18, height: 18)
+                .accessibilityHidden(true)
+        } else {
+            Image(nsImage: FileIconCache.shared.icon(for: url, cacheKey: cacheKey))
+                .renderingMode(.original)
+                .resizable()
+                .frame(width: 18, height: 18)
+                .accessibilityHidden(true)
+        }
     }
 }
 #endif

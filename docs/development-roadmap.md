@@ -154,27 +154,17 @@ Project documentation should be written in English by default. `README.md` is th
 - `FileBrowserModel+DirectoryWatch.startWatchingDirectory(_:)` skips installing a `DirectoryWatcher` on non-local volumes (`URLResourceKey.volumeIsLocalKey == false`); `DispatchSource` events never arrive from remote file systems.
 - A `Loading…` hint appears in `FilePaneStatusLine` when a non-preserving reload is still waiting for its first batch after 500 ms (`FileBrowserModel.isLoadingDirectory` + a `Task`-based grace period). Quick local loads do not flicker the indicator; differential reloads skip it entirely.
 
+### 1.17 macOS Tags
+
+- `FileItem` reads Finder-compatible tags through `URLResourceKey.tagNamesKey` and stores parsed `FileTag` values for row rendering and context-menu actions.
+- The file list includes a toggleable `Tags` column that renders compact colored dots. The default column set includes it.
+- File-row context menus expose a `Tags` submenu with Finder's seven standard color tags, custom tags already visible in the current directory, and `Add Custom Tag…` for assigning a new uncolored tag name.
+- Tag changes support multi-selection and are written through `URLResourceValues.tagNames`, so Finder and tfx see the same tag metadata after reload.
+- Tagged folders use the first colored tag to tint the folder icon; regular files keep their standard icons and show tags in the tag column.
+
 ## 2. Upcoming Work
 
-Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.1.
-
-### 2.1 macOS Tags
-
-Goal:
-
-- Display and edit Finder-compatible color tags. High visible impact for low engineering cost; the macOS API is straightforward.
-
-Tasks:
-
-- Read tags through `URLResourceKey.tagNamesKey`.
-- Optional tag-color column in the file list (toggleable through existing column settings).
-- Context-menu "Tags…" submenu listing the user's existing tags plus an "Add Tag…" picker.
-- Multi-selection batch tagging.
-
-Done when:
-
-- Tags applied in tfx appear in Finder, and tags applied in Finder appear in tfx.
-- The tag column is toggleable through the existing file-list column settings.
+Items are listed in recommended execution order, weighted by importance, relevance, effort, and risk. Item numbers reflect priority — they are not strict dependency markers. Each item describes its own dependencies in prose. The next concrete starting point is §2.2.
 
 ### 2.2 Git Status Indicators
 

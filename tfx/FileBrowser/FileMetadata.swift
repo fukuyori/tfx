@@ -24,6 +24,7 @@ struct FileItem: Identifiable, Hashable {
     let sizeTextValue: String
     let modifiedTextValue: String
     let createdTextValue: String
+    let tagsValue: [FileTag]
 
     nonisolated var id: URL { url }
     nonisolated var name: String { nameValue }
@@ -41,6 +42,7 @@ struct FileItem: Identifiable, Hashable {
     }
     nonisolated var modifiedText: String { modifiedTextValue }
     nonisolated var createdText: String { createdTextValue }
+    nonisolated var tags: [FileTag] { tagsValue }
     var permissionsText: String {
         guard let permissions = FilePermissionCache.shared.permissions(for: url) else { return "-" }
         return String(format: "%03o", permissions)
@@ -83,6 +85,7 @@ struct FileItem: Identifiable, Hashable {
             && lhs.modified == rhs.modified
             && lhs.isHidden == rhs.isHidden
             && lhs.isDirectory == rhs.isDirectory
+            && lhs.tagsValue == rhs.tagsValue
     }
 
     nonisolated func hash(into hasher: inout Hasher) {
@@ -92,7 +95,7 @@ struct FileItem: Identifiable, Hashable {
     nonisolated init(url: URL) {
         self.url = url
 
-        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey, .isAliasFileKey, .fileSizeKey, .contentModificationDateKey, .creationDateKey])
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey, .isAliasFileKey, .fileSizeKey, .contentModificationDateKey, .creationDateKey, .tagNamesKey])
         isDirectory = Self.isDirectoryOrDirectorySymlink(url, values: values)
         isHidden = values?.isHidden == true || url.lastPathComponent.hasPrefix(".")
         size = Int64(values?.fileSize ?? 0)
@@ -119,6 +122,7 @@ struct FileItem: Identifiable, Hashable {
         sizeTextValue = isDirectory ? "-" : FileDisplayTextCache.shared.sizeText(byteCount: size)
         modifiedTextValue = FileDisplayTextCache.shared.dateText(for: modified)
         createdTextValue = FileDisplayTextCache.shared.dateText(for: created)
+        tagsValue = values?.tagNames?.map(FileTag.init(rawTagName:)) ?? []
     }
 
     nonisolated init(zipEntry: ZipArchiveEntry, archiveURL: URL) {
@@ -139,6 +143,8 @@ struct FileItem: Identifiable, Hashable {
         sizeTextValue = isDirectory ? "-" : FileDisplayTextCache.shared.sizeText(byteCount: size)
         modifiedTextValue = FileDisplayTextCache.shared.dateText(for: modified)
         createdTextValue = "-"
+        // Zip-archive entries do not carry macOS Finder tags.
+        tagsValue = []
     }
 }
 #endif

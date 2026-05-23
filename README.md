@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.5.3**
+Version: **0.5.4**
 
 English | [日本語](README.ja.md)
 
@@ -48,6 +48,7 @@ English | [日本語](README.ja.md)
 - Subfolder search with progress and cancellation
 - File-type icons in the file list
 - Configurable file-list columns: visibility and order
+- Finder-compatible tags: tag column, standard color tags, and custom tag names from the file-row context menu
 - Resizable file-name column by dragging the `NAME` header
 - Restores window size, visible panes, pane widths, active pane, and open folders
 

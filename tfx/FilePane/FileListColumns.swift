@@ -7,6 +7,7 @@ enum FileListColumn: String, CaseIterable, Identifiable {
     case name
     case size
     case kind
+    case tags
     case modified
     case created
     case permissions
@@ -25,6 +26,8 @@ enum FileListColumn: String, CaseIterable, Identifiable {
             return "Size"
         case .kind:
             return "Kind"
+        case .tags:
+            return "Tags"
         case .modified:
             return "Modified"
         case .created:
@@ -46,6 +49,11 @@ enum FileListColumn: String, CaseIterable, Identifiable {
             return "SIZE"
         case .kind:
             return "KIND"
+        case .tags:
+            // The tag column shows colored dots, not text — keep the
+            // header empty so the cell does not need to be wide enough
+            // to accommodate a label.
+            return ""
         case .modified:
             return "MODIFIED"
         case .created:
@@ -67,6 +75,11 @@ enum FileListColumn: String, CaseIterable, Identifiable {
             return 96
         case .kind:
             return 120
+        case .tags:
+            // 9pt dot + ~3pt breathing room on each side. Tagged files
+            // with multiple tags truncate after the first — most files
+            // carry zero or one tag so this keeps the file row dense.
+            return 16
         case .modified, .created:
             return 160
         case .permissions:

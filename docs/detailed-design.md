@@ -178,8 +178,9 @@ The active model is selected from `leftModel` or `rightModel` through `activePan
 | `created` | Created date. |
 | `kind` | Localized kind description. |
 | `permissions` | POSIX permissions. |
+| `tags` | Finder-compatible macOS tags parsed from `URLResourceKey.tagNamesKey`. |
 
-Display properties include `name`, `mode`, `sizeText`, `kindText`, `modifiedText`, `createdText`, and `permissionsText`. Dates are displayed as `yyyy-MM-dd HH:mm:ss`.
+Display properties include `name`, `mode`, `sizeText`, `kindText`, `modifiedText`, `createdText`, `permissionsText`, and `tags`. Dates are displayed as `yyyy-MM-dd HH:mm:ss`.
 
 Zip archive entries are represented as `FileItem` values with virtual URLs. These rows support listing, preview, open-by-materialization, and copy-out behavior, but do not represent directly mutable file-system locations.
 
@@ -208,7 +209,7 @@ Directory read failures are reported through `show(_:)`, which updates model err
 
 `shouldPreserveItemsForReload(of:)` chooses between the two paths by comparing the upcoming directory against `lastLoadedDirectory` and checking whether `allItems` is non-empty.
 
-`FileBrowserDirectoryReader.loadHeader` prefetches `.isDirectoryKey`, `.fileSizeKey`, `.contentModificationDateKey`, `.creationDateKey`, `.isHiddenKey`, and `.isAliasFileKey` through `contentsOfDirectory(at:includingPropertiesForKeys:)`. The per-item `resourceValues(forKeys:)` call inside `FileItem.init` reads every key it needs from this prefetched cache, so the loader makes one `getattrlistbulk` round trip per directory rather than one per file — critical on network volumes.
+`FileBrowserDirectoryReader.loadHeader` prefetches `.isDirectoryKey`, `.fileSizeKey`, `.contentModificationDateKey`, `.creationDateKey`, `.isHiddenKey`, `.isAliasFileKey`, and `.tagNamesKey` through `contentsOfDirectory(at:includingPropertiesForKeys:)`. The per-item `resourceValues(forKeys:)` call inside `FileItem.init` reads every key it needs from this prefetched cache, so the loader makes one `getattrlistbulk` round trip per directory rather than one per file — critical on network volumes.
 
 `volumeAvailableCapacity` is **not** fetched inline by `loadHeader`. The header reports `"-"` immediately and `FileBrowserModel+Reload.fetchVolumeCapacity(for:generation:)` schedules an asynchronous follow-up that updates `availableCapacityText` once the answer arrives. This keeps the initial file-list paint independent of a potentially slow `statvfs` call on network mounts.
 
@@ -262,6 +263,7 @@ The `..` row is tracked separately through `isParentDirectorySelected`. Pressing
 | Reveal in Finder | Uses `NSWorkspace.shared.activateFileViewerSelecting`. |
 | Copy Path | Writes a path string to `NSPasteboard.general`. |
 | Open With | Lists candidate applications from `NSWorkspace.shared.urlsForApplications(toOpen:)` and opens the file via `NSWorkspace.shared.open(_:withApplicationAt:configuration:)`. The submenu also exposes an "Other…" picker (`NSOpenPanel` restricted to `UTType.application`). Hidden for plain folders and for `.app` bundles. |
+| Tags | Toggles Finder's seven standard color tags, toggles custom tags already visible in the current directory, or prompts for a new custom tag name. Multi-selection is supported. |
 | Open Terminal Here | Opens Terminal.app at the target directory. |
 | Compress to Zip | Creates a unique zip archive from the selected items. |
 | Extract Zip | Extracts a zip archive into a unique destination folder named from the archive. |
@@ -276,7 +278,15 @@ Context menus have a single attachment per area:
 
 All three menus follow Finder's grouping with dividers between groups: open actions (Open, Open With), destructive action (Move to Trash), manipulation (Rename, Compress, Extract, Copy/Cut/Paste), location (Reveal in Finder, Copy Path), and folder-only actions (Pin Folder, Open Terminal Here).
 
-### 8.7 Zip Archive Browsing
+### 8.7 Finder Tags
+
+Finder-compatible tags are represented by `FileTag`. macOS stores tags as raw strings in the `tagNames` resource value: bare names for uncolored tags and `"<name>\n<colorID>"` for colored tags. `FileTag` parses both forms and maps standard Finder color names back to their color IDs through `NSWorkspace.shared.fileLabels`.
+
+The file list includes a `Tags` column that renders each tag as a compact colored dot with the tag name in hover help. Uncolored custom tags fall back to the secondary foreground color so they remain visible. Folders additionally use their first colored tag to tint the folder icon; files keep their normal `NSWorkspace` icon.
+
+`FileBrowserModel+Tags` writes tag updates through `URLResourceValues.tagNames`. Standard color tags toggle by color ID. Custom tags toggle by name, and `Add Custom Tag…` prompts for a new uncolored name before appending it to each selected item that does not already have it. Tag editing is disabled for zip-archive virtual entries because those URLs are not mutable file-system locations.
+
+### 8.8 Zip Archive Browsing
 
 Zip archives are exposed as virtual directories. Opening a real `.zip` file navigates into the archive without extracting the whole archive into the current folder.
 
@@ -284,7 +294,7 @@ Zip archives are exposed as virtual directories. Opening a real `.zip` file navi
 
 Copying from a zip archive extracts the selected virtual entries into the paste target. Cutting from a zip archive behaves as copy because the archive is not modified.
 
-### 8.8 Copy, Cut, and Paste
+### 8.9 Copy, Cut, and Paste
 
 Copy and cut store URLs and operation type in `FileClipboard`, and also write URLs and the preferred operation to `NSPasteboard`. Paste first uses the app-local clipboard when available, and otherwise reads file URLs from the macOS pasteboard so files copied in Finder can be pasted into tfx. `Command + Option + V` performs move-paste for file URLs when available.
 
@@ -299,7 +309,7 @@ Same-name conflicts are resolved through a user prompt:
 
 The app-local clipboard is cleared after a successful move operation.
 
-### 8.9 Drag and Drop
+### 8.10 Drag and Drop
 
 File rows, file-pane blank space, and folder-tree rows accept `UTType.fileURL` drops. `FileBrowserDropDelegate` calls `FileBrowserModel.moveDroppedFiles(_:to:completion:)`.
 
@@ -307,7 +317,7 @@ File drops move files into the target directory by default. Holding Option reque
 
 If a dropped URL requires security-scoped access, access is started only for the duration of the move.
 
-### 8.10 Preview
+### 8.11 Preview
 
 Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look. `PreviewFileInfoView` loads metadata asynchronously so metadata display does not block preview layout.
 
