@@ -136,79 +136,79 @@ extension Theme {
     }
 }
 
-// MARK: - Terminal Classic (phosphor green CRT)
+// MARK: - Modern Dark (popular blue accent)
 //
-// Palette inspired by amber/green CRT terminals: a near-black ground
-// with a faint green undertone, a layered mid-shade for chrome, and a
-// single vivid phosphor green that runs through every active state
-// (keyboard target, header, status line). Directories use a cooler
-// green-cyan so they read as "interactive" against the warmer foreground.
+// Palette inspired by current developer tools: a neutral near-black
+// ground, blue as the primary active accent, cyan for navigational
+// directory affordances, and familiar Git signal colors. The saved id
+// stays `terminal-classic` so existing preferences migrate in place.
 
 extension Theme {
     private enum ClassicPalette {
-        // Base (background) ladder — three close-together near-blacks
-        // with a green tint so layered surfaces still feel related.
-        static let base0   = Color(red: 0.027, green: 0.039, blue: 0.027) // #070A07 — darkest
-        static let base1   = Color(red: 0.043, green: 0.063, blue: 0.043) // #0B100B — chrome
-        static let base2   = Color(red: 0.067, green: 0.094, blue: 0.067) // #111811 — selection lift
-        static let base3   = Color(red: 0.110, green: 0.149, blue: 0.110) // #1C261C — strong lift
+        // Base (background) ladder — neutral dark surfaces with enough
+        // separation for panes, headers, selections, and drag handles.
+        static let base0   = Color(red: 0.043, green: 0.059, blue: 0.078) // #0B0F14 — darkest
+        static let base1   = Color(red: 0.067, green: 0.086, blue: 0.114) // #11161D — chrome
+        static let base2   = Color(red: 0.102, green: 0.125, blue: 0.161) // #1A2029 — selection lift
+        static let base3   = Color(red: 0.141, green: 0.169, blue: 0.216) // #242B37 — strong lift
 
-        // Foreground ladder — desaturated phosphor greens.
-        static let text    = Color(red: 0.776, green: 0.910, blue: 0.776) // #C6E8C6
-        static let muted   = Color(red: 0.420, green: 0.533, blue: 0.439) // #6B8870
-        static let dim     = Color(red: 0.243, green: 0.318, blue: 0.255) // #3E5141
+        // Foreground ladder — modern zinc/slate neutrals.
+        static let text    = Color(red: 0.902, green: 0.925, blue: 0.953) // #E6ECF3
+        static let muted   = Color(red: 0.584, green: 0.647, blue: 0.722) // #95A5B8
+        static let dim     = Color(red: 0.278, green: 0.333, blue: 0.408) // #475568
 
         // Accents
-        static let phosphor   = Color(red: 0.290, green: 0.867, blue: 0.486) // #4ADD7C — keyboard / headers
-        static let phosphorDim = Color(red: 0.165, green: 0.502, blue: 0.282) // #2A8048 — active (non-KB)
-        static let directory  = Color(red: 0.373, green: 0.702, blue: 0.478) // #5FB37A — folders
-        static let amber      = Color(red: 0.847, green: 0.722, blue: 0.361) // #D8B85C — git modified
-        static let signalRed  = Color(red: 0.910, green: 0.361, blue: 0.361) // #E85C5C — git deleted
-        static let signalCyan = Color(red: 0.361, green: 0.784, blue: 0.847) // #5CC8D8 — git renamed
-        static let signalOrange = Color(red: 1.0, green: 0.478, blue: 0.361) // #FF7A5C — conflict
+        static let accent    = Color(red: 0.231, green: 0.510, blue: 0.965) // #3B82F6 — keyboard / headers
+        static let accentDim = Color(red: 0.118, green: 0.306, blue: 0.631) // #1E4EA1 — active (non-KB)
+        static let directory = Color(red: 0.220, green: 0.741, blue: 0.973) // #38BDF8 — folders
+        static let amber     = Color(red: 0.961, green: 0.620, blue: 0.043) // #F59E0B — git modified
+        static let green     = Color(red: 0.133, green: 0.773, blue: 0.369) // #22C55E — git added
+        static let signalRed = Color(red: 0.937, green: 0.267, blue: 0.267) // #EF4444 — git deleted
+        static let violet    = Color(red: 0.545, green: 0.361, blue: 0.965) // #8B5CF6 — git renamed
+        static let orange    = Color(red: 0.976, green: 0.451, blue: 0.086) // #F97316 — conflict
     }
 
     static let terminalClassic = Theme(
         id: "terminal-classic",
-        displayName: "Terminal Classic",
+        displayName: "Modern Dark",
         // File pane
         fileListBackground: ClassicPalette.base0,
         fileListRowSelected: ClassicPalette.base3,
-        fileListRowDropTarget: ClassicPalette.phosphorDim,
+        fileListRowDropTarget: ClassicPalette.accentDim,
         directoryForeground: ClassicPalette.directory,
         fileForeground: ClassicPalette.text,
         secondaryForeground: ClassicPalette.muted,
         // Chrome
-        headerForeground: ClassicPalette.phosphor,
+        headerForeground: ClassicPalette.accent,
         headerBackground: ClassicPalette.base1,
         titleBarBackgroundActive: ClassicPalette.base3,
         titleBarBackgroundInactive: ClassicPalette.base1,
-        statusLineForegroundActive: ClassicPalette.phosphor,
+        statusLineForegroundActive: ClassicPalette.accent,
         statusLineForegroundInactive: ClassicPalette.muted,
         statusLineBackground: ClassicPalette.base1,
         // Borders
-        paneBorderKeyboardTarget: ClassicPalette.phosphor,
-        paneBorderActive: ClassicPalette.phosphorDim,
+        paneBorderKeyboardTarget: ClassicPalette.accent,
+        paneBorderActive: ClassicPalette.accentDim,
         paneBorderInactive: ClassicPalette.dim,
         // Folder tree
         folderTreeBackground: ClassicPalette.base0,
         folderTreeForeground: ClassicPalette.text,
-        folderTreeSelectedForeground: ClassicPalette.phosphor,
+        folderTreeSelectedForeground: ClassicPalette.directory,
         folderTreeFolderIcon: ClassicPalette.directory,
         folderTreeSelectedActive: ClassicPalette.base3,
         folderTreeSelectedInactive: ClassicPalette.base2,
-        folderTreeSectionHeader: ClassicPalette.phosphorDim,
+        folderTreeSectionHeader: ClassicPalette.accent,
         // Misc
         splitHandleIdle: ClassicPalette.dim,
-        splitHandleActive: ClassicPalette.phosphor,
+        splitHandleActive: ClassicPalette.accent,
         // Git — palette accents only, all sit on the dark base
         gitModified: ClassicPalette.amber,
-        gitAdded: ClassicPalette.phosphor,
+        gitAdded: ClassicPalette.green,
         gitDeleted: ClassicPalette.signalRed,
-        gitRenamed: ClassicPalette.signalCyan,
+        gitRenamed: ClassicPalette.violet,
         gitUntracked: ClassicPalette.muted,
         gitIgnored: ClassicPalette.dim,
-        gitConflicted: ClassicPalette.signalOrange
+        gitConflicted: ClassicPalette.orange
     )
 }
 

@@ -122,6 +122,49 @@ When changing user-facing behavior, update both `README.md` and `README.ja.md` t
 
 ## Release Process
 
-The release process is still being formalized as §2.9 (Sparkle Auto-Update) and the §3.3 Distribution Plan land. Until then, releases are local-only builds tagged with `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` bumps in the Xcode project, plus a CHANGELOG entry.
+Releases are built from a clean working tree after bumping `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`, `README.md`, `README.ja.md`, and `CHANGELOG.md`.
 
-When §2.9 is in place, this section will be extended with appcast signing, Sparkle channel layout, and notarization steps.
+Before building a signed release, confirm that both Developer ID identities are available in the login keychain:
+
+```sh
+security find-identity -v -p codesigning
+```
+
+The release script defaults to the current project team and identities:
+
+- `TFX_DEVELOPMENT_TEAM=Q6GG27UYG5`
+- `TFX_APP_SIGN_IDENTITY="Developer ID Application: Noriaki Fukuyori (Q6GG27UYG5)"`
+- `TFX_PKG_SIGN_IDENTITY="Developer ID Installer: Noriaki Fukuyori (Q6GG27UYG5)"`
+
+Override those environment variables when building with another Apple Developer account.
+
+For notarized direct-distribution builds, store a notarytool keychain profile once on the release machine:
+
+```sh
+xcrun notarytool store-credentials tfx-notary \
+    --apple-id "APPLE_ID" \
+    --team-id "Q6GG27UYG5" \
+    --password "APP_SPECIFIC_PASSWORD"
+```
+
+Build a signed package without notarization:
+
+```sh
+TFX_SKIP_NOTARIZATION=1 ./scripts/build_release_pkg.sh
+```
+
+Build, submit for notarization, staple the ticket, and run Gatekeeper install assessment:
+
+```sh
+TFX_NOTARY_PROFILE=tfx-notary ./scripts/build_release_pkg.sh
+```
+
+The output package is written to `artifacts/tfx-<version>.pkg`. The script verifies the app signature with `codesign`, verifies the package signature with `pkgutil`, validates the stapled ticket with `stapler`, and checks install assessment with `spctl`.
+
+Unsigned local release builds remain available for debugging:
+
+```sh
+TFX_SKIP_SIGNING=1 ./scripts/build_release_pkg.sh
+```
+
+Sparkle appcast signing and channel layout will be added here when §2.7 lands.

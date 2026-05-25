@@ -1013,6 +1013,9 @@
         }
       }
     },
+    "Modern Dark" : {
+
+    },
     "Modified" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1047,7 +1050,7 @@
         }
       }
     },
-    "Monokai" : {
+    "Monokai Pro" : {
 
     },
     "Move down" : {
@@ -2072,9 +2075,6 @@
           }
         }
       }
-    },
-    "Terminal Classic" : {
-
     },
     "tfx is a macOS file manager" : {
       "extractionState" : "manual",

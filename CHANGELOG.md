@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.7] - 2026-05-23
+
+Paste compatibility with cloud-synced files (Dropbox, iCloud Drive, OneDrive).
+
+### Fixed
+
+- Copy → paste from FileProvider-backed locations (notably Dropbox smart-sync) failed with "file does not exist" while drag-and-drop on the same files worked. `FileBrowserFileOperations.paste` now wraps each source URL with `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` in the same pattern as `drop`. The cloud-placeholder hydration that drag-and-drop already triggered now also runs on paste, so copy-then-paste behaves identically to drag-and-drop for cloud-managed files.
+
+### Changed
+
+- Updated the version to `0.5.7` and the build number to `29`.
+
 ## [0.5.6] - 2026-05-23
 
 Built-in color themes.

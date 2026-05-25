@@ -229,6 +229,22 @@ enum FileBrowserFileOperations {
                 continue
             }
 
+            // Enter the security scope for the source URL before any
+            // file-system operation. This is what makes the call work
+            // against FileProvider-backed paths (Dropbox smart-sync,
+            // iCloud Drive, OneDrive, etc.): the system materializes
+            // the cloud placeholder into a real file on first access
+            // and only honors that request inside an active scope.
+            // The drop path already does this; paste was missing it,
+            // which is why copy → paste failed for Dropbox files even
+            // though drag-and-drop succeeded on the same items.
+            let scoped = sourceURL.startAccessingSecurityScopedResource()
+            defer {
+                if scoped {
+                    sourceURL.stopAccessingSecurityScopedResource()
+                }
+            }
+
             let decision = FileConflictResolver.destinationDecision(
                 for: sourceURL,
                 in: targetDirectory,

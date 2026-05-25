@@ -10,9 +10,18 @@ ARTIFACTS_DIR="$ROOT_DIR/artifacts"
 STAGING_DIR="$ARTIFACTS_DIR/staging"
 APP_SIGN_IDENTITY="${TFX_APP_SIGN_IDENTITY:-Developer ID Application: Noriaki Fukuyori (Q6GG27UYG5)}"
 PKG_SIGN_IDENTITY="${TFX_PKG_SIGN_IDENTITY:-Developer ID Installer: Noriaki Fukuyori (Q6GG27UYG5)}"
+DEVELOPMENT_TEAM="${TFX_DEVELOPMENT_TEAM:-Q6GG27UYG5}"
+NOTARY_PROFILE="${TFX_NOTARY_PROFILE:-}"
 SKIP_SIGNING="${TFX_SKIP_SIGNING:-0}"
+SKIP_NOTARIZATION="${TFX_SKIP_NOTARIZATION:-0}"
 
-BUILD_SETTINGS="$(xcodebuild -project "$PROJECT_PATH" -scheme "$SCHEME" -configuration "$CONFIGURATION" -showBuildSettings 2>/dev/null)"
+BUILD_SETTINGS="$(xcodebuild \
+  -project "$PROJECT_PATH" \
+  -scheme "$SCHEME" \
+  -configuration "$CONFIGURATION" \
+  -destination 'platform=macOS' \
+  -derivedDataPath "$DERIVED_DATA_PATH" \
+  -showBuildSettings 2>&1)"
 VERSION="$(awk -F '= ' '/MARKETING_VERSION/ { print $2; exit }' <<<"$BUILD_SETTINGS")"
 BUILD_NUMBER="$(awk -F '= ' '/CURRENT_PROJECT_VERSION/ { print $2; exit }' <<<"$BUILD_SETTINGS")"
 BUNDLE_IDENTIFIER="$(awk -F '= ' '/PRODUCT_BUNDLE_IDENTIFIER/ { print $2; exit }' <<<"$BUILD_SETTINGS")"
@@ -51,7 +60,7 @@ else
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
     CODE_SIGN_IDENTITY="$APP_SIGN_IDENTITY" \
     OTHER_CODE_SIGN_FLAGS="--timestamp" \
-    DEVELOPMENT_TEAM=Q6GG27UYG5 \
+    DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
     build
 
   codesign --verify --deep --strict --verbose=2 "$APP_PATH"
@@ -77,8 +86,27 @@ COPYFILE_DISABLE=1 pkgbuild "${PKGBUILD_ARGS[@]}" "$PKG_PATH"
 
 if [[ "$SKIP_SIGNING" != "1" ]]; then
   pkgutil --check-signature "$PKG_PATH"
+
+  if [[ "$SKIP_NOTARIZATION" != "1" && -n "$NOTARY_PROFILE" ]]; then
+    echo "Submitting $PKG_PATH for notarization"
+    xcrun notarytool submit "$PKG_PATH" \
+      --keychain-profile "$NOTARY_PROFILE" \
+      --wait
+
+    echo "Stapling notarization ticket"
+    xcrun stapler staple "$PKG_PATH"
+    xcrun stapler validate "$PKG_PATH"
+
+    echo "Checking Gatekeeper install assessment"
+    spctl -a -vv -t install "$PKG_PATH"
+  elif [[ "$SKIP_NOTARIZATION" != "1" ]]; then
+    echo "Skipping notarization because TFX_NOTARY_PROFILE is not set."
+  else
+    echo "Skipping notarization because TFX_SKIP_NOTARIZATION=1."
+  fi
 else
   pkgutil --payload-files "$PKG_PATH" >/dev/null
+  echo "Skipping notarization because TFX_SKIP_SIGNING=1."
 fi
 
 echo "Built $PKG_PATH"
