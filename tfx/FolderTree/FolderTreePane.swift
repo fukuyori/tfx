@@ -60,7 +60,10 @@ struct FolderTreePane: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(Array(model.pinnedFolders.enumerated()), id: \.element) { index, pinnedFolder in
-                            PinnedFolderInsertionSlot(isVisible: model.isPinnedFolderInsertionSlotVisible(at: index))
+                            PinnedFolderInsertionSlot(
+                                isVisible: model.isPinnedFolderInsertionSlotVisible(at: index),
+                                reservesRowSpace: !model.isDraggingPinnedFolder
+                            )
 
                             PinnedFolderTreeRow(
                                 model: model,
@@ -70,7 +73,10 @@ struct FolderTreePane: View {
                             )
                         }
 
-                        PinnedFolderInsertionSlot(isVisible: model.isPinnedFolderInsertionSlotVisible(at: model.pinnedFolders.count))
+                        PinnedFolderInsertionSlot(
+                            isVisible: model.isPinnedFolderInsertionSlotVisible(at: model.pinnedFolders.count),
+                            reservesRowSpace: !model.isDraggingPinnedFolder
+                        )
                     }
                     .background(
                         GeometryReader { geo in
@@ -79,8 +85,17 @@ struct FolderTreePane: View {
                                 .onChange(of: geo.size.height) { pinnedContentHeight = geo.size.height }
                         }
                     )
+                    // Make the whole rows-VStack hit-testable so the
+                    // drop delegate receives location updates anywhere
+                    // inside the section, not only directly over a row
+                    // (which would miss the inter-row gaps the insertion
+                    // slots open into).
+                    .contentShape(Rectangle())
                 }
                 .frame(height: min(max(pinnedContentHeight, 1), pinnedSectionMaxHeight))
+                .overlay {
+                    PinnedFolderExternalDropOverlay(model: model, rowHeight: 26)
+                }
                 .onChange(of: model.folderTreeSelection) {
                     if model.folderTreeSelectionSection == .pinned {
                         scrollToSelection(with: pinnedProxy)

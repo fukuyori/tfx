@@ -67,7 +67,17 @@ final class FileRowInteractionView: NSView, NSDraggingSource {
             )
             return item
         }
-        beginDraggingSession(with: draggingItems, event: mouseDownEvent, source: self)
+        let session = beginDraggingSession(with: draggingItems, event: mouseDownEvent, source: self)
+        // Suppress the AppKit "snap back to source" animation. SwiftUI
+        // drop targets that consume the drop (e.g. the pinned-folder
+        // section, which records the drop as in-app state rather than a
+        // file-system move) don't communicate "success" back to the
+        // drag session in a way AppKit recognizes, so the default
+        // bounce-back makes a successful pin look like a rejected drop.
+        // Without the bounce, the drag image simply disappears at the
+        // drop point on both success and reject, which reads
+        // identically to Finder's modern drop behavior.
+        session.animatesToStartingPositionsOnCancelOrFail = false
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -88,7 +98,7 @@ final class FileRowInteractionView: NSView, NSDraggingSource {
     }
 
     func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
-        context == .outsideApplication ? .copy : [.copy, .move]
+        [.copy, .move]
     }
 }
 #endif

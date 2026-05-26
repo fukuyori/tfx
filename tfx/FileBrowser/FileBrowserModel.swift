@@ -106,6 +106,12 @@ final class FileBrowserModel: ObservableObject {
     var subfolderSearchCancellation: SubfolderSearchCancellation?
     var metadataPrefetchCancellation: MetadataPrefetchCancellation?
     var gitStatusCancellation: GitStatusCancellation?
+    /// Timestamp of the most recent successful pinned-folder external
+    /// drop. While set within `Self.pinDropSuppressionWindow` of `now`,
+    /// `updateExternalPinDropPreview` is a no-op so SwiftUI's spurious
+    /// post-drop `dropUpdated` replays cannot re-open the accent line.
+    var pinnedExternalDropCompletedAt: Date?
+    static let pinDropSuppressionWindow: TimeInterval = 0.6
     /// Caches per-directory Git root resolution so re-entering a
     /// previously visited folder skips the `git rev-parse` cost. The
     /// optional value distinguishes "outside any work tree" (`.some(nil)`)

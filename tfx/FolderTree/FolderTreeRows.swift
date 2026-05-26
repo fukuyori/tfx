@@ -109,18 +109,13 @@ struct FolderTreeRow: View {
                 activateTree: activateTree
             )
         }
-        .onDrop(
-            of: [UTType.fileURL.identifier],
-            delegate: FileBrowserDropDelegate(
-                model: model,
-                targetDirectory: url,
-                highlightedDirectory: url,
-                reloadRelatedPanes: {
-                    activateTree()
-                    model.selectFolderTree(url, in: selectionSection)
-                }
-            )
-        )
+        // Folder-tree rows (both FOLDERS and PINNED sections) intentionally
+        // do NOT accept file-URL drops. The pinned section has its own
+        // `PinnedFolderExternalDropDelegate` for adding folders to the
+        // pin list, and we want a drag from the file pane onto a tree
+        // row to be ignored rather than silently moving the file into
+        // that directory. Re-enable per-row file drops here if a future
+        // workflow needs "drop file onto folder = move into" again.
     }
 
     private func displayName(for url: URL) -> String {

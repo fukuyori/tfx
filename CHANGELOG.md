@@ -4,6 +4,19 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.8] - 2026-05-26
+
+Pinned-folder drag and drop polish.
+
+### Fixed
+
+- Dropping a folder from the file pane onto the pinned-folder section no longer shows a snap-back animation after the folder is pinned.
+- Reordering pinned folders now keeps the dragged folder visible, hides the original row label while dragging, and uses a stable insertion line near the original position.
+
+### Changed
+
+- Updated the version to `0.5.8` and the build number to `30`.
+
 ## [0.5.7] - 2026-05-23
 
 Paste compatibility with cloud-synced files (Dropbox, iCloud Drive, OneDrive).

@@ -31,9 +31,23 @@ struct FileBrowserPinnedFolderDrag {
             return nil
         }
 
-        let rowOffset = Int((translationY / rowHeight).rounded())
-        let dropDirectionOffset = translationY > 0 ? 1 : 0
-        return min(max(originalIndex + rowOffset + dropDirectionOffset, 0), folderCount)
+        let rowOffset = translationY / rowHeight
+        guard abs(rowOffset) >= 0.5 else {
+            return originalIndex
+        }
+
+        let insertionIndex: Int
+        if rowOffset > 0 {
+            insertionIndex = originalIndex + Int(floor(rowOffset + 0.5)) + 1
+        } else {
+            insertionIndex = originalIndex + Int(ceil(rowOffset - 0.5))
+        }
+
+        let clampedIndex = min(max(insertionIndex, 0), folderCount)
+        if clampedIndex == originalIndex || clampedIndex == originalIndex + 1 {
+            return nil
+        }
+        return clampedIndex
     }
 
     mutating func reset() {
