@@ -4,6 +4,15 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.5.9] - 2026-05-26
+
+Clearer error alerts for file operation failures.
+
+### Changed
+
+- `FileBrowserModel.show(_:)` now builds the alert body by walking the `NSError` chain instead of relying on `Error.localizedDescription` alone. Recovery suggestions, underlying error messages, and the file path that the operation tried to act on (`NSFilePathErrorKey` / `NSURLErrorKey`) are appended when present. Previously a Cocoa file error showed up as just "The file couldn't be opened.", giving no hint which file or what went wrong; with the chain expanded the alert calls out the path so users can correlate it with permissions, missing sync state, or out-of-space conditions on their own.
+- Updated the version to `0.5.9` and the build number to `31`.
+
 ## [0.5.8] - 2026-05-26
 
 Pinned-folder drag and drop polish.

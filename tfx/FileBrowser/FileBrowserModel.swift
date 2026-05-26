@@ -203,9 +203,38 @@ final class FileBrowserModel: ObservableObject {
     ) {
         errorTitle = title
         errorButtonTitle = buttonTitle
-        errorMessage = error.localizedDescription
+        errorMessage = Self.detailedDescription(of: error)
         errorDismissalHandler = onDismiss
         isShowingError = true
+    }
+
+    /// Build the message body for the error alert. The default
+    /// `Error.localizedDescription` collapses Cocoa file errors into a
+    /// short sentence that often drops the file path or the underlying
+    /// reason (a NSCocoaErrorDomain `.fileReadNoSuchFile` reads as just
+    /// "The file couldn't be opened.", for example). We walk
+    /// `NSError.userInfo` so the dialog also shows the recovery
+    /// suggestion, the chained underlying error, and the path that the
+    /// operation tried to act on.
+    private static func detailedDescription(of error: Error) -> String {
+        let nsError = error as NSError
+        var parts: [String] = [nsError.localizedDescription]
+        if let recovery = nsError.localizedRecoverySuggestion {
+            parts.append(recovery)
+        }
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            let underlyingText = underlying.localizedDescription
+            if !underlyingText.isEmpty,
+               !parts.joined(separator: "\n").contains(underlyingText) {
+                parts.append(underlyingText)
+            }
+        }
+        if let path = nsError.userInfo[NSFilePathErrorKey] as? String {
+            parts.append(path)
+        } else if let url = nsError.userInfo[NSURLErrorKey] as? URL {
+            parts.append(url.path)
+        }
+        return parts.joined(separator: "\n")
     }
 
     func dismissError() {

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.5.8**
+Version: **0.5.9**
 
 English | [日本語](README.ja.md)
 
