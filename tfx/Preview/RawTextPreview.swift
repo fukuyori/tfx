@@ -64,9 +64,15 @@ struct RawTextPreview: NSViewRepresentable {
 
         DispatchQueue.global(qos: .userInitiated).async {
             guard !cancellation.isCancelled else { return }
-            let text = (try? String(contentsOf: targetURL, encoding: .utf8))
-                ?? String(decoding: ((try? Data(contentsOf: targetURL)) ?? Data()), as: UTF8.self)
+            let outcome = PreviewTextLoader.load(at: targetURL)
             guard !cancellation.isCancelled else { return }
+            let text: String
+            switch outcome {
+            case let .success(loaded):
+                text = loaded
+            case let .tooLarge(actualBytes):
+                text = PreviewTextLoader.tooLargeMessage(actualBytes: actualBytes)
+            }
 
             DispatchQueue.main.async {
                 guard

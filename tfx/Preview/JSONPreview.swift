@@ -34,9 +34,18 @@ struct JSONPreview: NSViewRepresentable {
 
         DispatchQueue.global(qos: .userInitiated).async {
             guard !cancellation.isCancelled else { return }
-            let data = (try? Data(contentsOf: targetURL)) ?? Data()
-            let displayed = Self.prettyPrint(data: data)
+            let outcome = PreviewTextLoader.load(at: targetURL)
             guard !cancellation.isCancelled else { return }
+            let displayed: String
+            switch outcome {
+            case let .success(text):
+                // The shared loader returns a UTF-8 string; convert
+                // back to bytes for the JSON parser so the existing
+                // pretty-printer path stays untouched.
+                displayed = Self.prettyPrint(data: Data(text.utf8))
+            case let .tooLarge(actualBytes):
+                displayed = PreviewTextLoader.tooLargeMessage(actualBytes: actualBytes)
+            }
 
             DispatchQueue.main.async {
                 guard

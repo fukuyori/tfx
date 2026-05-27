@@ -15,11 +15,14 @@ struct CSVPreview: View {
     @State private var loadedURL: URL?
     @State private var isLoading = false
     @State private var loadFailed = false
+    @State private var tooLargeMessage: String?
 
     var body: some View {
         Group {
             if isLoading {
                 statusView { ProgressView() }
+            } else if let tooLargeMessage {
+                statusView { Text(tooLargeMessage) }
             } else if loadFailed {
                 statusView { Text("Unable to read file") }
             } else if rows.isEmpty {
@@ -75,25 +78,30 @@ struct CSVPreview: View {
         loadedURL = newURL
         isLoading = true
         loadFailed = false
+        tooLargeMessage = nil
         rows = []
 
         let delimiter: Character = newURL.pathExtension.lowercased() == "tsv" ? "\t" : ","
         let target = newURL
 
         DispatchQueue.global(qos: .userInitiated).async {
-            guard let text = try? String(contentsOf: target, encoding: .utf8) else {
+            let outcome = PreviewTextLoader.load(at: target)
+            switch outcome {
+            case let .tooLarge(actualBytes):
+                let message = PreviewTextLoader.tooLargeMessage(actualBytes: actualBytes)
                 DispatchQueue.main.async {
                     guard loadedURL == newURL else { return }
-                    loadFailed = true
+                    tooLargeMessage = message
                     isLoading = false
                 }
                 return
-            }
-            let parsed = CSVParser.parse(text, delimiter: delimiter)
-            DispatchQueue.main.async {
-                guard loadedURL == newURL else { return }
-                rows = parsed
-                isLoading = false
+            case let .success(text):
+                let parsed = CSVParser.parse(text, delimiter: delimiter)
+                DispatchQueue.main.async {
+                    guard loadedURL == newURL else { return }
+                    rows = parsed
+                    isLoading = false
+                }
             }
         }
     }

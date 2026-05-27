@@ -4,6 +4,19 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.0] - 2026-05-27
+
+Preview hardening: PDF rendered through Quick Look sandbox, markdown locked down against script injection, and text-based previews bounded by a size cap.
+
+### Changed
+
+- `PDFPreview` now renders the first page through `QLThumbnailGenerator`. The PDF parser, image decoders, and any embedded resources run inside Apple's sandboxed Quick Look XPC service (`com.apple.quicklook.QuickLookSatellite`); only the rendered `NSImage` returns to tfx. Embedded JavaScript and AcroForms can no longer execute, PDF link / external-file actions can no longer fire, parser exploits land in the satellite instead of in tfx, and resource attacks (huge page counts, deep nesting) are capped by the satellite's own limits. Multi-page scrolling, text selection, and link navigation — which the file-preview pane did not need — are gone.
+- `MarkdownPreview` configures its `WKWebView` with `WKWebpagePreferences.allowsContentJavaScript = false`, loads the rendered HTML with `baseURL: nil`, and attaches a `WKNavigationDelegate` that only permits link activations to `http`, `https`, and `mailto` schemes (those are opened through `NSWorkspace`). `javascript:` and `data:` URLs are rejected, and relative `file://` references no longer resolve, so an attacker-controlled `.md` cannot exfiltrate local files through `<img src="../…">`-style relative loads.
+- `MarkdownInlineHTML.inlineHTML` re-escapes captured link URLs as attribute values and validates the URL scheme before emitting `<a href="…">`. Links with non-allowlisted schemes drop the URL entirely and render as plain text, so injected `javascript:`-style hrefs never reach the DOM.
+- `MarkdownHTMLDocument` injects a `Content-Security-Policy` meta tag (`default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'`) on every rendered page, blocking script execution, external image and frame loads, fetch/XHR, and form submissions as defense in depth.
+- New `PreviewTextLoader` enforces a 50 MB cap when reading files into memory for the raw-text, JSON, and CSV previews. Files above the cap render a localized "File too large to preview" placeholder with the actual and allowed sizes, so a runaway file no longer exhausts tfx's resident memory just by being selected.
+- Updated the version to `0.6.0` and the build number to `32`.
+
 ## [0.5.9] - 2026-05-26
 
 Clearer error alerts for file operation failures.

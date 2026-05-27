@@ -66,7 +66,7 @@ See `docs/code-organization.md` for file naming and placement rules, and `docs/c
 | --- | --- |
 | UI | SwiftUI |
 | macOS integration | AppKit, NSWorkspace, NSOpenPanel, NSAlert, NSPasteboard |
-| PDF preview | PDFKit |
+| PDF preview | QuickLookThumbnailing (sandboxed XPC) |
 | Video preview | AVKit |
 | Markdown preview | WebKit |
 | Generic preview | QuickLookUI |
@@ -343,7 +343,17 @@ If a dropped URL requires security-scoped access, access is started only for the
 
 Preview views are selected from the primary selected URL or from visible multi-preview items. PDF, video, and Markdown use dedicated views; other files use Quick Look. `PreviewFileInfoView` loads metadata asynchronously so metadata display does not block preview layout.
 
-Markdown is converted to HTML with the built-in renderer and displayed in a `WKWebView`. The supported baseline syntax includes headings, paragraphs, lists, code blocks, block quotes, inline code, emphasis, and links.
+`PDFPreview` renders the first page through `QLThumbnailGenerator`. The PDF parser and any embedded resources run inside Apple's sandboxed Quick Look XPC service (`com.apple.quicklook.QuickLookSatellite`); only the resulting `NSImage` returns to tfx. Embedded JavaScript and AcroForms cannot execute (no interactive view), PDF link / external-file actions cannot fire, parser exploits land in the satellite instead of in tfx, and resource attacks are capped by the satellite's own limits. The trade-off — no multi-page scrolling, no text selection — is acceptable because the preview pane is for at-a-glance file identification rather than reading.
+
+`MarkdownPreview` converts Markdown to HTML with the built-in renderer and displays it in a `WKWebView`. The supported baseline syntax includes headings, paragraphs, lists, code blocks, block quotes, inline code, emphasis, and links. The renderer is hardened against an attacker-controlled markdown file:
+
+- `WKWebpagePreferences.allowsContentJavaScript = false`, so injected `<script>` tags and `javascript:` URLs cannot run.
+- The HTML is loaded with `baseURL: nil`, so relative `file://` references inside the rendered document cannot resolve to arbitrary local files.
+- A `WKNavigationDelegate` only permits link activations whose scheme is `http`, `https`, or `mailto`, and opens them through `NSWorkspace`. Anything else (`javascript:`, `data:`, …) is dropped at click time.
+- `MarkdownInlineHTML.inlineHTML` re-escapes captured link URLs as attribute values and validates the scheme before emitting `<a href="…">`. Non-allowlisted schemes drop the URL entirely and render the link as plain text, so unsafe hrefs never reach the DOM.
+- Every rendered document carries a `Content-Security-Policy` meta tag — `default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'` — as defense in depth against future renderer changes that might inadvertently let HTML through.
+
+`PreviewTextLoader` is the shared reader used by `RawTextPreview`, `JSONPreview`, and `CSVPreview`. It checks `URLResourceKey.fileSizeKey` before reading any bytes and refuses sources above a 50 MB cap, returning a `.tooLarge` sentinel that each preview renders as a localized "File too large to preview" placeholder showing the actual and allowed sizes. Without this cap, a multi-GB log or an intentional bomb file would exhaust tfx's resident memory on selection.
 
 Future Markdown extensions will cover ruby text, math rendering, Mermaid diagrams, custom syntax, and CSS customization through TOML configuration.
 

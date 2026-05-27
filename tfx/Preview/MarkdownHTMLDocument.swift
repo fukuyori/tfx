@@ -2,11 +2,25 @@
 import Foundation
 
 enum MarkdownHTMLDocument {
+    /// Content-Security-Policy that locks the markdown preview down to
+    /// inline `<style>` only. `default-src 'none'` blocks every other
+    /// resource type by default; `style-src 'unsafe-inline'` re-enables
+    /// just the inline stylesheet the renderer ships. Crucially this
+    /// blocks `<script>` execution (`script-src` falls back to
+    /// `default-src 'none'`), external `<img>` and `<iframe>` loads,
+    /// and `connect-src` (no fetch/XHR), defending against an
+    /// attacker-controlled markdown source even if a future renderer
+    /// change inadvertently lets HTML through. WKWebView already has
+    /// JavaScript globally disabled in `WKWebViewConfiguration`; the
+    /// CSP is defense in depth.
+    private static let csp = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
+
     static let loadingHTML = """
     <!doctype html>
     <html>
     <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="\(csp)">
     <style>
     :root { color-scheme: light dark; }
     body {
@@ -28,6 +42,7 @@ enum MarkdownHTMLDocument {
         <html>
         <head>
         <meta charset="utf-8">
+        <meta http-equiv="Content-Security-Policy" content="\(csp)">
         <style>
         :root { color-scheme: light dark; }
         body {
