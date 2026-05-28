@@ -1,12 +1,13 @@
 #if os(macOS)
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct BuiltInTerminalPane: View {
     @ObservedObject var model: BuiltInTerminalModel
-    @Binding var followsActiveFolder: Bool
     @FocusState.Binding var isInputFocused: Bool
     let activate: () -> Void
 
+    @State private var isPathDropTarget = false
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
@@ -23,11 +24,6 @@ struct BuiltInTerminalPane: View {
                     .foregroundStyle(theme.headerForeground)
 
                 Spacer(minLength: 8)
-
-                Toggle("Follow", isOn: $followsActiveFolder)
-                    .toggleStyle(.checkbox)
-                    .font(design.fonts.swiftUIFont(for: .caption))
-                    .foregroundStyle(theme.secondaryForeground)
             }
             .padding(.horizontal, 10)
             .frame(height: 28)
@@ -73,9 +69,56 @@ struct BuiltInTerminalPane: View {
         .simultaneousGesture(TapGesture().onEnded {
             activate()
         })
+        .onDrop(
+            of: [UTType.fileURL.identifier],
+            delegate: BuiltInTerminalPathDropDelegate(
+                model: model,
+                isDropTarget: $isPathDropTarget,
+                activate: activate
+            )
+        )
         .overlay(
             Rectangle()
-                .stroke(theme.paneBorderActive, lineWidth: 1)
+                .stroke(isPathDropTarget ? theme.paneBorderKeyboardTarget : theme.paneBorderActive, lineWidth: isPathDropTarget ? 2 : 1)
+        )
+    }
+}
+
+private struct BuiltInTerminalPathDropDelegate: DropDelegate {
+    let model: BuiltInTerminalModel
+    @Binding var isDropTarget: Bool
+    let activate: () -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        info.hasItemsConforming(to: [UTType.fileURL.identifier])
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard validateDrop(info: info) else { return }
+        isDropTarget = true
+        activate()
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        validateDrop(info: info) ? DropProposal(operation: .copy) : DropProposal(operation: .forbidden)
+    }
+
+    func dropExited(info: DropInfo) {
+        isDropTarget = false
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer { isDropTarget = false }
+        guard validateDrop(info: info) else { return false }
+
+        activate()
+        return FileBrowserDropProviderLoader.loadFileURLs(
+            from: info.itemProviders(for: [UTType.fileURL.identifier]),
+            onError: { _ in },
+            onURL: { url in
+                model.insertPaths([url])
+                activate()
+            }
         )
     }
 }

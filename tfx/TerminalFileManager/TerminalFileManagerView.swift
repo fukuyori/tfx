@@ -11,7 +11,6 @@ struct TerminalFileManagerView: View {
     @AppStorage("TerminalFileManager.isSplitViewVisible") var isSplitViewVisible = false
     @AppStorage("TerminalFileManager.isTerminalPaneVisible") var isTerminalPaneVisible = false
     @AppStorage("TerminalFileManager.terminalPaneHeight") var terminalPaneHeight = 220.0
-    @AppStorage("TerminalFileManager.terminalFollowsActiveFolder") var terminalFollowsActiveFolder = true
     @AppStorage("TerminalFileManager.activePane") var activePaneRawValue = BrowserPaneID.left.rawValue
     @AppStorage("TerminalFileManager.activeArea") var activeAreaRawValue = ActiveArea.files.rawValue
     @AppStorage("TerminalFileManager.folderTreeWidth") private var folderTreeWidth = 250.0
@@ -144,17 +143,14 @@ struct TerminalFileManagerView: View {
             .onChange(of: rightModel.currentDirectory) {
                 onPaneDirectoryChange(.right)
             }
-            .onChange(of: activePaneRawValue) {
-                followActiveFolderIfNeeded()
-            }
-            .onChange(of: terminalFollowsActiveFolder) {
-                followActiveFolderIfNeeded()
-            }
             .onChange(of: isTerminalPaneVisible) { _, isVisible in
                 onTerminalPaneVisibilityChange(isVisible: isVisible)
             }
             .onChange(of: terminalModel.isRunning) { _, isRunning in
                 refocusTerminalInputAfterCommandIfNeeded(isRunning: isRunning)
+            }
+            .onChange(of: terminalModel.terminalExitRequestID) {
+                closeTerminalPaneFromExitCommand()
             }
             .onChange(of: isSplitViewVisible) { oldValue, newValue in
                 onSplitViewVisibilityChange(from: oldValue, to: newValue)
@@ -250,11 +246,17 @@ struct TerminalFileManagerView: View {
                 mainHeight: mainHeight,
                 previewPaneWidth: previewPaneWidth
             )
+            .frame(width: totalWidth, height: mainHeight)
+            .clipped()
 
             if isTerminalPaneVisible {
                 terminalArea(totalHeight: geometry.size.height, terminalHeight: terminalHeight)
+                    .frame(width: totalWidth, height: terminalHeight + 1)
+                    .clipped()
             }
         }
+        .frame(width: totalWidth, height: geometry.size.height, alignment: .top)
+        .clipped()
     }
 
     private func mainHorizontalLayout(
@@ -283,6 +285,7 @@ struct TerminalFileManagerView: View {
 
             fileArea
                 .frame(width: mainWidth, height: mainHeight)
+                .clipped()
 
             if isPreviewVisible {
                 SplitDragHandle {
@@ -296,8 +299,11 @@ struct TerminalFileManagerView: View {
 
                 PreviewPane(urls: activeModel.previewURLs)
                     .frame(width: previewPaneWidth, height: mainHeight)
+                    .clipped()
             }
         }
+        .frame(width: totalWidth, height: mainHeight)
+        .clipped()
     }
 
     private func terminalArea(totalHeight: CGFloat, terminalHeight: CGFloat) -> some View {
@@ -313,7 +319,6 @@ struct TerminalFileManagerView: View {
 
             BuiltInTerminalPane(
                 model: terminalModel,
-                followsActiveFolder: $terminalFollowsActiveFolder,
                 isInputFocused: $isTerminalInputFocused,
                 activate: focusTerminalPane
             )
@@ -325,7 +330,6 @@ struct TerminalFileManagerView: View {
         let paneModel = modelForPane(paneID)
         UserDefaults.standard.set(paneModel.currentDirectory.path, forKey: "TerminalFileManager.\(paneID.rawValue)Directory")
         updateActiveTabDirectory(paneModel.currentDirectory, for: paneID)
-        followActiveFolderIfNeeded()
         isSearchFocused = false
     }
 

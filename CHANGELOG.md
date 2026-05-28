@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.5] - 2026-05-29
+
+Built-in terminal refinements.
+
+### Added
+
+- Added file/folder drops onto the built-in terminal pane. Dropped paths are inserted into the command field as shell-quoted absolute paths.
+- Added `exit` and `logout` handling to close the built-in terminal pane.
+
+### Changed
+
+- The built-in terminal pane now keeps its working directory fixed after it opens instead of following later file-pane navigation.
+- Updated the version to `0.6.5` and the build number to `37`.
+
 ## [0.6.4] - 2026-05-29
 
 Startup layout and built-in terminal polish.

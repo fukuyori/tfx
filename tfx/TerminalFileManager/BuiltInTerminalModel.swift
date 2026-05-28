@@ -8,6 +8,7 @@ final class BuiltInTerminalModel: ObservableObject {
     @Published var transcript: String
     @Published var commandText = ""
     @Published var isRunning = false
+    @Published var terminalExitRequestID = UUID()
 
     private var shellPath: String
 
@@ -59,7 +60,24 @@ final class BuiltInTerminalModel: ObservableObject {
         }
     }
 
+    func insertPaths(_ urls: [URL]) {
+        let arguments = urls
+            .map { Self.shellQuotedPath($0.path) }
+            .joined(separator: " ")
+        guard !arguments.isEmpty else { return }
+
+        if !commandText.isEmpty, commandText.last?.isWhitespace == false {
+            commandText += " "
+        }
+        commandText += arguments
+    }
+
     private func handleBuiltin(_ command: String) -> Bool {
+        if Self.isExitCommand(command) {
+            terminalExitRequestID = UUID()
+            return true
+        }
+
         guard command == "cd" || command.hasPrefix("cd ") else { return false }
         let rawPath = command == "cd" ? NSHomeDirectory() : Self.normalizedPathArgument(String(command.dropFirst(3)))
         let resolvedPath: String
@@ -79,6 +97,11 @@ final class BuiltInTerminalModel: ObservableObject {
             transcript += "cd: no such directory: \(rawPath)\n"
         }
         return true
+    }
+
+    nonisolated static func isExitCommand(_ command: String) -> Bool {
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed == "exit" || trimmed == "logout"
     }
 
     nonisolated private static func normalizedPathArgument(_ argument: String) -> String {
@@ -111,6 +134,10 @@ final class BuiltInTerminalModel: ObservableObject {
         } catch {
             return "Failed to run command: \(error.localizedDescription)\n"
         }
+    }
+
+    nonisolated static func shellQuotedPath(_ path: String) -> String {
+        "'\(path.replacingOccurrences(of: "'", with: "'\\''"))'"
     }
 
     nonisolated private static func prompt(for directory: URL) -> String {

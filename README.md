@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.6.4**
+Version: **0.6.5**
 
 English | [日本語](README.ja.md)
 
@@ -36,7 +36,7 @@ English | [日本語](README.ja.md)
 - Browse zip archives without extracting them
 - Copy files from browsed zip archives
 - Open a terminal app at the current folder
-- Built-in command terminal pane that follows the active folder
+- Built-in command terminal pane that starts in the active folder and accepts file/folder drops to insert shell-quoted paths
 - New File, New Folder, inline Rename, Move to Trash, and Reveal in Finder
 - "Open With" submenu listing applications that can open the file, with an "Other…" picker
 - Auto-refresh: each file pane updates automatically when its directory changes externally
@@ -83,8 +83,8 @@ English | [日本語](README.ja.md)
 - `Command + Shift + T`: New tab
 - `Command + W`: Close tab
 - `Command + Shift + [` / `Command + Shift + ]`: Previous / next tab
-- `Command + \``: Toggle built-in terminal pane
-- `Command + Shift + \``: Focus built-in terminal pane
+- `Command + Option + T`: Toggle built-in terminal pane
+- `Command + Option + Shift + T`: Focus built-in terminal pane
 
 ## Command Line Launch
 

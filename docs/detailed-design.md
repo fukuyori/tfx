@@ -91,7 +91,7 @@ The header contains navigation, breadcrumb path navigation, search, sorting, fil
 
 The current directory path is displayed as a horizontally scrollable breadcrumb bar. Each path segment is clickable and calls the same directory navigation path as file-pane and folder-tree navigation. The bar scrolls to the trailing end when the current directory changes so the deepest folder remains visible.
 
-The built-in terminal pane is a bottom command pane. The first implementation runs one shell command at a time in the pane's current directory and captures stdout/stderr into a transcript. Its working directory follows the active file pane when `TerminalFileManager.terminalFollowsActiveFolder` is enabled. Full PTY behavior for interactive TUI programs is intentionally left for the next terminal slice.
+The built-in terminal pane is a bottom command pane. The first implementation runs one shell command at a time in the pane's current directory and captures stdout/stderr into a transcript. Opening the pane initializes its working directory from the active file pane, then keeps that terminal directory fixed while the file panes continue to navigate independently. Files and folders dragged from the file list into the terminal pane are inserted into the command field as shell-quoted absolute paths. Full PTY behavior for interactive TUI programs is intentionally left for a later terminal slice.
 
 ### 5.2 Folder Tree Pane
 
@@ -424,7 +424,6 @@ The persisted flag `Preview.showsRawSource` applies to all eligible files in bot
 | `TerminalFileManager.isSplitViewVisible` | Split-pane visibility during the current session. Restored on launch only when `[startup].layout = "restore"`. |
 | `TerminalFileManager.isTerminalPaneVisible` | Built-in terminal pane visibility. |
 | `TerminalFileManager.terminalPaneHeight` | Built-in terminal pane height. |
-| `TerminalFileManager.terminalFollowsActiveFolder` | Built-in terminal follows the active file pane directory. |
 | `TerminalFileManager.activePane` | Active pane. |
 | `TerminalFileManager.activeArea` | Active keyboard target. |
 | `TerminalFileManager.folderTreeWidth` | Folder tree width. |

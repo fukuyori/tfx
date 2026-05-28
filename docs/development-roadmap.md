@@ -212,7 +212,7 @@ Tasks:
 
 - Embed a PTY-backed terminal view (evaluate SwiftTerm or a similar library before writing custom). First slice uses a command-runner pane without full PTY/TUI behavior.
 - Default shell from `$SHELL`; working directory follows the active pane's current folder (configurable, default on). First slice is implemented.
-- Commands: toggle terminal pane, focus terminal pane, run command on selected files. Toggle/focus are implemented; selected-file command helpers remain future work.
+- Commands: toggle terminal pane, focus terminal pane, run command on selected files. Toggle/focus are implemented; the first selected-file helper accepts file/folder drops from the file list and inserts shell-quoted paths into the command field.
 - Persistence: visibility, height, font size. Visibility and height are implemented.
 
 Done when:

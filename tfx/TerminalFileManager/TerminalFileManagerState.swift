@@ -73,10 +73,14 @@ extension TerminalFileManagerView {
     }
 
     func setTerminalPaneVisible(_ isVisible: Bool, focus: Bool = false) {
+        let wasVisible = isTerminalPaneVisible
         isTerminalPaneVisible = isVisible
         guard isVisible else {
             deactivateTerminalPaneIfNeeded()
             return
+        }
+        if !wasVisible {
+            terminalModel.followDirectory(activeModel.currentDirectory)
         }
         if focus {
             activateTerminalPane()
@@ -100,7 +104,6 @@ extension TerminalFileManagerView {
     }
 
     func activateTerminalPane() {
-        followActiveFolderIfNeeded()
         activeArea = .terminal
         DispatchQueue.main.async {
             isTerminalInputFocused = true
@@ -121,9 +124,8 @@ extension TerminalFileManagerView {
         }
     }
 
-    func followActiveFolderIfNeeded() {
-        guard terminalFollowsActiveFolder else { return }
-        terminalModel.followDirectory(activeModel.currentDirectory)
+    func closeTerminalPaneFromExitCommand() {
+        setTerminalPaneVisible(false, focus: false)
     }
 
     /// Side-effect handler for `isSplitViewVisible` changes. Invoked from
