@@ -8,6 +8,8 @@ struct PreviewPane: View {
     @State private var activeMultiPreviewURLs: Set<URL> = []
     @AppStorage("Preview.showsRawSource") private var showsRawSource = false
     private let maxActiveMultiPreviews = 3
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,6 +18,7 @@ struct PreviewPane: View {
             }
             content
         }
+        .background(previewBackground)
     }
 
     @ViewBuilder
@@ -55,17 +58,15 @@ struct PreviewPane: View {
                     }
                     .padding(10)
                 }
-                .background(Color(nsColor: .textBackgroundColor))
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 28))
+                        .font(design.fonts.swiftUIFont(for: .title))
                     Text("No preview")
                 }
-                .font(.system(.callout, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(design.fonts.swiftUIFont(for: .previewCode))
+                .foregroundStyle(theme.secondaryForeground)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .textBackgroundColor))
             }
         }
         .onChange(of: urls) {
@@ -126,7 +127,7 @@ struct PreviewPane: View {
                 showsRawSource.toggle()
             } label: {
                 Image(systemName: "eye")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
                     .foregroundStyle(showsRawSource ? Color.secondary : Color.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -143,7 +144,7 @@ struct PreviewPane: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(theme.headerBackground.opacity(design.opacity.background))
     }
 
     private var toggleHelpText: Text {
@@ -154,6 +155,10 @@ struct PreviewPane: View {
 
     private var anyURLSupportsRawSourceToggle: Bool {
         urls.contains { Self.supportsRawSourceToggle($0) }
+    }
+
+    private var previewBackground: Color {
+        theme.fileListBackground.opacity(design.opacity.background)
     }
 
     private func shouldShowRawSource(for url: URL) -> Bool {

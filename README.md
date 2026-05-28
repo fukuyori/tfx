@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.6.0**
+Version: **0.6.1**
 
 English | [日本語](README.ja.md)
 
@@ -48,6 +48,7 @@ English | [日本語](README.ja.md)
 - Subfolder search with progress and cancellation
 - File-type icons in the file list
 - Configurable file-list columns: visibility and order
+- User-editable `config.toml` for font family and size
 - Finder-compatible tags: tag column, standard color tags, and custom tag names from the file-row context menu
 - Resizable file-name column by dragging the `NAME` header
 - Restores window size, visible panes, pane widths, active pane, and open folders
@@ -103,6 +104,37 @@ If you have a wrapper such as `/usr/local/bin/tfx`, relative paths are supported
 ```sh
 tfx .
 ```
+
+## Configuration
+
+tfx creates and reads its user configuration from:
+
+```text
+~/Library/Application Support/tfx/config.toml
+```
+
+The current configuration supports compact `[font]`, `[colors]`, and `[opacity]` blocks:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "monospace"
+size = 13
+
+[colors]
+fileListBackground = "#020A12"
+fileForeground = "#D6F7FF"
+directoryForeground = "#66D9FF"
+headerForeground = "#8AEFFF"
+
+[opacity]
+background = 1
+inactivePane = 0.5
+```
+
+See [`docs/configuration.md`](docs/configuration.md) for supported keys, design token mapping, examples, and error handling.
 
 ## Build
 

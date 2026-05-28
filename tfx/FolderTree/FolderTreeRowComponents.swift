@@ -5,6 +5,7 @@ struct FolderTreeExpansionButton: View {
     let isExpanded: Bool
     let showsExpansionControl: Bool
     let action: () -> Void
+    @Environment(\.design) private var design
 
     var body: some View {
         Button {
@@ -12,7 +13,7 @@ struct FolderTreeExpansionButton: View {
             action()
         } label: {
             Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                .font(.system(size: 10, weight: .semibold))
+                .font(design.fonts.swiftUIFont(for: .caption, weight: .semibold))
         }
         .buttonStyle(.plain)
         .frame(width: 14)

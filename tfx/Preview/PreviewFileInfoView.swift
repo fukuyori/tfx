@@ -30,13 +30,15 @@ struct PreviewFileInfo: Equatable, Sendable {
 struct PreviewFileInfoView: View {
     let url: URL
     @State private var info = PreviewFileInfo.loading
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 FileIcon(url: url)
                 Text(info.name)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
@@ -58,11 +60,12 @@ struct PreviewFileInfoView: View {
                 infoRow("Permission", info.permissions)
                 infoRow("Signature", info.signature)
             }
-            .font(.system(size: 11, design: .monospaced))
+            .font(design.fonts.swiftUIFont(for: .caption))
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .foregroundStyle(theme.fileForeground)
+        .background(theme.statusLineBackground.opacity(design.opacity.background))
         .task(id: url.standardizedFileURL) {
             info = await PreviewFileInfoLoader.load(for: url)
         }
@@ -71,10 +74,10 @@ struct PreviewFileInfoView: View {
     private func infoRow(_ label: LocalizedStringResource, _ value: String) -> some View {
         Group {
             Text(label)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
                 .lineLimit(1)
             Text(value)
-                .foregroundStyle(.primary)
+                .foregroundStyle(theme.fileForeground)
                 .lineLimit(1)
                 .truncationMode(.middle)
         }

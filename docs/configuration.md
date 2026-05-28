@@ -1,0 +1,436 @@
+# tfx Configuration
+
+tfx stores user-editable configuration in:
+
+```text
+~/Library/Application Support/tfx/config.toml
+```
+
+The file is created automatically when tfx starts if it does not already
+exist. Existing files are not overwritten. If the file cannot be parsed, tfx
+falls back to the built-in design and shows a startup configuration alert.
+tfx also reloads this file when the app becomes active again, so edits made in
+another editor are picked up when returning to tfx.
+
+## Current Scope
+
+The current implementation supports `[font]`, `[colors]`, and `[opacity]`. The configuration
+loader intentionally accepts a small TOML subset for these first slices:
+
+- Top-level `version = 1`
+- `[font]`, `[colors]`, and `[opacity]` tables
+- String values in double quotes
+- Numeric font size values
+- Color values as `"#RRGGBB"`
+- Opacity values from `0` through `1`
+- `#` comments outside quoted strings
+
+Other sections are ignored for now. Shortcut, filetype, Lua, and Markdown
+preview settings are planned but not implemented in the current configuration
+loader.
+
+## Default File
+
+New installations create this file:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "monospace"
+size = 13
+
+# Optional color overrides. Unspecified colors use the built-in tfx base.
+#
+# [colors]
+# fileListBackground = "#000301"
+# fileForeground = "#CFFFCF"
+# directoryForeground = "#6FFF80"
+
+# Optional opacity overrides. Values must be between 0 and 1.
+#
+# [opacity]
+# inactivePane = 0.5
+# disabledItem = 0.45
+```
+
+## Keys
+
+### `version`
+
+Required top-level integer.
+
+```toml
+version = 1
+```
+
+Only `1` is supported. Any other value is treated as a configuration error.
+
+### `[font]`
+
+Controls the app-wide font families and base size.
+
+```toml
+[font]
+ui = "system"
+mono = "monospace"
+size = 13
+```
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `ui` | string | `"system"` | Font family for UI-oriented roles such as folder tree, headers, pane title, preview text, and dialog-like surfaces. |
+| `mono` | string | `"monospace"` | Font family for file-list rows, status line, raw text, JSON, and CSV previews. |
+| `size` | number | `13` | Base font size in points. Valid range: `8` through `40`. |
+
+`"system"` means the platform system UI font. `"monospace"` means the
+platform monospaced system font. Any other string is treated as a font family
+name and passed to SwiftUI / AppKit. If a named font is unavailable, rendering
+falls back through the platform font APIs.
+
+### `[colors]`
+
+Overrides individual semantic color tokens from the built-in black-and-green
+base design.
+
+```toml
+[colors]
+fileListBackground = "#000301"
+fileForeground = "#CFFFCF"
+directoryForeground = "#6FFF80"
+```
+
+Every value must be a quoted `#RRGGBB` hex color. Tokens are optional. Missing
+tokens keep the built-in tfx base color.
+
+#### File Pane / List Rows
+
+| Key | Description |
+| --- | --- |
+| `fileListBackground` | Base background for file rows and the file pane. |
+| `fileListRowSelected` | Background for selected file rows. |
+| `fileListRowDropTarget` | Background for in-progress drop targets. |
+| `directoryForeground` | Directory names and directory mode glyphs. |
+| `fileForeground` | Regular file names. |
+| `secondaryForeground` | Size, kind, date, permission, and other secondary columns. |
+
+#### File Pane Chrome
+
+| Key | Description |
+| --- | --- |
+| `headerForeground` | File-pane column header text and header accents. |
+| `headerBackground` | File-pane column header background. |
+| `titleBarBackgroundActive` | File-pane title bar when active. |
+| `titleBarBackgroundInactive` | File-pane title bar when inactive. |
+| `statusLineForegroundActive` | Status-line text for the keyboard target. |
+| `statusLineForegroundInactive` | Status-line text when inactive. |
+| `statusLineBackground` | Status-line background. |
+
+#### Pane Borders
+
+| Key | Description |
+| --- | --- |
+| `paneBorderKeyboardTarget` | Border for the current keyboard target. |
+| `paneBorderActive` | Border for an active pane that is not the keyboard target. |
+| `paneBorderInactive` | Border for inactive panes. |
+
+#### Folder Tree
+
+| Key | Description |
+| --- | --- |
+| `folderTreeBackground` | Folder-tree background. |
+| `folderTreeForeground` | Folder-tree row text. |
+| `folderTreeSelectedForeground` | Selected/current folder-tree row text. |
+| `folderTreeFolderIcon` | Folder-tree folder icon tint. |
+| `folderTreeSelectedActive` | Selected folder-tree row when the tree is the keyboard target. |
+| `folderTreeSelectedInactive` | Selected folder-tree row when the tree is inactive. |
+| `folderTreeSectionHeader` | Folder-tree section headers such as `PINNED` and `FOLDERS`. |
+
+#### Split Handle
+
+| Key | Description |
+| --- | --- |
+| `splitHandleIdle` | Split-pane resize handle when idle. |
+| `splitHandleActive` | Split-pane resize handle during drag. |
+
+#### Git Status
+
+| Key | Description |
+| --- | --- |
+| `gitModified` | Modified file badge. |
+| `gitAdded` | Added file badge. |
+| `gitDeleted` | Deleted file badge. |
+| `gitRenamed` | Renamed file badge. |
+| `gitUntracked` | Untracked file badge. |
+| `gitIgnored` | Ignored file badge. |
+| `gitConflicted` | Conflicted file badge. |
+
+### `[opacity]`
+
+Overrides semantic opacity tokens used by the built-in design.
+
+```toml
+[opacity]
+background = 1
+inactivePane = 0.5
+disabledItem = 0.45
+headerSecondary = 0.75
+```
+
+Every value must be a number from `0` through `1`. Tokens are optional.
+Missing tokens keep the built-in tfx base value.
+When `background` is less than `1`, tfx makes the window background transparent
+so the configured background opacity is visible.
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `background` | `1` | Global opacity for theme background surfaces: file list, folder tree, headers, title bars, status lines, selected rows, and drop-target rows. |
+| `inactivePane` | `0.5` | Active-but-not-keyboard-target pane title background strength. |
+| `disabledItem` | `0.45` | Disabled row opacity, currently used by the unavailable parent-directory row. |
+| `headerSecondary` | `0.75` | Secondary header affordances such as the resize indicator. |
+| `selectedParentRow` | `0.8` | Selected parent-directory row background strength. |
+| `dropIndicator` | `0.85` | Folder-tree insertion indicator strength. |
+| `dragPreview` | `0.96` | Floating pinned-folder drag preview opacity. |
+| `dragPreviewShadow` | `0.18` | Floating pinned-folder drag preview shadow opacity. |
+| `subtleBackground` | `0.07` | Very subtle backgrounds, currently used by the path breadcrumb control. |
+
+## Font Role Mapping
+
+The user-facing configuration stays small, while the app maps roles internally:
+
+| UI role | Family source | Size |
+| --- | --- | --- |
+| File list rows | `mono` | `size` |
+| Parent directory row | `mono` | `size` |
+| Folder tree rows | `ui` | `size` |
+| Path/search controls | `mono` | `size` |
+| Raw text preview | `mono` | `size` |
+| JSON preview | `mono` | `size` |
+| CSV preview | `mono` | `size` |
+| Headers | `ui` | `size - 1`, minimum `8` |
+| Pane title path field | `ui` | `size - 1`, minimum `8` |
+| Status line | `mono` | `size - 2`, minimum `8` |
+| Captions/help text | `ui` | `size - 2`, minimum `8` |
+| Settings title / empty preview icon scale | `ui` | `size + 2` |
+
+## Examples
+
+Use the system UI font and a larger monospaced file list:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "SF Mono"
+size = 14
+```
+
+Use custom Japanese-friendly UI text with a separate monospaced font:
+
+```toml
+version = 1
+
+[font]
+ui = "Hiragino Sans"
+mono = "Menlo"
+size = 13
+```
+
+Use JetBrains Mono throughout the file-oriented parts:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "JetBrains Mono"
+size = 13
+```
+
+Change only the primary file and folder colors:
+
+```toml
+version = 1
+
+[colors]
+fileForeground = "#E6FFE6"
+directoryForeground = "#80FF9A"
+fileListRowSelected = "#12351E"
+```
+
+Use a dimmer pane chrome while keeping the file list readable:
+
+```toml
+version = 1
+
+[colors]
+headerForeground = "#58D66E"
+statusLineForegroundInactive = "#2B7A3A"
+paneBorderInactive = "#174021"
+```
+
+### Color Samples
+
+These samples can be copied into `config.toml` and adjusted token by token.
+Each sample defines only colors; font settings can be added in the same file
+under `[font]`.
+
+Amber console:
+
+```toml
+version = 1
+
+[colors]
+fileListBackground = "#120800"
+fileListRowSelected = "#3A2406"
+fileListRowDropTarget = "#6B3A08"
+fileForeground = "#FFE7B0"
+directoryForeground = "#FFB84D"
+secondaryForeground = "#B87928"
+headerForeground = "#FFD36A"
+headerBackground = "#1C0D00"
+titleBarBackgroundActive = "#4A2A08"
+titleBarBackgroundInactive = "#1C0D00"
+statusLineForegroundActive = "#FFD36A"
+statusLineForegroundInactive = "#B87928"
+statusLineBackground = "#1C0D00"
+paneBorderKeyboardTarget = "#FFD36A"
+paneBorderActive = "#B87928"
+paneBorderInactive = "#5A3510"
+folderTreeBackground = "#120800"
+folderTreeForeground = "#FFE7B0"
+folderTreeSelectedForeground = "#FFF0C8"
+folderTreeFolderIcon = "#FFB84D"
+folderTreeSelectedActive = "#4A2A08"
+folderTreeSelectedInactive = "#2A1805"
+folderTreeSectionHeader = "#FFD36A"
+splitHandleIdle = "#5A3510"
+splitHandleActive = "#FFD36A"
+gitModified = "#FFD36A"
+gitAdded = "#A6E36A"
+gitDeleted = "#FF6B5F"
+gitRenamed = "#D8A6FF"
+gitUntracked = "#B87928"
+gitIgnored = "#5A3510"
+gitConflicted = "#6FE7D6"
+```
+
+Cyan deep sea:
+
+```toml
+version = 1
+
+[colors]
+fileListBackground = "#020A12"
+fileListRowSelected = "#07314A"
+fileListRowDropTarget = "#0A5C78"
+fileForeground = "#D6F7FF"
+directoryForeground = "#66D9FF"
+secondaryForeground = "#4A91A8"
+headerForeground = "#8AEFFF"
+headerBackground = "#03131D"
+titleBarBackgroundActive = "#06354A"
+titleBarBackgroundInactive = "#03131D"
+statusLineForegroundActive = "#8AEFFF"
+statusLineForegroundInactive = "#4A91A8"
+statusLineBackground = "#03131D"
+paneBorderKeyboardTarget = "#8AEFFF"
+paneBorderActive = "#4A91A8"
+paneBorderInactive = "#1D5265"
+folderTreeBackground = "#020A12"
+folderTreeForeground = "#D6F7FF"
+folderTreeSelectedForeground = "#FFFFFF"
+folderTreeFolderIcon = "#66D9FF"
+folderTreeSelectedActive = "#06354A"
+folderTreeSelectedInactive = "#062235"
+folderTreeSectionHeader = "#8AEFFF"
+splitHandleIdle = "#1D5265"
+splitHandleActive = "#8AEFFF"
+gitModified = "#FFD166"
+gitAdded = "#7CFFB2"
+gitDeleted = "#FF6B7A"
+gitRenamed = "#BDA7FF"
+gitUntracked = "#4A91A8"
+gitIgnored = "#1D5265"
+gitConflicted = "#8AEFFF"
+```
+
+Magenta slate:
+
+```toml
+version = 1
+
+[colors]
+fileListBackground = "#0B0A10"
+fileListRowSelected = "#2A2038"
+fileListRowDropTarget = "#583066"
+fileForeground = "#ECE7F2"
+directoryForeground = "#FF8BD1"
+secondaryForeground = "#9A8BA8"
+headerForeground = "#FFB3E1"
+headerBackground = "#14111C"
+titleBarBackgroundActive = "#322440"
+titleBarBackgroundInactive = "#14111C"
+statusLineForegroundActive = "#FFB3E1"
+statusLineForegroundInactive = "#9A8BA8"
+statusLineBackground = "#14111C"
+paneBorderKeyboardTarget = "#FFB3E1"
+paneBorderActive = "#9A6BB8"
+paneBorderInactive = "#493858"
+folderTreeBackground = "#0B0A10"
+folderTreeForeground = "#ECE7F2"
+folderTreeSelectedForeground = "#FFFFFF"
+folderTreeFolderIcon = "#FF8BD1"
+folderTreeSelectedActive = "#322440"
+folderTreeSelectedInactive = "#211A2A"
+folderTreeSectionHeader = "#FFB3E1"
+splitHandleIdle = "#493858"
+splitHandleActive = "#FFB3E1"
+gitModified = "#FFD166"
+gitAdded = "#7DDE92"
+gitDeleted = "#FF6B8A"
+gitRenamed = "#C9A7FF"
+gitUntracked = "#9A8BA8"
+gitIgnored = "#493858"
+gitConflicted = "#7BE7FF"
+```
+
+Use stronger active/inactive separation:
+
+```toml
+version = 1
+
+[opacity]
+background = 0.88
+inactivePane = 0.35
+disabledItem = 0.35
+headerSecondary = 0.55
+selectedParentRow = 0.9
+dropIndicator = 1
+dragPreview = 0.98
+dragPreviewShadow = 0.26
+subtleBackground = 0.12
+```
+
+## Error Handling
+
+tfx treats these as configuration errors:
+
+- Missing or invalid assignment syntax, such as `size: 13`
+- Non-string `ui` or `mono` values
+- Non-numeric `size`
+- `size` outside `8...40`
+- Color values that are not quoted `#RRGGBB` strings
+- Opacity values outside `0...1`
+- Unsupported `version`
+
+When an error is found, tfx does not crash. It uses the built-in black-and-green
+base design and shows an alert with the parse error.
+
+## Planned Sections
+
+Shortcut configuration will use a separate `shortcuts.toml` file, and
+extension behavior will use `filetypes.toml` plus Lua scripts once those
+roadmap items are implemented.

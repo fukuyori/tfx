@@ -3,24 +3,25 @@ import SwiftUI
 
 struct DeferredPreviewPlaceholder: View {
     let url: URL
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: iconName)
-                .font(.system(size: 24))
+                .font(design.fonts.swiftUIFont(for: .title))
             Text("Preview queued")
-                .font(.system(size: 12, design: .monospaced))
+                .font(design.fonts.swiftUIFont(for: .previewCode))
             Text(displayName)
-                .font(.system(size: 11, design: .monospaced))
+                .font(design.fonts.swiftUIFont(for: .caption))
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryForeground)
                 .frame(maxWidth: .infinity)
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(theme.secondaryForeground)
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .textBackgroundColor))
     }
 
     private var displayName: String {

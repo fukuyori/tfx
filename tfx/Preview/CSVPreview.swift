@@ -16,6 +16,8 @@ struct CSVPreview: View {
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var tooLargeMessage: String?
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     var body: some View {
         Group {
@@ -31,15 +33,14 @@ struct CSVPreview: View {
                 tableView
             }
         }
-        .background(Color(nsColor: .textBackgroundColor))
         .onAppear { loadIfNeeded(url) }
         .onChange(of: url) { _, newValue in loadIfNeeded(newValue) }
     }
 
     private func statusView<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         content()
-            .font(.system(.callout, design: .monospaced))
-            .foregroundStyle(.secondary)
+            .font(design.fonts.swiftUIFont(for: .previewCode))
+            .foregroundStyle(theme.secondaryForeground)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -52,14 +53,15 @@ struct CSVPreview: View {
                         ForEach(0..<columnCount, id: \.self) { columnIndex in
                             let cell = columnIndex < row.count ? row[columnIndex] : ""
                             Text(cell)
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(design.fonts.swiftUIFont(for: .previewCode))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .frame(minWidth: 96, alignment: .leading)
+                                .foregroundStyle(theme.fileForeground)
                                 .background(rowIndex == 0
-                                    ? Color(nsColor: .controlBackgroundColor)
+                                    ? theme.headerBackground.opacity(design.opacity.background)
                                     : Color.clear
                                 )
                                 .overlay(

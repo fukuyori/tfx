@@ -4,6 +4,21 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.1] - 2026-05-28
+
+Configurable design tokens.
+
+### Added
+
+- Added user-editable `config.toml` support for compact `[font]`, `[colors]`, and `[opacity]` blocks.
+- Documented supported configuration keys and added distinct color samples for easier visual verification.
+
+### Changed
+
+- Replaced bundled theme switching with a single black-and-green base design that users customize through semantic color tokens.
+- Unified preview background opacity with the file-list background opacity.
+- Updated the version to `0.6.1` and the build number to `33`.
+
 ## [0.6.0] - 2026-05-27
 
 Preview hardening: PDF rendered through Quick Look sandbox, markdown locked down against script injection, and text-based previews bounded by a size cap.

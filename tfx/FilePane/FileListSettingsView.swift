@@ -3,6 +3,7 @@ import SwiftUI
 
 struct FileListSettingsView: View {
     @Binding var configurationRaw: String
+    @Environment(\.design) private var design
     @Environment(\.dismiss) private var dismiss
 
     private var configuration: FileListColumnConfiguration {
@@ -18,7 +19,7 @@ struct FileListSettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("File List Settings")
-                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .font(design.fonts.swiftUIFont(for: .title, weight: .semibold))
                 Spacer()
                 Button("Done") {
                     dismiss()
@@ -28,7 +29,7 @@ struct FileListSettingsView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Columns")
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
                     .foregroundStyle(.secondary)
 
                 ForEach(configuration.orderedColumns) { column in
@@ -89,7 +90,7 @@ struct FileListSettingsView: View {
             .disabled(configuration.orderedColumns.last == column)
             .help("Move down")
         }
-        .font(.system(size: 13, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .fileList))
         .padding(.vertical, 3)
     }
 }

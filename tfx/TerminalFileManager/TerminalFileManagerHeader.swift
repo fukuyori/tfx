@@ -10,7 +10,7 @@ extension TerminalFileManagerView {
             utilityControls
         }
         .padding(10)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.headerBackground.opacity(design.opacity.background))
         .sheet(isPresented: $isFileListSettingsPresented) {
             FileListSettingsView(
                 configurationRaw: $fileColumnConfigurationRaw

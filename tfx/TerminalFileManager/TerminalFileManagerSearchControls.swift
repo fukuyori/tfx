@@ -14,7 +14,7 @@ extension TerminalFileManagerView {
                 set: { model.searchText = $0 }
             ))
                 .textFieldStyle(.roundedBorder)
-                .font(.system(.callout, design: .monospaced))
+                .font(design.fonts.swiftUIFont(for: .fileList))
                 .frame(width: 180)
                 .focused($isSearchFocused)
                 .onTapGesture {
@@ -93,6 +93,7 @@ extension TerminalFileManagerView {
 private struct PathBreadcrumbBar: View {
     let directory: URL
     let navigate: (URL) -> Void
+    @Environment(\.design) private var design
 
     private var breadcrumbs: [PathBreadcrumb] {
         PathBreadcrumb.breadcrumbs(for: directory)
@@ -125,7 +126,7 @@ private struct PathBreadcrumbBar: View {
                         .frame(width: 1, height: 1)
                         .id("path-end")
                 }
-                .font(.system(.callout, design: .monospaced))
+                .font(design.fonts.swiftUIFont(for: .fileList))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
             }
@@ -136,7 +137,7 @@ private struct PathBreadcrumbBar: View {
                 scrollToEnd(with: proxy)
             }
         }
-        .background(.black.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
+        .background(.black.opacity(design.opacity.subtleBackground), in: RoundedRectangle(cornerRadius: 6))
     }
 
     private func scrollToEnd(with proxy: ScrollViewProxy) {

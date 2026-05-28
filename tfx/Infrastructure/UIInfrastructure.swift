@@ -32,11 +32,13 @@ enum PerformanceTrace {
 
 struct WindowFrameAutosaver: NSViewRepresentable {
     let name: String
+    var allowsTransparency = false
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
         DispatchQueue.main.async {
             view.window?.setFrameAutosaveName(name)
+            configureWindow(view.window)
         }
         return view
     }
@@ -44,7 +46,15 @@ struct WindowFrameAutosaver: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         DispatchQueue.main.async {
             nsView.window?.setFrameAutosaveName(name)
+            configureWindow(nsView.window)
         }
+    }
+
+    private func configureWindow(_ window: NSWindow?) {
+        guard let window else { return }
+
+        window.isOpaque = !allowsTransparency
+        window.backgroundColor = allowsTransparency ? .clear : .windowBackgroundColor
     }
 }
 

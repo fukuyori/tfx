@@ -13,6 +13,7 @@ struct FilePane: View {
     let activate: () -> Void
     let reloadRelatedPanes: () -> Void
 
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     private var visibleColumns: [FileListColumn] {
@@ -74,7 +75,7 @@ struct FilePane: View {
                 activate: activate
             )
         }
-        .background(theme.fileListBackground)
+        .background(theme.fileListBackground.opacity(design.opacity.background))
         .overlay(
             RoundedRectangle(cornerRadius: 0)
                 .stroke(

@@ -162,14 +162,13 @@ Project documentation should be written in English by default. `README.md` is th
 - Tag changes support multi-selection and are written through `URLResourceValues.tagNames`, so Finder and tfx see the same tag metadata after reload.
 - Tagged folders use the first colored tag to tint the folder icon; regular files keep their standard icons and show tags in the tag column.
 
-### 1.19 Built-in Color Themes
+### 1.19 Base Design Tokens
 
 - `tfx/Theme/Theme.swift` defines a semantic token table covering the file pane, folder tree, selection / drop highlights, pane borders, status line, split handle, and per-Git-status badge colors.
-- Four built-in themes ship, each designed around a small canonical palette layered into a deep-to-bright background ladder: **Terminal Classic** (phosphor-CRT green family), **Solarized Dark** (canonical Ethan Schoonover palette with an added abyss shade for the file list and `base3` body text), **Monokai Pro (Filter Octagon)** (`#2D2A2E` base with `#FFD866` yellow as the alert accent and `#FF6188` red reserved for delete/conflict), and **Dracula** (`#282A36` base with `currentLine` selection and pink/purple identity). All cases of `Color.*` in the file pane and folder tree views were migrated to token lookups so adding a new theme is purely additive.
-- `ThemeStore` is an `@MainActor`-isolated `ObservableObject` held by `tfxApp`. The active theme is persisted under the `TerminalFileManager.activeTheme` `UserDefaults` key; unknown ids fall back to Terminal Classic.
-- SwiftUI `EnvironmentKey` exposes the active theme via `@Environment(\.theme)` so any view can read tokens without holding its own store reference. Switching themes from the menu triggers a single `@Published` write that propagates to every view in one publish.
-- `View → Theme` submenu lets users switch between the four built-in themes. The current theme carries a check-mark glyph; selecting another writes through `ThemeStore.select(_:)` and refreshes instantly.
-- `GitFileStatus` no longer carries its own `color`; `Theme.color(for:)` resolves the per-theme palette so light-leaning themes can adjust the warm Git colors without each view branching.
+- tfx ships one canonical black-and-green terminal design. User customization will override those base design tokens directly instead of switching among multiple bundled themes.
+- `DesignTokens` wraps the base colors plus font tokens. `DesignStore` is an `@MainActor`-isolated `ObservableObject` held by `tfxApp` and publishes the active token set through SwiftUI environment values.
+- SwiftUI `EnvironmentKey` exposes the active colors via `@Environment(\.theme)` and the full design via `@Environment(\.design)`, so any view can read tokens without holding its own store reference.
+- `GitFileStatus` no longer carries its own `color`; `Theme.color(for:)` resolves the badge colors from the active design tokens.
 
 ### 1.18 Git Status Indicators
 
@@ -274,16 +273,28 @@ Planned layout:
 
 ```text
 config.toml
-themes/*.toml
 filetypes.toml
 shortcuts.toml
 scripts/*.lua
 markdown/preview.css
 ```
 
+Implemented first slice:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "monospace"
+size = 13
+```
+
+`config.toml` is created on demand at launch if it does not exist. The initial parser supports `version = 1`, the compact `[font]` block, `[colors]` `#RRGGBB` semantic token overrides, and `[opacity]` numeric semantic token overrides.
+
 Tasks:
 
-- Pick and integrate a TOML parser.
+- Pick and integrate a full TOML parser before broadening beyond the initial `[font]` subset.
 - Define `version = N` at the top of every TOML file; carry forward at least one prior version's migration code (§3.5).
 - Built-in defaults remain in code; TOML overrides are merged on top.
 
@@ -311,14 +322,14 @@ Done when:
 - Existing shortcuts can be reviewed from one action definition list.
 - User-defined shortcut conflicts are reported clearly.
 
-### 2.10 Theme Customization via TOML
+### 2.10 Design Customization via TOML
 
-Builds on §2.8 and §2.6. Maps the TOML theme files to the same color tokens used by the built-in themes.
+Builds on §2.8. Maps `config.toml` design overrides to the same color, font, and opacity tokens used by the built-in base design.
 
 Done when:
 
-- A user-defined `themes/*.toml` file can override built-in themes and appears in the theme picker.
-- Missing tokens fall back to the active built-in default.
+- `config.toml` can override the built-in black-and-green base design colors, fonts, and opacity tokens.
+- Missing tokens fall back to the built-in base design.
 
 ### 2.11 Extension-Based Behavior
 

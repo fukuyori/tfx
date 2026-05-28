@@ -8,6 +8,7 @@ struct PinnedFolderTreeRow: View {
     let activateTree: () -> Void
     @State private var rowHeight: CGFloat = 26
     @State private var dragTranslationY: CGFloat = 0
+    @Environment(\.design) private var design
 
     var body: some View {
         rowContent
@@ -27,8 +28,8 @@ struct PinnedFolderTreeRow: View {
                 if showsFloatingDragRow {
                     rowContent
                         .offset(y: dragTranslationY)
-                        .opacity(0.96)
-                        .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
+                        .opacity(design.opacity.dragPreview)
+                        .shadow(color: .black.opacity(design.opacity.dragPreviewShadow), radius: 6, x: 0, y: 3)
                         .allowsHitTesting(false)
                 }
             }
@@ -68,6 +69,7 @@ struct PinnedFolderTreeRow: View {
 struct PinnedFolderInsertionSlot: View {
     let isVisible: Bool
     var reservesRowSpace = true
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     /// Visible insertion slot opens by a full pinned-folder row height
@@ -93,7 +95,7 @@ struct PinnedFolderInsertionSlot: View {
                 // so the user sees a clear "insert here" mark without
                 // the whole gap looking like a giant UI element.
                 Capsule()
-                    .fill(theme.paneBorderKeyboardTarget.opacity(0.85))
+                    .fill(theme.paneBorderKeyboardTarget.opacity(design.opacity.dropIndicator))
                     .frame(height: 2)
                     .padding(.horizontal, 10)
             }

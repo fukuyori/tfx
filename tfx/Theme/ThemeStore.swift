@@ -3,41 +3,44 @@ import Combine
 import Foundation
 import SwiftUI
 
-/// Single source of truth for the active color theme.
-///
-/// Held by `tfxApp` and threaded into the SwiftUI view tree via
-/// `EnvironmentKey`. Persists the selected theme id under
-/// `Theme.activeThemeID` so the choice survives relaunches; missing or
-/// unknown ids fall back to `Theme.default` (terminal-classic).
-///
-/// `@Published var activeTheme` triggers a SwiftUI refresh whenever the
-/// theme changes, so every view that reads from the environment value
-/// re-renders automatically.
+/// Single source of truth for the active design tokens.
 @MainActor
-final class ThemeStore: ObservableObject {
-    static let userDefaultsKey = "TerminalFileManager.activeTheme"
+final class DesignStore: ObservableObject {
+    @Published private(set) var activeDesign = DesignTokens.default
+    @Published private(set) var configurationError: String?
 
-    @Published private(set) var activeTheme: Theme
-
-    init(userDefaults: UserDefaults = .standard) {
-        let savedID = userDefaults.string(forKey: Self.userDefaultsKey)
-        self.activeTheme = savedID.map(Theme.theme(forID:)) ?? .default
-        self.userDefaults = userDefaults
+    var activeTheme: Theme {
+        activeDesign.theme
     }
 
-    private let userDefaults: UserDefaults
+    init() {
+        reload()
+    }
 
-    func select(_ theme: Theme) {
-        guard theme != activeTheme else { return }
-        activeTheme = theme
-        userDefaults.set(theme.id, forKey: Self.userDefaultsKey)
+    func reload() {
+        do {
+            let configuration = try DesignConfigurationLoader.load()
+            activeDesign = DesignTokens(
+                theme: configuration.theme,
+                fonts: configuration.fonts,
+                opacity: configuration.opacity
+            )
+            configurationError = nil
+        } catch {
+            configurationError = error.localizedDescription
+            activeDesign = .default
+        }
+    }
+
+    func dismissConfigurationError() {
+        configurationError = nil
     }
 }
 
 /// Environment key surfacing the currently active theme to every
 /// SwiftUI view. Reading `@Environment(\.theme)` is the canonical way
 /// for a view to fetch theme tokens — keeps the dependency one-way and
-/// avoids each leaf view holding its own `ThemeStore` reference.
+/// avoids each leaf view holding its own store reference.
 private struct ThemeEnvironmentKey: EnvironmentKey {
     static let defaultValue: Theme = .default
 }

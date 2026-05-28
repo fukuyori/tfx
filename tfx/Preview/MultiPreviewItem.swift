@@ -11,6 +11,8 @@ struct MultiPreviewItem<Content: View, Info: View>: View {
     let releasePreview: () -> Void
     @ViewBuilder let content: () -> Content
     @ViewBuilder let info: () -> Info
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,11 +23,11 @@ struct MultiPreviewItem<Content: View, Info: View>: View {
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .font(.system(size: 12, design: .monospaced))
-            .foregroundStyle(.primary)
+            .font(design.fonts.swiftUIFont(for: .header))
+            .foregroundStyle(theme.headerForeground)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(theme.headerBackground.opacity(design.opacity.background))
 
             Group {
                 if isPreviewActive {
@@ -39,7 +41,6 @@ struct MultiPreviewItem<Content: View, Info: View>: View {
 
             info()
         }
-        .background(Color(nsColor: .textBackgroundColor))
         .overlay(
             RoundedRectangle(cornerRadius: 4)
                 .stroke(isSelected ? Color.green : Color(nsColor: .separatorColor), lineWidth: isSelected ? 2 : 1)

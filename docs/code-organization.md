@@ -49,9 +49,9 @@ Use this directory for additional Git integration (branch operations, diff displ
 
 ### `tfx/Theme`
 
-`Theme` token table, `ThemeStore` (active-theme `ObservableObject` + UserDefaults persistence), and the `EnvironmentKey` that surfaces the active theme to every view via `@Environment(\.theme)`.
+`Theme` color token table, `DesignTokens` font / design aggregate, `DesignStore`, and the environment keys that surface colors via `@Environment(\.theme)` and the full design via `@Environment(\.design)`.
 
-Use this directory for adding new built-in themes, new theme tokens, or alternative theme distribution paths (e.g. user-defined TOML themes from §2.10 when the configuration foundation is in place).
+Use this directory for adding new design tokens or the configuration-backed customization path from §2.10. tfx has one built-in black-and-green base design; user configuration should override that base rather than adding multiple bundled themes.
 
 ### `tfx/Infrastructure`
 

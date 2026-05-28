@@ -5,21 +5,25 @@ import SwiftUI
 /// Shared factory for the read-only monospaced `NSTextView` used by the
 /// raw-text and pretty-printed-JSON previews.
 enum MonospacedTextPreviewView {
-    static func makeScrollView() -> NSScrollView {
+    static func makeScrollView(
+        fonts: DesignFontTokens = .default,
+        textColor: NSColor = .textColor
+    ) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = false
-        scrollView.drawsBackground = true
-        scrollView.backgroundColor = .textBackgroundColor
+        scrollView.drawsBackground = false
+        scrollView.backgroundColor = .clear
 
         if let textView = scrollView.documentView as? NSTextView {
             textView.isEditable = false
             textView.isSelectable = true
             textView.isRichText = false
-            textView.drawsBackground = true
-            textView.backgroundColor = .textBackgroundColor
-            textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+            textView.drawsBackground = false
+            textView.backgroundColor = .clear
+            textView.textColor = textColor
+            textView.font = fonts.nsFont(for: .previewCode)
             textView.textContainerInset = NSSize(width: 8, height: 8)
             textView.isAutomaticQuoteSubstitutionEnabled = false
             textView.isAutomaticDashSubstitutionEnabled = false
@@ -41,14 +45,29 @@ enum MonospacedTextPreviewView {
 /// decoded.
 struct RawTextPreview: NSViewRepresentable {
     let url: URL
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSScrollView {
-        MonospacedTextPreviewView.makeScrollView()
+        MonospacedTextPreviewView.makeScrollView(
+            fonts: design.fonts,
+            textColor: NSColor(theme.fileForeground)
+        )
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
+        nsView.drawsBackground = false
+        nsView.backgroundColor = .clear
+
+        if let textView = nsView.documentView as? NSTextView {
+            textView.font = design.fonts.nsFont(for: .previewCode)
+            textView.drawsBackground = false
+            textView.backgroundColor = .clear
+            textView.textColor = NSColor(theme.fileForeground)
+        }
+
         guard context.coordinator.currentURL != url else { return }
 
         context.coordinator.cancellation?.cancel()

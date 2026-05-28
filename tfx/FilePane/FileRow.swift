@@ -13,6 +13,7 @@ struct FileRow: View {
     /// after navigating into a repo is still in flight.
     let gitStatus: GitFileStatus?
 
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -21,7 +22,7 @@ struct FileRow: View {
                 fileCell(for: column)
             }
         }
-        .font(.system(size: 13, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .fileList))
         .padding(.horizontal, 12)
         .padding(.vertical, 5)
         .background(rowBackground)
@@ -109,14 +110,14 @@ struct FileRow: View {
 
     private var rowBackground: Color {
         if isDropTarget {
-            return theme.fileListRowDropTarget
+            return theme.fileListRowDropTarget.opacity(design.opacity.background)
         }
 
         if isSelected {
-            return theme.fileListRowSelected
+            return theme.fileListRowSelected.opacity(design.opacity.background)
         }
 
-        return theme.fileListBackground
+        return .clear
     }
 }
 

@@ -11,14 +11,29 @@ import SwiftUI
 /// raw file contents are shown so the user can still inspect the file.
 struct JSONPreview: NSViewRepresentable {
     let url: URL
+    @Environment(\.design) private var design
+    @Environment(\.theme) private var theme
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSScrollView {
-        MonospacedTextPreviewView.makeScrollView()
+        MonospacedTextPreviewView.makeScrollView(
+            fonts: design.fonts,
+            textColor: NSColor(theme.fileForeground)
+        )
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
+        nsView.drawsBackground = false
+        nsView.backgroundColor = .clear
+
+        if let textView = nsView.documentView as? NSTextView {
+            textView.font = design.fonts.nsFont(for: .previewCode)
+            textView.drawsBackground = false
+            textView.backgroundColor = .clear
+            textView.textColor = NSColor(theme.fileForeground)
+        }
+
         guard context.coordinator.currentURL != url else { return }
 
         context.coordinator.cancellation?.cancel()

@@ -23,6 +23,8 @@ struct TerminalFileManagerView: View {
     @State var hoverHelpText = ""
     @State private var hasAppliedStartupFocus = false
     @FocusState var isSearchFocused: Bool
+    @Environment(\.design) var design
+    @Environment(\.theme) var theme
 
     init(initialDirectory: URL? = AppLaunchArguments.initialDirectory()) {
         let defaults = UserDefaults.standard
@@ -90,11 +92,14 @@ struct TerminalFileManagerView: View {
                 }
             }
         }
-        .background(WindowFrameAutosaver(name: "TerminalFileManagerWindow"))
+        .background(WindowFrameAutosaver(
+            name: "TerminalFileManagerWindow",
+            allowsTransparency: design.opacity.background < 1
+        ))
         .background(KeyboardEventHandler(isEnabled: !isSearchFocused) { event in
             handleKeyEvent(event)
         })
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(Color.clear)
         .onAppear {
             openRequestedDirectoryIfNeeded()
             applyStartupFocusIfNeeded()

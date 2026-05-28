@@ -6,6 +6,7 @@ struct ParentDirectoryRow: View {
     let isSelected: Bool
     let columns: [FileListColumn]
     let fileNameColumnWidth: Double
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -14,11 +15,11 @@ struct ParentDirectoryRow: View {
                 parentCell(for: column)
             }
         }
-        .font(.system(size: 13, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .fileList))
         .padding(.horizontal, 12)
         .padding(.vertical, 5)
-        .background(isSelected ? theme.folderTreeSelectedActive.opacity(0.8) : theme.fileListBackground)
-        .opacity(isEnabled ? 1 : 0.45)
+        .background(parentBackground)
+        .opacity(isEnabled ? 1 : design.opacity.disabledItem)
     }
 
     @ViewBuilder
@@ -66,6 +67,14 @@ struct ParentDirectoryRow: View {
 
     private func columnWidth(_ column: FileListColumn) -> CGFloat {
         column == .name ? CGFloat(fileNameColumnWidth) : column.defaultWidth
+    }
+
+    private var parentBackground: Color {
+        isSelected
+            ? theme.folderTreeSelectedActive
+                .opacity(design.opacity.selectedParentRow)
+                .opacity(design.opacity.background)
+            : .clear
     }
 }
 #endif

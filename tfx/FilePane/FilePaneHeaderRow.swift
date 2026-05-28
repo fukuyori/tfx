@@ -5,6 +5,7 @@ struct FilePaneHeaderRow: View {
     let visibleColumns: [FileListColumn]
     @Binding var fileNameColumnWidth: Double
     @State private var nameColumnDragStartWidth: Double?
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -13,11 +14,11 @@ struct FilePaneHeaderRow: View {
                 headerCell(for: column)
             }
         }
-        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
         .foregroundStyle(theme.headerForeground)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(theme.headerBackground)
+        .background(theme.headerBackground.opacity(design.opacity.background))
     }
 
     @ViewBuilder
@@ -27,8 +28,8 @@ struct FilePaneHeaderRow: View {
                 Text(column.headerTitle)
                 Spacer(minLength: 4)
                 Image(systemName: "arrow.left.and.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(theme.headerForeground.opacity(0.75))
+                    .font(design.fonts.swiftUIFont(for: .caption, weight: .semibold))
+                    .foregroundStyle(theme.headerForeground.opacity(design.opacity.headerSecondary))
             }
             .frame(width: columnWidth(column), alignment: column.alignment)
             .contentShape(Rectangle())

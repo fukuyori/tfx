@@ -36,6 +36,8 @@ struct FolderTreeRow: View {
         model.isDropTargetDirectory(url)
     }
 
+    @Environment(\.design) private var design
+
     var body: some View {
         VStack(spacing: 0) {
             rowContent
@@ -86,7 +88,7 @@ struct FolderTreeRow: View {
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.system(size: 12, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .folderTree))
         .foregroundStyle((isCurrent || isSelected) ? theme.folderTreeSelectedForeground : theme.folderTreeForeground)
         .padding(.leading, CGFloat(depth * 14 + 8))
         .padding(.trailing, 8)
@@ -142,18 +144,18 @@ struct FolderTreeRow: View {
 
     private var rowBackground: Color {
         if isDropTarget {
-            return theme.fileListRowDropTarget
+            return theme.fileListRowDropTarget.opacity(design.opacity.background)
         }
 
         if isTreeActive && isSelected {
-            return theme.folderTreeSelectedActive
+            return theme.folderTreeSelectedActive.opacity(design.opacity.background)
         }
 
         if isSelected {
-            return theme.folderTreeSelectedInactive
+            return theme.folderTreeSelectedInactive.opacity(design.opacity.background)
         }
 
-        return theme.folderTreeBackground
+        return .clear
     }
 }
 #endif

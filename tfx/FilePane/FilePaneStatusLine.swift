@@ -10,6 +10,7 @@ struct FilePaneStatusLine: View {
     /// local load does not flicker the indicator.
     @State private var showsLoadingHint = false
     @State private var loadingHintTask: Task<Void, Never>?
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -36,11 +37,11 @@ struct FilePaneStatusLine: View {
                 .truncationMode(.middle)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
         }
-        .font(.system(size: 12, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .statusLine))
         .foregroundStyle(isKeyboardTarget ? theme.statusLineForegroundActive : theme.statusLineForegroundInactive)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .background(theme.statusLineBackground)
+        .background(theme.statusLineBackground.opacity(design.opacity.background))
         .contentShape(Rectangle())
         .onTapGesture {
             activate()

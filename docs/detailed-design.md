@@ -296,17 +296,37 @@ The file list has a `.gitStatus` column (10pt, tightest possible width for one m
 
 `reload()` triggers `refreshGitStatus()` in parallel with the directory load, so badges appear as soon as both reads complete. The `DirectoryWatcher` already routes external changes through `reload()`, so badges update on local volumes when the working copy changes; network volumes still rely on the manual `⌘R` path described in §8.4.
 
-### 8.9 Color Themes
+### 8.9 Base Design Tokens
 
-Color tokens are surfaced through `Theme` (`tfx/Theme/Theme.swift`), a struct with semantic properties (`fileListBackground`, `paneBorderKeyboardTarget`, `gitModified`, …) rather than positional colors. Each built-in theme is a `static let` factory that assigns every token; adding a new token always carries a default so older themes remain valid.
+Color tokens are surfaced through `Theme` (`tfx/Theme/Theme.swift`), a struct with semantic properties (`fileListBackground`, `paneBorderKeyboardTarget`, `gitModified`, …) rather than positional colors. tfx ships one canonical black-and-green terminal design. User configuration customizes that base token set directly instead of switching among multiple bundled themes.
 
-`ThemeStore` (`tfx/Theme/ThemeStore.swift`) is an `@MainActor`-isolated `ObservableObject` held by `tfxApp` via `@StateObject`. Selecting a theme through `ThemeStore.select(_:)` updates the published `activeTheme` and writes the new id to `UserDefaults` under `TerminalFileManager.activeTheme`. Missing or unknown ids on load fall back to `Theme.default` (Terminal Classic), so old preference files and theme renames degrade gracefully.
+`DesignTokens` (`tfx/Theme/DesignTokens.swift`) wraps the base colors plus font and opacity tokens. `DesignStore` (`tfx/Theme/ThemeStore.swift`) is an `@MainActor`-isolated `ObservableObject` held by `tfxApp` via `@StateObject`.
 
-Views read the active theme via `@Environment(\.theme)`. `tfxApp` injects the value with `.environment(\.theme, themeStore.activeTheme)`, so a single publish from the store re-renders every reader in one pass — no per-view subscription bookkeeping needed.
+`DesignConfigurationLoader` creates and reads `~/Library/Application Support/tfx/config.toml`. The first supported TOML subset is deliberately small:
 
-The `View → Theme` submenu (`ViewMenuCommands`) iterates `Theme.allThemes` and uses a check-mark glyph on the currently active row. Switching is immediate; there is no app-level refresh hop.
+```toml
+version = 1
 
-`GitFileStatus` does not carry colors; `Theme.color(for:)` resolves the per-theme palette so file-row code reads `theme.color(for: status)` once and renders the badge in the active theme's vocabulary.
+[font]
+ui = "system"
+mono = "monospace"
+size = 13
+
+[colors]
+fileForeground = "#CFFFCF"
+directoryForeground = "#6FFF80"
+
+[opacity]
+background = 1
+inactivePane = 0.5
+disabledItem = 0.45
+```
+
+`system` and `monospace` mean the platform UI font and monospaced system font. Other string values are treated as explicit font family names. Color values are quoted `#RRGGBB` strings keyed by the semantic `Theme` token names. Opacity values are numeric `0...1` values keyed by semantic opacity token names. Load failures fall back to the built-in design and are surfaced as a startup configuration alert.
+
+Views read colors via `@Environment(\.theme)` and the full design through `@Environment(\.design)`. `tfxApp` injects both values from `DesignStore`, so a single publish re-renders every reader in one pass — no per-view subscription bookkeeping needed.
+
+`GitFileStatus` does not carry colors; `Theme.color(for:)` resolves the badge palette so file-row code reads `theme.color(for: status)` once and renders the badge in the active design vocabulary.
 
 ### 8.10 Zip Archive Browsing
 

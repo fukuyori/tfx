@@ -6,7 +6,7 @@ extension TerminalFileManagerView {
     var hoverHelpOverlay: some View {
         if !hoverHelpText.isEmpty {
             Text(hoverHelpText)
-                .font(.system(size: 11, design: .monospaced))
+                .font(design.fonts.swiftUIFont(for: .caption))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)

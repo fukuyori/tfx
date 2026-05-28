@@ -8,6 +8,7 @@ struct FolderTreePane: View {
 
     @State private var pinnedContentHeight: CGFloat = 0
     private let pinnedSectionMaxHeight: CGFloat = 240
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     private var roots: [URL] {
@@ -26,6 +27,7 @@ struct FolderTreePane: View {
 
             folderTreeSection
         }
+        .background(theme.folderTreeBackground.opacity(design.opacity.background))
         .overlay(
             RoundedRectangle(cornerRadius: 0)
                 .stroke(isActive ? theme.paneBorderKeyboardTarget : theme.paneBorderInactive, lineWidth: isActive ? 2 : 1)
@@ -45,11 +47,11 @@ struct FolderTreePane: View {
             .buttonStyle(.borderless)
             .help("Reload")
         }
-        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+        .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
         .foregroundStyle(theme.headerForeground)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(isActive ? theme.titleBarBackgroundActive : theme.folderTreeBackground)
+        .background((isActive ? theme.titleBarBackgroundActive : theme.folderTreeBackground).opacity(design.opacity.background))
     }
 
     private var pinnedSection: some View {
@@ -108,7 +110,6 @@ struct FolderTreePane: View {
                 }
             }
         }
-        .background(theme.folderTreeBackground)
     }
 
     private var folderTreeSection: some View {
@@ -143,7 +144,6 @@ struct FolderTreePane: View {
                 }
             }
         }
-        .background(theme.folderTreeBackground)
         .contentShape(Rectangle())
         .onTapGesture {
             activate()

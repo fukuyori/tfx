@@ -10,13 +10,14 @@ struct FilePaneTitleBar: View {
 
     @State private var pathInput: String = ""
     @FocusState private var isPathFieldFocused: Bool
+    @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: 8) {
             TextField("", text: $pathInput)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12, design: .monospaced))
+                .font(design.fonts.swiftUIFont(for: .paneTitle))
                 .lineLimit(1)
                 .foregroundStyle(isActivePane ? theme.statusLineForegroundActive : theme.secondaryForeground)
                 .focused($isPathFieldFocused)
@@ -39,7 +40,7 @@ struct FilePaneTitleBar: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(isKeyboardTarget ? theme.titleBarBackgroundActive : (isActivePane ? theme.titleBarBackgroundActive.opacity(0.5) : theme.titleBarBackgroundInactive))
+        .background(titleBackground.opacity(design.opacity.background))
         .onAppear {
             pathInput = currentPathString
         }
@@ -52,6 +53,18 @@ struct FilePaneTitleBar: View {
 
     private var currentPathString: String {
         model.currentDirectory.path(percentEncoded: false)
+    }
+
+    private var titleBackground: Color {
+        if isKeyboardTarget {
+            return theme.titleBarBackgroundActive
+        }
+
+        if isActivePane {
+            return theme.titleBarBackgroundActive.opacity(design.opacity.inactivePane)
+        }
+
+        return theme.titleBarBackgroundInactive
     }
 
     private func commitPathInput() {

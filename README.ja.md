@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.6.0**
+Version: **0.6.1**
 
 [English](README.md) | 日本語
 
@@ -48,6 +48,7 @@ Version: **0.6.0**
 - 進捗表示とキャンセルに対応したサブフォルダ検索
 - ファイル種別に応じたアイコン表示
 - ファイル一覧カラムの表示 / 非表示、順番変更
+- フォントファミリーとサイズを `config.toml` で設定可能
 - Finder 互換タグ: タグ列、標準色タグ、ファイル行コンテキストメニューからのカスタムタグ名追加
 - `NAME` ヘッダーのドラッグによるファイル名カラム幅変更
 - ウィンドウサイズ、表示状態、ペイン幅、アクティブペイン、開いているフォルダの復元
@@ -103,6 +104,37 @@ open -a /Applications/tfx.app "$PWD"
 ```sh
 tfx .
 ```
+
+## 設定
+
+tfx はユーザー設定を次の場所に作成し、読み込みます。
+
+```text
+~/Library/Application Support/tfx/config.toml
+```
+
+現在対応している設定は、コンパクトな `[font]`、`[colors]`、`[opacity]` ブロックです。
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "monospace"
+size = 13
+
+[colors]
+fileListBackground = "#020A12"
+fileForeground = "#D6F7FF"
+directoryForeground = "#66D9FF"
+headerForeground = "#8AEFFF"
+
+[opacity]
+background = 1
+inactivePane = 0.5
+```
+
+対応キー、デザイントークンの適用先、例、エラー時の挙動は [`docs/configuration.md`](docs/configuration.md) を参照してください。
 
 ## ビルド
 

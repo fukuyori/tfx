@@ -329,14 +329,13 @@ Track larger customization and extension work as separate follow-up phases.
 ### Future Phase A: Configuration Foundation
 
 - User-editable configuration files are stored under `~/Library/Application Support/tfx/`.
-- Declarative configuration, themes, filetype rules, and shortcut definitions use TOML.
+- Declarative configuration, design overrides, filetype rules, and shortcut definitions use TOML.
 - Dynamic extension behavior uses Lua.
 - Transient UI state remains in `UserDefaults`.
 
 Initial file layout:
 
-- `config.toml`: Main user configuration.
-- `themes/*.toml`: User-defined color schemes.
+- `config.toml`: Main user configuration. Implemented blocks are `[font]`, `[colors]`, and `[opacity]`.
 - `filetypes.toml`: Extension-based behavior rules.
 - `shortcuts.toml`: Shortcut definitions.
 - `scripts/*.lua`: Lua extension scripts.
