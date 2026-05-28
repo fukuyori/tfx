@@ -46,19 +46,87 @@ extension TerminalFileManagerView {
     func filePane(_ paneID: BrowserPaneID) -> some View {
         let paneModel = paneID == .left ? leftModel : rightModel
 
-        return FilePane(
-            model: paneModel,
-            paneID: paneID,
-            isActivePane: activePane == paneID,
-            isKeyboardTarget: activePane == paneID && activeArea == .files,
-            fileNameColumnWidth: $fileNameColumnWidth,
-            columnConfiguration: FileListColumnConfiguration(rawValue: fileColumnConfigurationRaw),
-            activate: {
-                activePane = paneID
-                activeArea = .files
-            },
-            reloadRelatedPanes: reloadAllPanes
-        )
+        return VStack(spacing: 0) {
+            filePaneTabStrip(paneID)
+
+            FilePane(
+                model: paneModel,
+                paneID: paneID,
+                isActivePane: activePane == paneID,
+                isKeyboardTarget: activePane == paneID && activeArea == .files,
+                fileNameColumnWidth: $fileNameColumnWidth,
+                columnConfiguration: FileListColumnConfiguration(rawValue: fileColumnConfigurationRaw),
+                activate: {
+                    activePane = paneID
+                    activeArea = .files
+                },
+                reloadRelatedPanes: reloadAllPanes
+            )
+        }
+    }
+
+    func filePaneTabStrip(_ paneID: BrowserPaneID) -> some View {
+        let paneTabs = tabs(for: paneID)
+        let activeID = activeTabID(for: paneID)
+        let isPaneActive = activePane == paneID
+
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 0) {
+                ForEach(paneTabs) { tab in
+                    HStack(spacing: 4) {
+                        Button {
+                            switchToTab(tab, in: paneID)
+                        } label: {
+                            Text(tabTitle(for: tab.directory))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(minWidth: 72, maxWidth: 144, minHeight: 24, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .help(tab.directory.path)
+
+                        if paneTabs.count > 1 && tab.id == activeID {
+                            Button {
+                                closeActiveTab(in: paneID)
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .frame(width: 14, height: 24)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Close Tab")
+                        }
+                    }
+                    .font(design.fonts.swiftUIFont(for: .caption))
+                    .foregroundStyle(tab.id == activeID ? theme.folderTreeSelectedForeground : theme.secondaryForeground)
+                    .padding(.horizontal, 8)
+                    .background(tab.id == activeID ? theme.titleBarBackgroundActive : theme.headerBackground)
+                }
+
+                Button {
+                    openNewTab(in: paneID)
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(width: 28, height: 24)
+                        .foregroundStyle(theme.headerForeground)
+                }
+                .buttonStyle(.plain)
+                .help("New Tab")
+            }
+        }
+        .frame(height: 25)
+        .background(theme.headerBackground)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(isPaneActive ? theme.paneBorderActive : theme.paneBorderInactive)
+                .frame(height: 1)
+        }
+    }
+
+    func tabTitle(for directory: URL) -> String {
+        let name = directory.lastPathComponent
+        return name.isEmpty ? "/" : name
     }
 }
 

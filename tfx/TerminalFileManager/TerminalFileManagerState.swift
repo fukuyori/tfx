@@ -154,5 +154,9 @@ extension Notification.Name {
     /// Posted by `ViewMenuCommands` to request a left ⇄ right pane swap.
     /// Observed by `TerminalFileManagerView`.
     static let terminalFileManagerSwapPanes = Notification.Name("TerminalFileManager.swapPanes")
+    static let terminalFileManagerNewTab = Notification.Name("TerminalFileManager.newTab")
+    static let terminalFileManagerCloseTab = Notification.Name("TerminalFileManager.closeTab")
+    static let terminalFileManagerPreviousTab = Notification.Name("TerminalFileManager.previousTab")
+    static let terminalFileManagerNextTab = Notification.Name("TerminalFileManager.nextTab")
 }
 #endif

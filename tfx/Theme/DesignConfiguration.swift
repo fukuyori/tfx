@@ -284,6 +284,10 @@ enum DesignConfigurationLoader {
     goBack = "cmd+["
     goForward = "cmd+]"
     goUp = "cmd+up"
+    newTab = "cmd+shift+t"
+    closeTab = "cmd+w"
+    previousTab = "cmd+shift+["
+    nextTab = "cmd+shift+]"
 
     # Optional application launch overrides.
     #

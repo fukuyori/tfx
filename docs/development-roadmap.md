@@ -191,16 +191,16 @@ Goal:
 
 Tasks:
 
-- Introduce a per-pane tab container that owns multiple `FileBrowserModel` instances and tracks the active one.
-- Horizontal tab strip above each file pane. Click to switch; `⌘W` closes; `⌘T` opens a new tab at the active folder; `⌘⇧[` / `⌘⇧]` cycles.
-- Persistence: per-pane tab list (paths + active index) under new `UserDefaults` keys, following the additive policy in §3.5.
+- Introduce a per-pane tab container that owns multiple `FileBrowserModel` instances and tracks the active one. First slice tracks per-pane folder tabs and reuses the existing pane model when switching.
+- Horizontal tab strip above each file pane. Click to switch; `⌘W` closes; `⌘⇧T` opens a new tab at the active folder; `⌘⇧[` / `⌘⇧]` cycles. `⌘T` remains Open Terminal.
+- Persistence: per-pane tab list (paths + active index) under new `UserDefaults` keys, following the additive policy in §3.5. First slice is implemented.
 - Folder tree, preview, and search controls follow the active tab.
 
 Done when:
 
-- Each pane can hold multiple tabs that survive relaunch.
-- Closing the last tab in a pane is handled deterministically (decide between "hide pane" and "empty-tab placeholder" during design).
-- Keyboard shortcuts work for new / close / next / previous tab.
+- Each pane can hold multiple tabs that survive relaunch. First slice is implemented.
+- Closing the last tab in a pane is handled deterministically: the last tab stays open.
+- Keyboard shortcuts work for new / close / next / previous tab. First slice is implemented.
 
 ### 2.4 Built-in Terminal Pane
 

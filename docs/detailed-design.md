@@ -103,7 +103,7 @@ The regular folder tree is used for display, navigation, expansion/collapse, con
 
 ### 5.3 File Pane
 
-`FilePane` renders a terminal-style file table. In split mode, the left and right panes each own an independent `FileBrowserModel`. In single-pane mode, only the active pane is visible.
+`FilePane` renders a terminal-style file table. In split mode, the left and right panes each own an independent `FileBrowserModel`. In single-pane mode, only the active pane is visible. Each pane also has a lightweight tab strip above the file table. The first tab implementation stores folder paths and active tab indexes per pane, reusing the pane's existing `FileBrowserModel` when switching tabs.
 
 The file list begins with a `..` parent-directory row. `FileRow` renders file type icon, mode, name, size, kind, modified date, created date, and permissions. The name column is always visible; other columns can be shown, hidden, and reordered.
 
@@ -416,6 +416,8 @@ The persisted flag `Preview.showsRawSource` applies to all eligible files in bot
 | --- | --- |
 | `TerminalFileManager.leftDirectory` | Last left pane directory. |
 | `TerminalFileManager.rightDirectory` | Last right pane directory. |
+| `TerminalFileManager.leftTabs` | JSON-encoded left-pane tab paths and active index. |
+| `TerminalFileManager.rightTabs` | JSON-encoded right-pane tab paths and active index. |
 | `TerminalFileManager.isPreviewVisible` | Preview pane visibility. |
 | `TerminalFileManager.isSplitViewVisible` | Split-pane visibility. |
 | `TerminalFileManager.activePane` | Active pane. |

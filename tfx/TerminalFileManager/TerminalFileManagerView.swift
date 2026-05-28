@@ -16,6 +16,10 @@ struct TerminalFileManagerView: View {
     @AppStorage("TerminalFileManager.fileNameColumnWidth") var fileNameColumnWidth = 320.0
     @AppStorage("TerminalFileManager.fileColumnConfiguration") var fileColumnConfigurationRaw = FileListColumnConfiguration.defaultRawValue
     @StateObject private var openDirectoryRouter = AppOpenDirectoryRouter.shared
+    @State var leftTabs: [FilePaneTab]
+    @State var rightTabs: [FilePaneTab]
+    @State var leftActiveTabID: FilePaneTab.ID
+    @State var rightActiveTabID: FilePaneTab.ID
     @State private var folderDragStartWidth: Double?
     @State private var previewDragStartWidth: Double?
     @State var fileSplitDragStartRatio: Double?
@@ -32,9 +36,21 @@ struct TerminalFileManagerView: View {
         let homeURL = URL(fileURLWithPath: NSHomeDirectory())
         let leftURL = initialDirectory ?? Self.restoredDirectory(forKey: "TerminalFileManager.leftDirectory", fallback: homeURL)
         let rightURL = Self.restoredDirectory(forKey: "TerminalFileManager.rightDirectory", fallback: homeURL)
+        let restoredLeftTabs = Self.restoredTabs(
+            forKey: "TerminalFileManager.leftTabs",
+            fallback: leftURL
+        )
+        let restoredRightTabs = Self.restoredTabs(
+            forKey: "TerminalFileManager.rightTabs",
+            fallback: rightURL
+        )
 
-        _leftModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: leftURL))
-        _rightModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: rightURL))
+        _leftModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: restoredLeftTabs.activeDirectory))
+        _rightModel = StateObject(wrappedValue: FileBrowserModel(initialDirectory: restoredRightTabs.activeDirectory))
+        _leftTabs = State(initialValue: restoredLeftTabs.tabs)
+        _rightTabs = State(initialValue: restoredRightTabs.tabs)
+        _leftActiveTabID = State(initialValue: restoredLeftTabs.activeTabID)
+        _rightActiveTabID = State(initialValue: restoredRightTabs.activeTabID)
 
         if initialDirectory != nil {
             defaults.set(BrowserPaneID.left.rawValue, forKey: "TerminalFileManager.activePane")
@@ -110,10 +126,12 @@ struct TerminalFileManagerView: View {
         }
         .onChange(of: leftModel.currentDirectory) {
             UserDefaults.standard.set(leftModel.currentDirectory.path, forKey: "TerminalFileManager.leftDirectory")
+            updateActiveTabDirectory(leftModel.currentDirectory, for: .left)
             isSearchFocused = false
         }
         .onChange(of: rightModel.currentDirectory) {
             UserDefaults.standard.set(rightModel.currentDirectory.path, forKey: "TerminalFileManager.rightDirectory")
+            updateActiveTabDirectory(rightModel.currentDirectory, for: .right)
             isSearchFocused = false
         }
         .onChange(of: isSplitViewVisible) { oldValue, newValue in
@@ -124,6 +142,18 @@ struct TerminalFileManagerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerSwapPanes)) { _ in
             swapPanes()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerNewTab)) { _ in
+            openNewTab()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerCloseTab)) { _ in
+            closeActiveTab()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerPreviousTab)) { _ in
+            selectAdjacentTab(delta: -1)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerNextTab)) { _ in
+            selectAdjacentTab(delta: 1)
         }
         .alert(activeErrorTitle, isPresented: Binding(
             get: { leftModel.isShowingError || rightModel.isShowingError },

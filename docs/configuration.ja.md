@@ -64,6 +64,10 @@ toggleHidden = "cmd+shift+."
 goBack = "cmd+["
 goForward = "cmd+]"
 goUp = "cmd+up"
+newTab = "cmd+shift+t"
+closeTab = "cmd+w"
+previousTab = "cmd+shift+["
+nextTab = "cmd+shift+]"
 
 # Optional application launch overrides.
 #
@@ -272,6 +276,10 @@ copyPath = "cmd+option+c"
 | `selectAll` | `cmd+a` | 表示中の項目をすべて選択します。 |
 | `revealInFinder` | `cmd+option+r` | 選択項目を Finder で表示します。 |
 | `copyPath` | `cmd+option+c` | 選択項目のパスをコピーします。未選択時は現在フォルダのパスをコピーします。 |
+| `newTab` | `cmd+shift+t` | アクティブペインの現在フォルダで新規タブを開きます。 |
+| `closeTab` | `cmd+w` | アクティブタブを閉じます。ペイン内の最後のタブは閉じません。 |
+| `previousTab` | `cmd+shift+[` | アクティブペインの前のタブを選択します。 |
+| `nextTab` | `cmd+shift+]` | アクティブペインの次のタブを選択します。 |
 
 2 つのアクションが同じショートカットに解決された場合、tfx は設定エラーを報告し、内蔵ショートカットデフォルトを使います。
 
@@ -513,6 +521,46 @@ gitRenamed = "#C9A7FF"
 gitUntracked = "#9A8BA8"
 gitIgnored = "#493858"
 gitConflicted = "#7BE7FF"
+```
+
+Light graphite:
+
+```toml
+version = 1
+
+[colors]
+fileListBackground = "#F7FAF5"
+fileListRowSelected = "#DDEFD8"
+fileListRowDropTarget = "#BEE5B7"
+fileForeground = "#18221A"
+directoryForeground = "#167A3A"
+secondaryForeground = "#5D6B60"
+headerForeground = "#1C6B37"
+headerBackground = "#EAF3E7"
+titleBarBackgroundActive = "#D5EBD0"
+titleBarBackgroundInactive = "#EAF3E7"
+statusLineForegroundActive = "#176B34"
+statusLineForegroundInactive = "#5D6B60"
+statusLineBackground = "#EAF3E7"
+paneBorderKeyboardTarget = "#17813A"
+paneBorderActive = "#6AA66F"
+paneBorderInactive = "#C5D5C2"
+folderTreeBackground = "#F2F7EF"
+folderTreeForeground = "#18221A"
+folderTreeSelectedForeground = "#0E2614"
+folderTreeFolderIcon = "#167A3A"
+folderTreeSelectedActive = "#D5EBD0"
+folderTreeSelectedInactive = "#E3EFE0"
+folderTreeSectionHeader = "#1C6B37"
+splitHandleIdle = "#C5D5C2"
+splitHandleActive = "#17813A"
+gitModified = "#9A6A00"
+gitAdded = "#16813D"
+gitDeleted = "#B23B3B"
+gitRenamed = "#7653B5"
+gitUntracked = "#4F8053"
+gitIgnored = "#9AA89A"
+gitConflicted = "#007C73"
 ```
 
 アクティブ / 非アクティブの差を強める例:

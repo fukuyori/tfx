@@ -204,6 +204,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case selectAll
     case revealInFinder
     case copyPath
+    case newTab
+    case closeTab
+    case previousTab
+    case nextTab
 
     var id: String { rawValue }
 }
@@ -235,7 +239,11 @@ enum Shortcuts {
         .movePasteItems: ShortcutInfo(key: "v", modifiers: [.command, .option]),
         .selectAll: ShortcutInfo(key: "a", modifiers: .command),
         .revealInFinder: ShortcutInfo(key: "r", modifiers: [.command, .option]),
-        .copyPath: ShortcutInfo(key: "c", modifiers: [.command, .option])
+        .copyPath: ShortcutInfo(key: "c", modifiers: [.command, .option]),
+        .newTab: ShortcutInfo(key: "t", modifiers: [.command, .shift]),
+        .closeTab: ShortcutInfo(key: "w", modifiers: .command),
+        .previousTab: ShortcutInfo(key: "[", modifiers: [.command, .shift]),
+        .nextTab: ShortcutInfo(key: "]", modifiers: [.command, .shift])
     ]
 
     static func info(_ action: ShortcutAction) -> ShortcutInfo {
@@ -512,6 +520,10 @@ enum ShortcutConfigurationLoader {
     selectAll = "cmd+a"
     revealInFinder = "cmd+option+r"
     copyPath = "cmd+option+c"
+    newTab = "cmd+shift+t"
+    closeTab = "cmd+w"
+    previousTab = "cmd+shift+["
+    nextTab = "cmd+shift+]"
     """
 }
 

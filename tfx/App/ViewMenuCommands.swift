@@ -28,6 +28,28 @@ struct ViewMenuCommands: Commands {
             }
             .keyboardShortcut(shortcutStore.info(.swapPanes))
             .disabled(!isSplitViewVisible)
+
+            Divider()
+
+            Button("New Tab") {
+                NotificationCenter.default.post(name: .terminalFileManagerNewTab, object: nil)
+            }
+            .keyboardShortcut(shortcutStore.info(.newTab))
+
+            Button("Close Tab") {
+                NotificationCenter.default.post(name: .terminalFileManagerCloseTab, object: nil)
+            }
+            .keyboardShortcut(shortcutStore.info(.closeTab))
+
+            Button("Previous Tab") {
+                NotificationCenter.default.post(name: .terminalFileManagerPreviousTab, object: nil)
+            }
+            .keyboardShortcut(shortcutStore.info(.previousTab))
+
+            Button("Next Tab") {
+                NotificationCenter.default.post(name: .terminalFileManagerNextTab, object: nil)
+            }
+            .keyboardShortcut(shortcutStore.info(.nextTab))
         }
     }
 }

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.6.2**
+Version: **0.6.3**
 
 English | [日本語](README.ja.md)
 
@@ -20,6 +20,7 @@ English | [日本語](README.ja.md)
 - Home, Documents, and Downloads are pinned by default on first launch
 - Drag reordering for pinned folders
 - Single-pane and split-pane modes
+- Per-pane folder tabs
 - Drag and drop between left and right file panes
 - Option-drag copies files; normal drag moves files
 - Visual highlighting for the active view
@@ -78,6 +79,9 @@ English | [日本語](README.ja.md)
 - `Command + \`: Toggle split view
 - `Command + Shift + X`: Swap left and right panes (split view only)
 - `Command + Shift + .`: Toggle hidden files
+- `Command + Shift + T`: New tab
+- `Command + W`: Close tab
+- `Command + Shift + [` / `Command + Shift + ]`: Previous / next tab
 
 ## Command Line Launch
 

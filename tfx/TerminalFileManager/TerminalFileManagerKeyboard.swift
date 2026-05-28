@@ -134,6 +134,26 @@ extension TerminalFileManagerView {
             return true
         }
 
+        if shortcutStore.info(.newTab).matches(event) {
+            openNewTab()
+            return true
+        }
+
+        if shortcutStore.info(.closeTab).matches(event) {
+            closeActiveTab()
+            return true
+        }
+
+        if shortcutStore.info(.previousTab).matches(event) {
+            selectAdjacentTab(delta: -1)
+            return true
+        }
+
+        if shortcutStore.info(.nextTab).matches(event) {
+            selectAdjacentTab(delta: 1)
+            return true
+        }
+
         if shortcutStore.info(.reload).matches(event) {
             model.reload()
             return true

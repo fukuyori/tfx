@@ -71,6 +71,10 @@ toggleHidden = "cmd+shift+."
 goBack = "cmd+["
 goForward = "cmd+]"
 goUp = "cmd+up"
+newTab = "cmd+shift+t"
+closeTab = "cmd+w"
+previousTab = "cmd+shift+["
+nextTab = "cmd+shift+]"
 
 # Optional application launch overrides.
 #
@@ -287,6 +291,10 @@ Supported action keys:
 | `selectAll` | `cmd+a` | Select all visible items. |
 | `revealInFinder` | `cmd+option+r` | Reveal the selected items in Finder. |
 | `copyPath` | `cmd+option+c` | Copy the selected item path, or the current folder path when no item is selected. |
+| `newTab` | `cmd+shift+t` | Open a new tab in the active pane at the current folder. |
+| `closeTab` | `cmd+w` | Close the active tab. The last tab in a pane stays open. |
+| `previousTab` | `cmd+shift+[` | Select the previous tab in the active pane. |
+| `nextTab` | `cmd+shift+]` | Select the next tab in the active pane. |
 
 If two actions resolve to the same shortcut, tfx reports a configuration error
 and uses the built-in shortcut defaults.
@@ -538,6 +546,46 @@ gitRenamed = "#C9A7FF"
 gitUntracked = "#9A8BA8"
 gitIgnored = "#493858"
 gitConflicted = "#7BE7FF"
+```
+
+Light graphite:
+
+```toml
+version = 1
+
+[colors]
+fileListBackground = "#F7FAF5"
+fileListRowSelected = "#DDEFD8"
+fileListRowDropTarget = "#BEE5B7"
+fileForeground = "#18221A"
+directoryForeground = "#167A3A"
+secondaryForeground = "#5D6B60"
+headerForeground = "#1C6B37"
+headerBackground = "#EAF3E7"
+titleBarBackgroundActive = "#D5EBD0"
+titleBarBackgroundInactive = "#EAF3E7"
+statusLineForegroundActive = "#176B34"
+statusLineForegroundInactive = "#5D6B60"
+statusLineBackground = "#EAF3E7"
+paneBorderKeyboardTarget = "#17813A"
+paneBorderActive = "#6AA66F"
+paneBorderInactive = "#C5D5C2"
+folderTreeBackground = "#F2F7EF"
+folderTreeForeground = "#18221A"
+folderTreeSelectedForeground = "#0E2614"
+folderTreeFolderIcon = "#167A3A"
+folderTreeSelectedActive = "#D5EBD0"
+folderTreeSelectedInactive = "#E3EFE0"
+folderTreeSectionHeader = "#1C6B37"
+splitHandleIdle = "#C5D5C2"
+splitHandleActive = "#17813A"
+gitModified = "#9A6A00"
+gitAdded = "#16813D"
+gitDeleted = "#B23B3B"
+gitRenamed = "#7653B5"
+gitUntracked = "#4F8053"
+gitIgnored = "#9AA89A"
+gitConflicted = "#007C73"
 ```
 
 Use stronger active/inactive separation:

@@ -4,6 +4,19 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.3] - 2026-05-29
+
+Pane tabs.
+
+### Added
+
+- Added the first pane-tabs slice: each file pane now has a folder tab strip, new / close / previous / next tab actions, and per-pane tab persistence.
+- Added a light-mode `Light graphite` color sample to the English and Japanese configuration guides.
+
+### Changed
+
+- Updated the version to `0.6.3` and the build number to `35`.
+
 ## [0.6.2] - 2026-05-28
 
 Configuration documentation and shortcut polish.

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.6.2**
+Version: **0.6.3**
 
 [English](README.md) | 日本語
 
@@ -20,6 +20,7 @@ Version: **0.6.2**
 - 初回起動時に Home / Documents / Downloads をピン留め
 - ピン留めフォルダのドラッグ並べ替え
 - 単独ビュー / スプリットビュー切り替え
+- ペインごとのフォルダタブ
 - 左右ペイン間のドラッグアンドドロップ
 - Option ドラッグによるコピー、通常ドラッグによる移動
 - アクティブビューのハイライト表示
@@ -78,6 +79,9 @@ Version: **0.6.2**
 - `Command + \`: スプリット表示切り替え
 - `Command + Shift + X`: 左右ペインを入れ替え（スプリット表示時のみ）
 - `Command + Shift + .`: 隠しファイル表示切り替え
+- `Command + Shift + T`: 新規タブ
+- `Command + W`: タブを閉じる
+- `Command + Shift + [` / `Command + Shift + ]`: 前 / 次のタブ
 
 ## コマンドラインから起動
 
