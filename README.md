@@ -2,11 +2,11 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.6.1**
+Version: **0.6.2**
 
 English | [日本語](README.ja.md)
 
-`tfx` is a macOS file manager with a terminal-inspired interface and keyboard-first workflow. It combines a folder tree, split file panes, rich previews, drag and drop, and Terminal.app integration.
+`tfx` is a macOS file manager with a terminal-inspired interface and keyboard-first workflow. It combines a folder tree, split file panes, rich previews, drag and drop, and terminal app integration.
 
 ## Screenshot
 
@@ -34,8 +34,8 @@ English | [日本語](README.ja.md)
 - Toggleable preview pane
 - Browse zip archives without extracting them
 - Copy files from browsed zip archives
-- Open Terminal.app at the current folder
-- New File, New Folder, Rename, Move to Trash, and Reveal in Finder
+- Open a terminal app at the current folder
+- New File, New Folder, inline Rename, Move to Trash, and Reveal in Finder
 - "Open With" submenu listing applications that can open the file, with an "Other…" picker
 - Auto-refresh: each file pane updates automatically when its directory changes externally
 - Compress selected items to a zip archive
@@ -48,7 +48,7 @@ English | [日本語](README.ja.md)
 - Subfolder search with progress and cancellation
 - File-type icons in the file list
 - Configurable file-list columns: visibility and order
-- User-editable `config.toml` for font family and size
+- User-editable `config.toml` for design settings and shortcut overrides
 - Finder-compatible tags: tag column, standard color tags, and custom tag names from the file-row context menu
 - Resizable file-name column by dragging the `NAME` header
 - Restores window size, visible panes, pane widths, active pane, and open folders
@@ -60,18 +60,20 @@ English | [日本語](README.ja.md)
 - `Left / Right`: Scroll the file list horizontally
 - `Tab` / `Shift + Tab`: Cycle keyboard focus across folder tree → left file pane → right file pane
 - `Enter`: Open the selected file or enter the selected folder
+- `Command + O`: Open the selected item
 - `Command + [` / `Command + ]`: Back / Forward
 - `Command + Up`: Parent folder
 - `Backspace`: Parent folder
 - `Command + F`: Search
 - `Command + N`: New folder
-- `Delete`: Move to Trash
+- `Command + Shift + N`: New file
+- `Command + Return`: Rename inline
 - `Command + Backspace`: Move to Trash
 - `Command + C / X / V`: Copy / Cut / Paste
 - `Command + Option + V`: Move-paste
 - `Command + A`: Select all
 - `Command + R`: Reload
-- `Command + T`: Open Terminal.app here
+- `Command + T`: Open a terminal app here
 - `Command + P`: Toggle preview pane
 - `Command + \`: Toggle split view
 - `Command + Shift + X`: Swap left and right panes (split view only)
@@ -110,10 +112,11 @@ tfx .
 tfx creates and reads its user configuration from:
 
 ```text
-~/Library/Application Support/tfx/config.toml
+~/Library/Application Support/tfx/
 ```
 
-The current configuration supports compact `[font]`, `[colors]`, and `[opacity]` blocks:
+The current configuration supports compact `[font]`, `[colors]`, `[opacity]`,
+`[shortcuts]`, `[terminal]`, and `[openWith]` blocks in `config.toml`:
 
 ```toml
 version = 1
@@ -132,9 +135,21 @@ headerForeground = "#8AEFFF"
 [opacity]
 background = 1
 inactivePane = 0.5
+
+[shortcuts]
+reload = "cmd+shift+r"
+togglePreview = "cmd+option+p"
+
+[terminal]
+app = "/Applications/Ghostty.app"
+
+[openWith]
+md = "com.microsoft.VSCode"
+pdf = "/Applications/Preview.app"
 ```
 
 See [`docs/configuration.md`](docs/configuration.md) for supported keys, design token mapping, examples, and error handling.
+Japanese documentation is available at [`docs/configuration.ja.md`](docs/configuration.ja.md).
 
 ## Build
 

@@ -1,33 +1,39 @@
 # tfx Configuration
 
+English | [日本語](configuration.ja.md)
+
 tfx stores user-editable configuration in:
 
 ```text
-~/Library/Application Support/tfx/config.toml
+~/Library/Application Support/tfx/
 ```
 
-The file is created automatically when tfx starts if it does not already
-exist. Existing files are not overwritten. If the file cannot be parsed, tfx
-falls back to the built-in design and shows a startup configuration alert.
-tfx also reloads this file when the app becomes active again, so edits made in
-another editor are picked up when returning to tfx.
+The main configuration file is `config.toml`. It contains design settings and
+shortcut overrides. This file is created automatically when tfx starts if it
+does not already exist. Existing files are not overwritten. If the file cannot be
+parsed, tfx falls back to the built-in defaults and shows a
+startup configuration alert. tfx also reloads this file when the app becomes
+active again, so edits made in another editor are picked up when returning to
+tfx.
 
 ## Current Scope
 
-The current implementation supports `[font]`, `[colors]`, and `[opacity]`. The configuration
-loader intentionally accepts a small TOML subset for these first slices:
+`config.toml` supports `[font]`, `[colors]`, `[opacity]`, `[shortcuts]`,
+`[terminal]`, and `[openWith]`. The configuration loaders intentionally accept
+a small TOML subset for these first slices:
 
 - Top-level `version = 1`
-- `[font]`, `[colors]`, and `[opacity]` tables
+- `[font]`, `[colors]`, `[opacity]`, `[shortcuts]`, `[terminal]`, and `[openWith]` tables
 - String values in double quotes
 - Numeric font size values
 - Color values as `"#RRGGBB"`
 - Opacity values from `0` through `1`
+- Shortcut values such as `"cmd+r"`, `"cmd+shift+x"`, and `"cmd+up"`
+- Application references as absolute app paths or bundle identifiers
 - `#` comments outside quoted strings
 
-Other sections are ignored for now. Shortcut, filetype, Lua, and Markdown
-preview settings are planned but not implemented in the current configuration
-loader.
+Other sections are ignored for now. Lua and Markdown preview settings are
+planned but not implemented in the current configuration loaders.
 
 ## Default File
 
@@ -53,6 +59,28 @@ size = 13
 # [opacity]
 # inactivePane = 0.5
 # disabledItem = 0.45
+
+[shortcuts]
+reload = "cmd+r"
+openTerminal = "cmd+t"
+togglePreview = "cmd+p"
+toggleSplit = "cmd+backslash"
+swapPanes = "cmd+shift+x"
+focusSearch = "cmd+f"
+toggleHidden = "cmd+shift+."
+goBack = "cmd+["
+goForward = "cmd+]"
+goUp = "cmd+up"
+
+# Optional application launch overrides.
+#
+# [terminal]
+# app = "/System/Applications/Utilities/Terminal.app"
+# bundleIdentifier = "com.apple.Terminal"
+#
+# [openWith]
+# md = "com.microsoft.VSCode"
+# pdf = "/Applications/Preview.app"
 ```
 
 ## Keys
@@ -194,6 +222,121 @@ so the configured background opacity is visible.
 | `dragPreview` | `0.96` | Floating pinned-folder drag preview opacity. |
 | `dragPreviewShadow` | `0.18` | Floating pinned-folder drag preview shadow opacity. |
 | `subtleBackground` | `0.07` | Very subtle backgrounds, currently used by the path breadcrumb control. |
+
+### `[shortcuts]`
+
+Defined in `config.toml`.
+
+```toml
+[shortcuts]
+reload = "cmd+shift+r"
+togglePreview = "cmd+option+p"
+goUp = "cmd+up"
+rename = "ctrl+r"
+copyPath = "cmd+option+c"
+```
+
+Supported modifier tokens:
+
+| Token | Meaning |
+| --- | --- |
+| `cmd`, `command` | Command |
+| `shift` | Shift |
+| `opt`, `option`, `alt` | Option |
+| `ctrl`, `control` | Control |
+
+Supported key tokens:
+
+| Token | Meaning |
+| --- | --- |
+| Single character, such as `r`, `.`, `[`, `]` | That key |
+| `up`, `down`, `left`, `right` | Arrow keys |
+| `escape`, `esc` | Escape |
+| `delete`, `backspace` | Delete / Backspace. Also matches Forward Delete. |
+| `return`, `enter` | Return |
+| `tab` | Tab |
+| `space` | Space |
+| `backslash` | `\` |
+| `f1` through `f20` | Function keys |
+
+Supported action keys:
+
+| Key | Default | Action |
+| --- | --- | --- |
+| `reload` | `cmd+r` | Reload the active file pane. |
+| `openTerminal` | `cmd+t` | Open the configured terminal app at the active folder. |
+| `togglePreview` | `cmd+p` | Show or hide the preview pane. |
+| `toggleSplit` | `cmd+backslash` | Show or hide split view. |
+| `swapPanes` | `cmd+shift+x` | Swap the left and right panes. |
+| `focusSearch` | `cmd+f` | Focus the search field. |
+| `toggleHidden` | `cmd+shift+.` | Show or hide hidden files. |
+| `goBack` | `cmd+[` | Navigate back. |
+| `goForward` | `cmd+]` | Navigate forward. |
+| `goUp` | `cmd+up` | Navigate to the parent folder. |
+| `openItem` | `cmd+o` | Open the selected item. |
+| `newFolder` | `cmd+n` | Create a folder and start inline name editing. |
+| `newFile` | `cmd+shift+n` | Create a file and start inline name editing. |
+| `rename` | `cmd+return` | Rename the selected item inline. |
+| `moveToTrash` | `cmd+backspace` | Move the selected items to Trash. |
+| `compressToZip` | `cmd+option+z` | Compress the selected items to a zip archive. |
+| `extractZip` | `cmd+option+e` | Extract the selected zip archive. |
+| `copyItems` | `cmd+c` | Copy the selected items. |
+| `cutItems` | `cmd+x` | Cut the selected items. |
+| `pasteItems` | `cmd+v` | Paste into the active folder. |
+| `movePasteItems` | `cmd+option+v` | Paste by moving into the active folder. |
+| `selectAll` | `cmd+a` | Select all visible items. |
+| `revealInFinder` | `cmd+option+r` | Reveal the selected items in Finder. |
+| `copyPath` | `cmd+option+c` | Copy the selected item path, or the current folder path when no item is selected. |
+
+If two actions resolve to the same shortcut, tfx reports a configuration error
+and uses the built-in shortcut defaults.
+
+The same action keys are used by toolbar buttons, the View menu, keyboard
+handling, and file-list context menu items. For example, changing `rename`
+updates both the row context menu display and the shortcut that starts inline
+renaming.
+
+### `[terminal]`
+
+Overrides the app used by the terminal button and `openTerminal` shortcut.
+
+```toml
+[terminal]
+app = "/Applications/Ghostty.app"
+```
+
+You can also use a bundle identifier:
+
+```toml
+[terminal]
+bundleIdentifier = "com.googlecode.iterm2"
+```
+
+If both `app` and `bundleIdentifier` are present, `app` is used. If this table
+is omitted, tfx uses `/System/Applications/Utilities/Terminal.app`.
+
+### `[openWith]`
+
+Overrides the app used when opening files by extension. Keys are extensions
+without the leading dot. Values can be absolute app paths or bundle
+identifiers.
+
+```toml
+[openWith]
+md = "com.microsoft.VSCode"
+txt = "/System/Applications/TextEdit.app"
+pdf = "/Applications/Preview.app"
+```
+
+Compound extension keys can be quoted:
+
+```toml
+[openWith]
+"tar.gz" = "com.example.ArchiveApp"
+```
+
+Unknown extensions keep the normal macOS default-app behavior. Directories,
+zip navigation, and archive-internal files keep their existing tfx behavior.
 
 ## Font Role Mapping
 
@@ -424,13 +567,15 @@ tfx treats these as configuration errors:
 - `size` outside `8...40`
 - Color values that are not quoted `#RRGGBB` strings
 - Opacity values outside `0...1`
+- Invalid application launch assignment or string syntax
+- Unavailable configured terminal / open-with application when used
 - Unsupported `version`
 
-When an error is found, tfx does not crash. It uses the built-in black-and-green
-base design and shows an alert with the parse error.
+When an error is found, tfx does not crash. Design and shortcut parse errors
+fall back to their built-in defaults and show an alert with the parse error.
+Application launch errors are shown when the configured action is used.
 
 ## Planned Sections
 
-Shortcut configuration will use a separate `shortcuts.toml` file, and
-extension behavior will use `filetypes.toml` plus Lua scripts once those
-roadmap items are implemented.
+Richer extension behavior will use Lua scripts once those roadmap items are
+implemented.

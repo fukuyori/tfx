@@ -11,21 +11,22 @@ import SwiftUI
 struct ViewMenuCommands: Commands {
     @AppStorage("TerminalFileManager.isPreviewVisible") private var isPreviewVisible = true
     @AppStorage("TerminalFileManager.isSplitViewVisible") private var isSplitViewVisible = true
+    @ObservedObject var shortcutStore: ShortcutStore
 
     var body: some Commands {
         CommandMenu("View") {
             Toggle("Show Preview Pane", isOn: $isPreviewVisible)
-                .keyboardShortcut(Shortcuts.togglePreview)
+                .keyboardShortcut(shortcutStore.info(.togglePreview))
 
             Toggle("Split View", isOn: $isSplitViewVisible)
-                .keyboardShortcut(Shortcuts.toggleSplit)
+                .keyboardShortcut(shortcutStore.info(.toggleSplit))
 
             Divider()
 
             Button("Swap Left and Right Panes") {
                 NotificationCenter.default.post(name: .terminalFileManagerSwapPanes, object: nil)
             }
-            .keyboardShortcut(Shortcuts.swapPanes)
+            .keyboardShortcut(shortcutStore.info(.swapPanes))
             .disabled(!isSplitViewVisible)
         }
     }

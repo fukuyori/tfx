@@ -9,6 +9,7 @@ Project documentation is written in English by default. `README.ja.md` is the Ja
 | [`README.md`](../README.md) | User-facing overview, features, shortcuts, launch commands, and build commands. |
 | [`README.ja.md`](../README.ja.md) | Japanese user-facing overview. Keep this aligned with `README.md`. |
 | [`docs/configuration.md`](configuration.md) | User-editable configuration file location, supported keys, examples, and error handling. |
+| [`docs/configuration.ja.md`](configuration.ja.md) | Japanese version of the configuration guide. Keep this aligned with `docs/configuration.md`. |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Release history and version changes. |
 
 ## Engineering Documents
@@ -24,7 +25,7 @@ Project documentation is written in English by default. `README.ja.md` is the Ja
 ## Maintenance Rules
 
 - Update `README.md` and `README.ja.md` together when user-facing behavior changes.
-- Update `docs/configuration.md` when user-editable configuration keys, file locations, defaults, or validation rules change.
+- Update `docs/configuration.md` and `docs/configuration.ja.md` when user-editable configuration keys, file locations, defaults, or validation rules change.
 - Update `docs/detailed-design.md` when the current architecture or behavior changes.
 - Update `docs/file-manager-implementation-plan.md` when a planned phase changes status.
 - Update `docs/development-roadmap.md` when future work is completed, removed, or reprioritized.

@@ -274,7 +274,6 @@ Planned layout:
 ```text
 config.toml
 filetypes.toml
-shortcuts.toml
 scripts/*.lua
 markdown/preview.css
 ```
@@ -290,7 +289,7 @@ mono = "monospace"
 size = 13
 ```
 
-`config.toml` is created on demand at launch if it does not exist. The initial parser supports `version = 1`, the compact `[font]` block, `[colors]` `#RRGGBB` semantic token overrides, and `[opacity]` numeric semantic token overrides.
+`config.toml` is created on demand at launch if it does not exist. The initial parser supports `version = 1`, the compact `[font]` block, `[colors]` `#RRGGBB` semantic token overrides, `[opacity]` numeric semantic token overrides, and `[shortcuts]` action bindings.
 
 Tasks:
 
@@ -312,10 +311,10 @@ Goal:
 
 Tasks:
 
-- Define an action list with stable identifiers.
-- Manage default shortcuts centrally (single source of truth).
-- Define the `shortcuts.toml` override format.
-- Detect shortcut conflicts (both default-vs-user and user-vs-user).
+- Define an action list with stable identifiers. Done.
+- Manage default shortcuts centrally (single source of truth). Done.
+- Define the `[shortcuts]` override format in `config.toml`. Done.
+- Detect shortcut conflicts (both default-vs-user and user-vs-user). Done.
 
 Done when:
 
@@ -339,13 +338,15 @@ Goal:
 
 Tasks:
 
-- Define extension rules in `filetypes.toml`.
+- Define extension open-with rules in `config.toml` `[openWith]`. Done.
+- Define preview and context-menu rules in a future extension configuration.
 - Define precedence between built-in behavior, TOML rules, and Lua hooks (§2.12).
 - Fall back to current built-in behavior for unknown extensions.
 
 Done when:
 
-- The default preview / open behavior can be changed per extension.
+- The default open behavior can be changed per extension.
+- The default preview behavior can be changed per extension.
 - Rule precedence is explicit and documented.
 
 ### 2.12 Lua Extension API

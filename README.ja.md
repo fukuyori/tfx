@@ -2,11 +2,11 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.6.1**
+Version: **0.6.2**
 
 [English](README.md) | 日本語
 
-`tfx` は、ターミナル風の見た目とキーボード操作を中心にした macOS 向けファイルマネージャーです。フォルダツリー、スプリット表示、プレビュー、ドラッグアンドドロップ、Terminal.app 連携を備えています。
+`tfx` は、ターミナル風の見た目とキーボード操作を中心にした macOS 向けファイルマネージャーです。フォルダツリー、スプリット表示、プレビュー、ドラッグアンドドロップ、ターミナルアプリ連携を備えています。
 
 ## スクリーンショット
 
@@ -34,8 +34,8 @@ Version: **0.6.1**
 - プレビュー表示のオン / オフ切り替え
 - zip ファイルを展開せずに閲覧
 - 閲覧中の zip ファイルからファイルをコピー
-- Terminal.app を現在フォルダで開く
-- New File / New Folder / Rename / Move to Trash / Reveal in Finder
+- ターミナルアプリを現在フォルダで開く
+- New File / New Folder / インライン Rename / Move to Trash / Reveal in Finder
 - 「このアプリケーションで開く」サブメニュー（候補アプリ一覧と「その他…」ピッカー）
 - 自動更新: 外部からのディレクトリ変更を検知してファイル一覧を自動リフレッシュ
 - 選択項目を zip ファイルに圧縮
@@ -48,7 +48,7 @@ Version: **0.6.1**
 - 進捗表示とキャンセルに対応したサブフォルダ検索
 - ファイル種別に応じたアイコン表示
 - ファイル一覧カラムの表示 / 非表示、順番変更
-- フォントファミリーとサイズを `config.toml` で設定可能
+- `config.toml` でデザイン設定とショートカット上書きが可能
 - Finder 互換タグ: タグ列、標準色タグ、ファイル行コンテキストメニューからのカスタムタグ名追加
 - `NAME` ヘッダーのドラッグによるファイル名カラム幅変更
 - ウィンドウサイズ、表示状態、ペイン幅、アクティブペイン、開いているフォルダの復元
@@ -60,18 +60,20 @@ Version: **0.6.1**
 - `← / →`: ファイル一覧を左右にスクロール
 - `Tab` / `Shift + Tab`: フォルダツリー → 左ファイル一覧 → 右ファイル一覧 のフォーカス循環
 - `Enter`: ファイルを開く、またはフォルダへ移動
+- `Command + O`: 選択項目を開く
 - `Command + [` / `Command + ]`: 戻る / 進む
 - `Command + ↑`: 親フォルダへ移動
 - `Backspace`: 親フォルダへ移動
 - `Command + F`: 検索
 - `Command + N`: 新規フォルダ
-- `Delete`: ゴミ箱へ移動
+- `Command + Shift + N`: 新規ファイル
+- `Command + Return`: インラインで名前を変更
 - `Command + Backspace`: ゴミ箱へ移動
 - `Command + C / X / V`: コピー / カット / ペースト
 - `Command + Option + V`: 移動ペースト
 - `Command + A`: すべて選択
 - `Command + R`: 再読み込み
-- `Command + T`: 現在フォルダで Terminal.app を開く
+- `Command + T`: 現在フォルダでターミナルアプリを開く
 - `Command + P`: プレビューペイン表示切り替え
 - `Command + \`: スプリット表示切り替え
 - `Command + Shift + X`: 左右ペインを入れ替え（スプリット表示時のみ）
@@ -110,10 +112,11 @@ tfx .
 tfx はユーザー設定を次の場所に作成し、読み込みます。
 
 ```text
-~/Library/Application Support/tfx/config.toml
+~/Library/Application Support/tfx/
 ```
 
-現在対応している設定は、コンパクトな `[font]`、`[colors]`、`[opacity]` ブロックです。
+現在対応している設定は、`config.toml` のコンパクトな `[font]`、`[colors]`、`[opacity]`、
+`[shortcuts]`、`[terminal]`、`[openWith]` ブロックです。
 
 ```toml
 version = 1
@@ -132,9 +135,20 @@ headerForeground = "#8AEFFF"
 [opacity]
 background = 1
 inactivePane = 0.5
+
+[shortcuts]
+reload = "cmd+shift+r"
+togglePreview = "cmd+option+p"
+
+[terminal]
+app = "/Applications/Ghostty.app"
+
+[openWith]
+md = "com.microsoft.VSCode"
+pdf = "/Applications/Preview.app"
 ```
 
-対応キー、デザイントークンの適用先、例、エラー時の挙動は [`docs/configuration.md`](docs/configuration.md) を参照してください。
+対応キー、デザイントークンの適用先、例、エラー時の挙動は [`docs/configuration.ja.md`](docs/configuration.ja.md) を参照してください。
 
 ## ビルド
 

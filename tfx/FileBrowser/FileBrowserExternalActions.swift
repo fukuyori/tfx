@@ -42,7 +42,25 @@ enum FileBrowserExternalActions {
     }
 
     static func open(_ url: URL) {
-        NSWorkspace.shared.open(resolvedOpenURL(for: url))
+        open(url) { _ in }
+    }
+
+    static func open(_ url: URL, onError: @escaping (Error) -> Void) {
+        let resolved = resolvedOpenURL(for: url)
+        do {
+            let configuration = try AppLaunchConfigurationLoader.load()
+            if let appReference = configuration.application(forFile: resolved) {
+                try open([resolved], withApplication: appReference, onError: onError)
+                return
+            }
+        } catch {
+            DispatchQueue.main.async {
+                onError(error)
+            }
+            return
+        }
+
+        NSWorkspace.shared.open(resolved)
     }
 
     static func openApplication(_ url: URL, onError: @escaping (Error) -> Void) {
@@ -100,6 +118,14 @@ enum FileBrowserExternalActions {
         }
     }
 
+    static func open(_ urls: [URL], withApplication appReference: ApplicationReference, onError: @escaping (Error) -> Void) throws {
+        guard let appURL = appReference.resolvedURL() else {
+            throw AppLaunchConfigurationError.applicationUnavailable(String(describing: appReference))
+        }
+
+        open(urls, withApplicationAt: appURL, onError: onError)
+    }
+
     static func chooseApplication() -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
@@ -120,7 +146,24 @@ enum FileBrowserExternalActions {
     }
 
     static func openTerminal(at directory: URL, onError: @escaping (Error) -> Void) {
-        let terminalURL = URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app")
+        let terminalURL: URL
+        do {
+            let configuration = try AppLaunchConfigurationLoader.load()
+            if let configuredTerminal = configuration.terminalApplication {
+                guard let resolvedURL = configuredTerminal.resolvedURL() else {
+                    throw AppLaunchConfigurationError.applicationUnavailable(String(describing: configuredTerminal))
+                }
+                terminalURL = resolvedURL
+            } else {
+                terminalURL = URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app")
+            }
+        } catch {
+            DispatchQueue.main.async {
+                onError(error)
+            }
+            return
+        }
+
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
 

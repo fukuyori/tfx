@@ -17,6 +17,7 @@ struct tfxApp: App {
     /// App-wide design store. Held here so every file pane shares the same
     /// tokens through the SwiftUI environment.
     @StateObject private var designStore = DesignStore()
+    @StateObject private var shortcutStore = ShortcutStore()
 #endif
 
     var body: some Scene {
@@ -24,17 +25,19 @@ struct tfxApp: App {
             ContentView()
 #if os(macOS)
                 .environmentObject(designStore)
+                .environmentObject(shortcutStore)
                 .onOpenURL { url in
                     AppOpenDirectoryRouter.shared.open([url])
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                     designStore.reload()
+                    shortcutStore.reload()
                 }
 #endif
         }
 #if os(macOS)
         .commands {
-            ViewMenuCommands()
+            ViewMenuCommands(shortcutStore: shortcutStore)
             DeveloperMenuCommands()
         }
 #endif

@@ -64,6 +64,7 @@ extension FileBrowserModel {
     }
 
     func clearSelection() {
+        inlineNameEdit = nil
         isParentDirectorySelected = false
         selectedItemIDs.removeAll()
         primarySelectedItemID = nil
@@ -98,6 +99,10 @@ extension FileBrowserModel {
     }
 
     func applySelection(_ selection: FileSelectionStateResult) {
+        if let edit = inlineNameEdit, !selection.selectedItemIDs.contains(edit.url) {
+            cancelInlineNameEdit()
+        }
+
         isParentDirectorySelected = selection.isParentDirectorySelected
         selectedItemIDs = selection.selectedItemIDs
         primarySelectedItemID = selection.primarySelectedItemID

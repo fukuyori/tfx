@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
 #if os(macOS)
     @EnvironmentObject private var designStore: DesignStore
+    @EnvironmentObject private var shortcutStore: ShortcutStore
 #endif
 
     var body: some View {
@@ -12,18 +13,18 @@ struct ContentView: View {
             .environment(\.design, designStore.activeDesign)
             .frame(minWidth: 980, minHeight: 640)
             .alert("Configuration Error", isPresented: Binding(
-                get: { designStore.configurationError != nil },
+                get: { configurationError != nil },
                 set: { isPresented in
                     if !isPresented {
-                        designStore.dismissConfigurationError()
+                        dismissConfigurationErrors()
                     }
                 }
             )) {
                 Button("OK", role: .cancel) {
-                    designStore.dismissConfigurationError()
+                    dismissConfigurationErrors()
                 }
             } message: {
-                Text(designStore.configurationError ?? "")
+                Text(configurationError ?? "")
             }
 #else
         ContentUnavailableView(
@@ -34,4 +35,26 @@ struct ContentView: View {
         .padding()
 #endif
     }
+
+#if os(macOS)
+    private var configurationError: String? {
+        [designStore.configurationError, shortcutStore.configurationError]
+            .compactMap { $0 }
+            .joined(separator: "\n\n")
+            .nilIfEmpty
+    }
+
+    private func dismissConfigurationErrors() {
+        designStore.dismissConfigurationError()
+        shortcutStore.dismissConfigurationError()
+    }
+#endif
 }
+
+#if os(macOS)
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
+    }
+}
+#endif

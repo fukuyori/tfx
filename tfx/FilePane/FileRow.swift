@@ -12,9 +12,14 @@ struct FileRow: View {
     /// tree, when the file is clean, or while the first status fetch
     /// after navigating into a repo is still in flight.
     let gitStatus: GitFileStatus?
+    let isEditingName: Bool
+    @Binding var editingName: String
+    let commitNameEdit: () -> Void
+    let cancelNameEdit: () -> Void
 
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
+    @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -39,11 +44,8 @@ struct FileRow: View {
                 .frame(width: columnWidth(column), alignment: column.alignment)
                 .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.secondaryForeground)
         case .name:
-            Text(item.name)
-                .lineLimit(1)
-                .truncationMode(.middle)
+            nameCell
                 .frame(width: columnWidth(column), alignment: column.alignment)
-                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
         case .size:
             Text(item.sizeText)
                 .frame(width: columnWidth(column), alignment: column.alignment)
@@ -77,6 +79,32 @@ struct FileRow: View {
 
     private func columnWidth(_ column: FileListColumn) -> CGFloat {
         column == .name ? CGFloat(fileNameColumnWidth) : column.defaultWidth
+    }
+
+    @ViewBuilder
+    private var nameCell: some View {
+        if isEditingName {
+            TextField("", text: $editingName)
+                .textFieldStyle(.plain)
+                .focused($isNameFieldFocused)
+                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
+                .onSubmit {
+                    commitNameEdit()
+                }
+                .onExitCommand {
+                    cancelNameEdit()
+                }
+                .onAppear {
+                    DispatchQueue.main.async {
+                        isNameFieldFocused = true
+                    }
+                }
+        } else {
+            Text(item.name)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
+        }
     }
 
     /// Render the macOS Finder color tags assigned to this item as a row of

@@ -25,6 +25,7 @@ struct TerminalFileManagerView: View {
     @FocusState var isSearchFocused: Bool
     @Environment(\.design) var design
     @Environment(\.theme) var theme
+    @EnvironmentObject var shortcutStore: ShortcutStore
 
     init(initialDirectory: URL? = AppLaunchArguments.initialDirectory()) {
         let defaults = UserDefaults.standard

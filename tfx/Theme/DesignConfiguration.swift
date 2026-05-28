@@ -272,6 +272,28 @@ enum DesignConfigurationLoader {
     # background = 1
     # inactivePane = 0.5
     # disabledItem = 0.45
+
+    [shortcuts]
+    reload = "cmd+r"
+    openTerminal = "cmd+t"
+    togglePreview = "cmd+p"
+    toggleSplit = "cmd+backslash"
+    swapPanes = "cmd+shift+x"
+    focusSearch = "cmd+f"
+    toggleHidden = "cmd+shift+."
+    goBack = "cmd+["
+    goForward = "cmd+]"
+    goUp = "cmd+up"
+
+    # Optional application launch overrides.
+    #
+    # [terminal]
+    # app = "/System/Applications/Utilities/Terminal.app"
+    # bundleIdentifier = "com.apple.Terminal"
+    #
+    # [openWith]
+    # md = "com.microsoft.VSCode"
+    # pdf = "/Applications/Preview.app"
     """
 }
 

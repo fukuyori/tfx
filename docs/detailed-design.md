@@ -26,7 +26,7 @@ Project documentation is written in English by default. `README.ja.md` is mainta
 - Same-name conflict resolution.
 - Zip archive browsing without full extraction.
 - Zip archive compression and extraction.
-- Reveal in Finder, copy path, and Terminal.app integration.
+- Reveal in Finder, copy path, configurable terminal app integration, and extension-specific open-with integration.
 - Search, hidden-file display, and sorting.
 - PDF, video, Markdown, and Quick Look previews.
 - Rendered previews for CSV / TSV (table) and JSON (pretty-print), plus plain-text previews for common config formats (TOML / YAML / INI / log / etc.).
@@ -87,7 +87,7 @@ See `docs/code-organization.md` for file naming and placement rules, and `docs/c
 3. File display area
 4. Preview pane
 
-The header contains navigation, breadcrumb path navigation, search, sorting, file operations, pane visibility toggles, Terminal.app launch, and path copy actions. Folder tree width, preview width, and split-pane ratio can be changed by dragging.
+The header contains navigation, breadcrumb path navigation, search, sorting, file operations, pane visibility toggles, terminal app launch, and path copy actions. Folder tree width, preview width, and split-pane ratio can be changed by dragging.
 
 The current directory path is displayed as a horizontally scrollable breadcrumb bar. Each path segment is clickable and calls the same directory navigation path as file-pane and folder-tree navigation. The bar scrolls to the trailing end when the current directory changes so the deepest folder remains visible.
 
@@ -256,17 +256,23 @@ The `..` row is tracked separately through `isParentDirectorySelected`. Pressing
 
 | Operation | Behavior |
 | --- | --- |
-| New File | Prompts for a name and creates an empty file with a unique destination if needed. |
-| New Folder | Prompts for a name and creates a unique destination if needed. |
-| Rename | Prompts for a new name and creates a unique destination if needed. |
+| New File | Creates an empty file with a unique placeholder name, selects it, and starts inline name editing. Cancelling the inline edit removes the placeholder. |
+| New Folder | Creates a folder with a unique placeholder name, selects it, and starts inline name editing. Cancelling the inline edit removes the placeholder. |
+| Rename | Starts inline name editing on the selected row and moves the item to a unique destination when the edit is committed. |
 | Move to Trash | Uses `FileManager.default.trashItem`; it does not permanently delete files. |
 | Reveal in Finder | Uses `NSWorkspace.shared.activateFileViewerSelecting`. |
 | Copy Path | Writes a path string to `NSPasteboard.general`. |
 | Open With | Lists candidate applications from `NSWorkspace.shared.urlsForApplications(toOpen:)` and opens the file via `NSWorkspace.shared.open(_:withApplicationAt:configuration:)`. The submenu also exposes an "Other…" picker (`NSOpenPanel` restricted to `UTType.application`). Hidden for plain folders and for `.app` bundles. |
 | Tags | Toggles Finder's seven standard color tags, toggles custom tags already visible in the current directory, or prompts for a new custom tag name. Multi-selection is supported. |
-| Open Terminal Here | Opens Terminal.app at the target directory. |
+| Open Terminal Here | Opens the configured terminal app at the target directory. |
 | Compress to Zip | Creates a unique zip archive from the selected items. |
 | Extract Zip | Extracts a zip archive into a unique destination folder named from the archive. |
+
+`AppLaunchConfigurationLoader` reads `[terminal]` and `[openWith]` from
+`~/Library/Application Support/tfx/config.toml`. Terminal launch accepts either
+an app path or bundle identifier. File open behavior can be overridden per
+extension with app paths or bundle identifiers; unknown extensions keep the
+normal `NSWorkspace` default-app behavior.
 
 After mutating operations, affected directories and folder-tree caches are refreshed where practical.
 
@@ -445,17 +451,25 @@ Pinned folders are displayed in the saved array order. New pinned folders are ap
 | Backspace | Parent folder. |
 | Command + F | Focus search. |
 | Command + N | New folder. |
-| Delete | Move to Trash. |
+| Command + Shift + N | New file. |
+| Command + Return | Rename inline. |
 | Command + Backspace | Move to Trash. |
 | Command + C / X / V | Copy / Cut / Paste. |
 | Command + Option + V | Move-paste when pasteboard file URLs are available. |
 | Command + A | Select all visible items. |
 | Command + R | Reload. |
-| Command + T | Open Terminal.app at the current folder. |
+| Command + T | Open the configured terminal app at the current folder. |
 | Command + P | Toggle the preview pane. |
 | Command + \\ | Toggle split view. |
 | Command + Shift + X | Swap the left and right panes (split view only). Handled directly in `handleKeyEvent` so the shortcut fires reliably even when the `View` menu binding is suppressed by the menu item's disabled state. |
 | Command + Shift + . | Toggle hidden files. |
+
+Shortcut defaults live in `Shortcuts` / `ShortcutAction`. `ShortcutStore` loads
+`~/Library/Application Support/tfx/config.toml`, merges `[shortcuts]` overrides on top
+of the built-in defaults, and falls back to defaults if a shortcut is invalid
+or conflicts with another action. Toolbar bindings, hover help, View-menu
+bindings, file-list context menu shortcuts, and keyboard handling read from the
+same store so display text and actual bindings stay in sync.
 
 `Tab` cycling is driven by `cycleKeyboardFocus(reverse:)` in `TerminalFileManagerKeyboard`. Left / right arrow scrolling is wired through `FileBrowserModel.horizontalScrollHandler`, which is registered by a small `NSViewRepresentable` (`HorizontalScrollAccess`) that resolves the enclosing `NSScrollView` and clamps scrolling to the document bounds.
 
@@ -463,7 +477,7 @@ On first appear the left file pane is activated and the `..` parent-folder row i
 
 ## 11. Error Handling
 
-Errors from file operations, directory loading, and Terminal.app launch are routed through `FileBrowserModel.show(_:)`. The model updates `errorMessage` and `isShowingError`, and `TerminalFileManagerView` displays them through an alert.
+Errors from file operations, directory loading, configured terminal launch, and configured open-with launch are routed through `FileBrowserModel.show(_:)`. The model updates `errorMessage` and `isShowingError`, and `TerminalFileManagerView` displays them through an alert.
 
 Same-name conflicts are not treated as errors. They are handled through a dedicated conflict-resolution prompt.
 

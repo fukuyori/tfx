@@ -7,31 +7,7 @@ extension TerminalFileManagerView {
     private static let horizontalScrollStep: CGFloat = 60
 
     func handleKeyEvent(_ event: NSEvent) -> Bool {
-        if event.modifierFlags.contains([.command, .option]),
-           event.modifierFlags.intersection([.control]).isEmpty,
-           event.charactersIgnoringModifiers?.lowercased() == "v" {
-            activeModel.pasteItemsMoving()
-            return true
-        }
-
-        // ⌘⇧X — swap the left and right panes. Handled here in addition to
-        // the `ViewMenuCommands` keyboard-shortcut binding because the menu
-        // path does not fire reliably when the menu button is
-        // `.disabled(!isSplitViewVisible)` and the @AppStorage value is read
-        // before the view body settles. `swapPanes()` itself guards on the
-        // split-visible flag, so calling it from a path that bypasses the
-        // menu's `.disabled` modifier is still safe.
-        if event.modifierFlags.contains([.command, .shift]),
-           event.modifierFlags.intersection([.option, .control]).isEmpty,
-           event.charactersIgnoringModifiers?.lowercased() == "x" {
-            swapPanes()
-            return true
-        }
-
-        if event.modifierFlags.contains(.command),
-           event.modifierFlags.intersection([.option, .control]).isEmpty,
-           event.keyCode == 51 {
-            activeModel.moveSelectedItemsToTrash()
+        if handleConfiguredShortcut(event) {
             return true
         }
 
@@ -78,6 +54,140 @@ extension TerminalFileManagerView {
         default:
             return false
         }
+    }
+
+    private func handleConfiguredShortcut(_ event: NSEvent) -> Bool {
+        if shortcutStore.info(.openItem).matches(event) {
+            activeModel.activateFileSelection()
+            return true
+        }
+
+        if shortcutStore.info(.newFolder).matches(event) {
+            activeModel.createFolder()
+            return true
+        }
+
+        if shortcutStore.info(.newFile).matches(event) {
+            activeModel.createFile()
+            return true
+        }
+
+        if shortcutStore.info(.rename).matches(event) {
+            activeModel.renameSelectedItem()
+            return true
+        }
+
+        if shortcutStore.info(.moveToTrash).matches(event) {
+            activeModel.moveSelectedItemsToTrash()
+            return true
+        }
+
+        if shortcutStore.info(.compressToZip).matches(event) {
+            activeModel.compressSelectedItemsToZip()
+            return true
+        }
+
+        if shortcutStore.info(.extractZip).matches(event) {
+            if let item = activeModel.primarySelectedItem, ZipArchiveBrowser.isZipArchive(item.url) {
+                activeModel.extractZipArchive(item)
+                return true
+            }
+            return false
+        }
+
+        if shortcutStore.info(.copyItems).matches(event) {
+            activeModel.copySelectedItems()
+            return true
+        }
+
+        if shortcutStore.info(.cutItems).matches(event) {
+            activeModel.cutSelectedItems()
+            return true
+        }
+
+        if shortcutStore.info(.pasteItems).matches(event) {
+            activeModel.pasteItems()
+            return true
+        }
+
+        if shortcutStore.info(.movePasteItems).matches(event) {
+            activeModel.pasteItemsMoving()
+            return true
+        }
+
+        if shortcutStore.info(.selectAll).matches(event) {
+            activeModel.selectAllVisibleItems()
+            return true
+        }
+
+        if shortcutStore.info(.revealInFinder).matches(event) {
+            activeModel.revealSelectedItemsInFinder()
+            return true
+        }
+
+        if shortcutStore.info(.copyPath).matches(event) {
+            if let item = activeModel.primarySelectedItem {
+                activeModel.copyPath(item.url)
+            } else {
+                activeModel.copyPath(activeModel.currentDirectory)
+            }
+            return true
+        }
+
+        if shortcutStore.info(.reload).matches(event) {
+            model.reload()
+            return true
+        }
+
+        if shortcutStore.info(.openTerminal).matches(event) {
+            model.openTerminal()
+            return true
+        }
+
+        if shortcutStore.info(.togglePreview).matches(event) {
+            isPreviewVisible.toggle()
+            return true
+        }
+
+        if shortcutStore.info(.toggleSplit).matches(event) {
+            setSplitViewVisible(!isSplitViewVisible)
+            return true
+        }
+
+        // Keep this path even though the View menu also has a binding:
+        // the menu can miss dynamically configured shortcuts, especially
+        // non-command combinations such as Control+T.
+        if shortcutStore.info(.swapPanes).matches(event) {
+            swapPanes()
+            return true
+        }
+
+        if shortcutStore.info(.focusSearch).matches(event) {
+            isSearchFocused = true
+            return true
+        }
+
+        if shortcutStore.info(.toggleHidden).matches(event) {
+            model.showHiddenFiles.toggle()
+            return true
+        }
+
+        if shortcutStore.info(.goBack).matches(event) {
+            model.goBack()
+            return true
+        }
+
+        if shortcutStore.info(.goForward).matches(event) {
+            model.goForward()
+            return true
+        }
+
+        if shortcutStore.info(.goUp).matches(event) {
+            model.goUp()
+            return true
+        }
+
+        return false
     }
 
     /// Cycle keyboard focus across the visible targets.

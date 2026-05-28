@@ -13,12 +13,14 @@ struct FileItemContextMenu: View {
     @ObservedObject var model: FileBrowserModel
     let item: FileItem
     let activate: () -> Void
+    @EnvironmentObject private var shortcutStore: ShortcutStore
 
     @ViewBuilder
     var body: some View {
         Button("Open") {
             model.openFromContextMenu(item)
         }
+        .keyboardShortcut(shortcutStore.info(.openItem))
 
         if !item.isDirectory {
             Menu("Open With") {
@@ -48,6 +50,7 @@ struct FileItemContextMenu: View {
         Button("Move to Trash") {
             model.moveSelectedItemsToTrash()
         }
+        .keyboardShortcut(shortcutStore.info(.moveToTrash))
 
         Menu("Tags") {
             Button("Add Custom Tag…") {
@@ -103,29 +106,35 @@ struct FileItemContextMenu: View {
         Button("Rename") {
             model.renameSelectedItem()
         }
+        .keyboardShortcut(shortcutStore.info(.rename))
 
         Button("Compress to Zip") {
             model.compressSelectedItemsToZip()
         }
+        .keyboardShortcut(shortcutStore.info(.compressToZip))
 
         if ZipArchiveBrowser.isZipArchive(item.url) {
             Button("Extract Zip") {
                 model.extractZipArchive(item)
             }
+            .keyboardShortcut(shortcutStore.info(.extractZip))
         }
 
         Button("Copy Items") {
             model.copySelectedItems()
         }
+        .keyboardShortcut(shortcutStore.info(.copyItems))
 
         Button("Cut Items") {
             model.cutSelectedItems()
         }
+        .keyboardShortcut(shortcutStore.info(.cutItems))
 
         Button("Paste Here") {
             activate()
             model.pasteItems(into: item.isDirectory ? item.url : model.currentDirectory)
         }
+        .keyboardShortcut(shortcutStore.info(.pasteItems))
         .disabled(!model.canPaste)
 
         Divider()
@@ -133,10 +142,12 @@ struct FileItemContextMenu: View {
         Button("Reveal in Finder") {
             model.revealSelectedItemsInFinder()
         }
+        .keyboardShortcut(shortcutStore.info(.revealInFinder))
 
         Button("Copy Path") {
             model.copyPath(item.url)
         }
+        .keyboardShortcut(shortcutStore.info(.copyPath))
 
         if item.isDirectory {
             Divider()
@@ -148,6 +159,7 @@ struct FileItemContextMenu: View {
             Button("Open Terminal Here") {
                 model.openTerminal(at: item.url)
             }
+            .keyboardShortcut(shortcutStore.info(.openTerminal))
         }
     }
 }
@@ -155,6 +167,7 @@ struct FileItemContextMenu: View {
 struct EmptyFileAreaContextMenu: View {
     @ObservedObject var model: FileBrowserModel
     let activate: () -> Void
+    @EnvironmentObject private var shortcutStore: ShortcutStore
 
     @ViewBuilder
     var body: some View {
@@ -162,11 +175,13 @@ struct EmptyFileAreaContextMenu: View {
             activate()
             model.createFolder()
         }
+        .keyboardShortcut(shortcutStore.info(.newFolder))
 
         Button("New File") {
             activate()
             model.createFile()
         }
+        .keyboardShortcut(shortcutStore.info(.newFile))
 
         Divider()
 
@@ -174,6 +189,7 @@ struct EmptyFileAreaContextMenu: View {
             activate()
             model.pasteItems()
         }
+        .keyboardShortcut(shortcutStore.info(.pasteItems))
         .disabled(!model.canPaste)
 
         Divider()
@@ -182,6 +198,7 @@ struct EmptyFileAreaContextMenu: View {
             activate()
             model.selectAllVisibleItems()
         }
+        .keyboardShortcut(shortcutStore.info(.selectAll))
         .disabled(model.items.isEmpty)
 
         Divider()
@@ -190,11 +207,13 @@ struct EmptyFileAreaContextMenu: View {
             activate()
             model.revealInFinder(model.currentDirectory)
         }
+        .keyboardShortcut(shortcutStore.info(.revealInFinder))
 
         Button("Copy Current Path") {
             activate()
             model.copyPath(model.currentDirectory)
         }
+        .keyboardShortcut(shortcutStore.info(.copyPath))
 
         Divider()
 
@@ -207,6 +226,7 @@ struct EmptyFileAreaContextMenu: View {
             activate()
             model.openTerminal()
         }
+        .keyboardShortcut(shortcutStore.info(.openTerminal))
     }
 }
 

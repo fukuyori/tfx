@@ -4,6 +4,22 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.2] - 2026-05-28
+
+Configuration documentation and shortcut polish.
+
+### Added
+
+- Added `docs/configuration.ja.md`, a Japanese version of the full user-editable configuration guide.
+
+### Fixed
+
+- `moveToTrash = "cmd+backspace"` and `moveToTrash = "cmd+delete"` now match macOS Delete / Backspace key events correctly, including Forward Delete fallback handling.
+
+### Changed
+
+- Updated the version to `0.6.2` and the build number to `34`.
+
 ## [0.6.1] - 2026-05-28
 
 Configurable design tokens.
@@ -11,7 +27,11 @@ Configurable design tokens.
 ### Added
 
 - Added user-editable `config.toml` support for compact `[font]`, `[colors]`, and `[opacity]` blocks.
+- Added user-editable `config.toml` `[shortcuts]` support for overriding core toolbar and View-menu shortcuts with conflict detection.
+- Added `config.toml` `[terminal]` and `[openWith]` settings for choosing the terminal app and per-extension open-with apps.
 - Documented supported configuration keys and added distinct color samples for easier visual verification.
+- Added inline name editing for Rename, New File, and New Folder. New items are created with a unique placeholder name, selected immediately, and removed again if the inline edit is cancelled.
+- Added configurable shortcut actions for file-list context menu operations, including open, new file/folder, rename, trash, zip compression/extraction, copy/cut/paste, reveal, and copy path.
 
 ### Changed
 

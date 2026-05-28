@@ -335,9 +335,8 @@ Track larger customization and extension work as separate follow-up phases.
 
 Initial file layout:
 
-- `config.toml`: Main user configuration. Implemented blocks are `[font]`, `[colors]`, and `[opacity]`.
-- `filetypes.toml`: Extension-based behavior rules.
-- `shortcuts.toml`: Shortcut definitions.
+- `config.toml`: Main user configuration. Implemented blocks are `[font]`, `[colors]`, `[opacity]`, `[shortcuts]`, `[terminal]`, and `[openWith]`.
+- Future extension configuration: richer preview and context-menu behavior rules.
 - `scripts/*.lua`: Lua extension scripts.
 - `markdown/preview.css`: Markdown preview CSS.
 

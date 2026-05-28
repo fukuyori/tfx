@@ -9,12 +9,16 @@ extension FileBrowserModel {
             navigate(to: item.url)
         } else if ZipArchiveBrowser.canCopyFromArchive(item.url) {
             do {
-                FileBrowserExternalActions.open(try ZipArchiveBrowser.materializedURL(for: item.url))
+                FileBrowserExternalActions.open(try ZipArchiveBrowser.materializedURL(for: item.url)) { [weak self] error in
+                    self?.show(error)
+                }
             } catch {
                 show(error)
             }
         } else {
-            FileBrowserExternalActions.open(item.url)
+            FileBrowserExternalActions.open(item.url) { [weak self] error in
+                self?.show(error)
+            }
         }
     }
 

@@ -124,6 +124,51 @@ struct FileBrowserModelTests {
     }
 
     @Test
+    func inlineRenameRenamesSelectedItem() throws {
+        let dir = try Self.makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let source = dir.appendingPathComponent("old.txt")
+        let destination = dir.appendingPathComponent("renamed.txt").standardizedFileURL
+        FileManager.default.createFile(atPath: source.path, contents: Data())
+
+        let model = FileBrowserModel(initialDirectory: dir)
+        model.updateCurrentDirectoryItems(
+            adding: [source],
+            selecting: [source],
+            pruneAfterUpdate: false
+        )
+
+        model.renameSelectedItem()
+        #expect(model.inlineNameEdit?.text == "old.txt")
+
+        model.setInlineNameEditText("renamed.txt")
+        model.commitInlineNameEdit()
+
+        #expect(!FileManager.default.fileExists(atPath: source.path))
+        #expect(FileManager.default.fileExists(atPath: destination.path))
+        #expect(model.inlineNameEdit == nil)
+        #expect(model.primarySelectedItemID == destination)
+    }
+
+    @Test
+    func cancelInlineNewFileRemovesCreatedPlaceholder() throws {
+        let dir = try Self.makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let model = FileBrowserModel(initialDirectory: dir)
+        model.createFile()
+
+        let createdURL = try #require(model.inlineNameEdit?.url)
+        #expect(FileManager.default.fileExists(atPath: createdURL.path))
+
+        model.cancelInlineNameEdit()
+
+        #expect(!FileManager.default.fileExists(atPath: createdURL.path))
+        #expect(model.inlineNameEdit == nil)
+    }
+
+    @Test
     func navigateClearsSelection() throws {
         let dirA = try Self.makeTempDir()
         let dirB = try Self.makeTempDir()

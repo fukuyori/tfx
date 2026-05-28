@@ -105,4 +105,16 @@ enum ConflictResolution {
     case skip
     case cancel
 }
+
+struct InlineNameEdit: Equatable {
+    enum Mode: Equatable {
+        case rename
+        case newItem
+    }
+
+    let url: URL
+    let originalName: String
+    var text: String
+    let mode: Mode
+}
 #endif

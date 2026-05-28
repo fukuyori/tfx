@@ -116,23 +116,33 @@ struct FilePaneFileList: View {
 
     private var fileRows: some View {
         ForEach(model.items) { item in
+            let isEditingName = model.inlineNameEdit?.url == item.url.standardizedFileURL
             FileRow(
                 item: item,
                 isSelected: model.isSelected(item),
                 isDropTarget: item.isDirectory && model.isDropTargetDirectory(item.url),
                 columns: visibleColumns,
                 fileNameColumnWidth: fileNameColumnWidth,
-                gitStatus: model.gitStatus(for: item)
+                gitStatus: model.gitStatus(for: item),
+                isEditingName: isEditingName,
+                editingName: Binding(
+                    get: { model.inlineNameEdit?.text ?? item.name },
+                    set: { model.setInlineNameEditText($0) }
+                ),
+                commitNameEdit: model.commitInlineNameEdit,
+                cancelNameEdit: model.cancelInlineNameEdit
             )
             .id(FileListRowID.item(item.id))
             .contentShape(Rectangle())
-            .overlay(
-                FileRowInteractionOverlay(
-                    item: item,
-                    model: model,
-                    activate: activate
-                )
-            )
+            .overlay {
+                if !isEditingName {
+                    FileRowInteractionOverlay(
+                        item: item,
+                        model: model,
+                        activate: activate
+                    )
+                }
+            }
             .onDrop(
                 of: [UTType.fileURL.identifier],
                 delegate: FileBrowserDropDelegate(

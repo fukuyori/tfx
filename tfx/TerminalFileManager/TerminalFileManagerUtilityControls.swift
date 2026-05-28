@@ -10,8 +10,8 @@ extension TerminalFileManagerView {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut(Shortcuts.reload)
-            .quickHelp("Reload", shortcut: Shortcuts.reload, text: $hoverHelpText)
+            .keyboardShortcut(shortcutStore.info(.reload))
+            .quickHelp("Reload", shortcut: shortcutStore.info(.reload), text: $hoverHelpText)
 
             Button {
                 model.openTerminal()
@@ -19,8 +19,8 @@ extension TerminalFileManagerView {
                 Image(systemName: "terminal")
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut(Shortcuts.openTerminal)
-            .quickHelp("Open Terminal here", shortcut: Shortcuts.openTerminal, text: $hoverHelpText)
+            .keyboardShortcut(shortcutStore.info(.openTerminal))
+            .quickHelp("Open Terminal here", shortcut: shortcutStore.info(.openTerminal), text: $hoverHelpText)
 
             Toggle(isOn: $isPreviewVisible) {
                 Image(systemName: "sidebar.right")
@@ -28,7 +28,7 @@ extension TerminalFileManagerView {
             .toggleStyle(.button)
             .quickHelp(
                 isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"),
-                shortcut: Shortcuts.togglePreview,
+                shortcut: shortcutStore.info(.togglePreview),
                 text: $hoverHelpText
             )
 
@@ -38,7 +38,7 @@ extension TerminalFileManagerView {
             .toggleStyle(.button)
             .quickHelp(
                 isSplitViewVisible ? LocalizedStringResource("Use single pane") : LocalizedStringResource("Use split panes"),
-                shortcut: Shortcuts.toggleSplit,
+                shortcut: shortcutStore.info(.toggleSplit),
                 text: $hoverHelpText
             )
 
@@ -49,7 +49,7 @@ extension TerminalFileManagerView {
             }
             .buttonStyle(.borderless)
             .disabled(!isSplitViewVisible)
-            .quickHelp("Swap left and right panes", shortcut: Shortcuts.swapPanes, text: $hoverHelpText)
+            .quickHelp("Swap left and right panes", shortcut: shortcutStore.info(.swapPanes), text: $hoverHelpText)
 
             Button {
                 isFileListSettingsPresented = true

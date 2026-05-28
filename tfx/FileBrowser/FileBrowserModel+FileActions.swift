@@ -10,11 +10,12 @@ extension FileBrowserModel {
         }
 
         do {
-            guard let result = try FileBrowserFileOperations.createFolder(in: currentDirectory) else { return }
+            guard let result = try FileBrowserFileOperations.createFolder(named: String(localized: "Untitled Folder"), in: currentDirectory) else { return }
             let folderURL = result.folderURL
             refreshFolderChildren(currentDirectory)
             updateCurrentDirectoryItems(adding: [folderURL], selecting: [folderURL])
             notifyDirectoriesChanged([result.affectedDirectory])
+            beginInlineNameEdit(url: folderURL, mode: .newItem)
         } catch {
             show(error)
         }
@@ -27,9 +28,10 @@ extension FileBrowserModel {
         }
 
         do {
-            guard let result = try FileBrowserFileOperations.createFile(in: currentDirectory) else { return }
+            guard let result = try FileBrowserFileOperations.createFile(named: String(localized: "Untitled.txt"), in: currentDirectory) else { return }
             updateCurrentDirectoryItems(adding: [result.fileURL], selecting: [result.fileURL])
             notifyDirectoriesChanged([result.affectedDirectory])
+            beginInlineNameEdit(url: result.fileURL, mode: .newItem)
         } catch {
             show(error)
         }
@@ -42,8 +44,52 @@ extension FileBrowserModel {
             return
         }
 
+        beginInlineNameEdit(url: selectedItem.url, mode: .rename)
+    }
+
+    func beginInlineNameEdit(url: URL, mode: InlineNameEdit.Mode) {
+        let standardizedURL = url.standardizedFileURL
+        inlineNameEdit = InlineNameEdit(
+            url: standardizedURL,
+            originalName: standardizedURL.lastPathComponent,
+            text: standardizedURL.lastPathComponent,
+            mode: mode
+        )
+        selectedItemIDs = [standardizedURL]
+        primarySelectedItemID = standardizedURL
+        selectionAnchorItemID = standardizedURL
+        isParentDirectorySelected = false
+    }
+
+    func setInlineNameEditText(_ text: String) {
+        guard var edit = inlineNameEdit else { return }
+        edit.text = text
+        inlineNameEdit = edit
+    }
+
+    func commitInlineNameEdit() {
+        guard let edit = inlineNameEdit else { return }
+        guard let item = allItemLookup[edit.url.standardizedFileURL] else {
+            inlineNameEdit = nil
+            return
+        }
+
+        let trimmed = edit.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            cancelInlineNameEdit()
+            return
+        }
+        guard trimmed != edit.originalName else {
+            inlineNameEdit = nil
+            return
+        }
+
         do {
-            guard let result = try FileBrowserFileOperations.rename(selectedItem) else { return }
+            guard let result = try FileBrowserFileOperations.rename(item, to: trimmed) else {
+                inlineNameEdit = nil
+                return
+            }
+            inlineNameEdit = nil
             refreshFolderChildren(result.affectedDirectory)
             updateCurrentDirectoryItems(
                 adding: [result.destinationURL],
@@ -51,6 +97,26 @@ extension FileBrowserModel {
                 selecting: [result.destinationURL]
             )
             notifyDirectoriesChanged([result.affectedDirectory])
+        } catch {
+            show(error)
+        }
+    }
+
+    func cancelInlineNameEdit() {
+        guard let edit = inlineNameEdit else { return }
+        inlineNameEdit = nil
+
+        guard edit.mode == .newItem else { return }
+
+        do {
+            try FileManager.default.removeItem(at: edit.url)
+            let affectedDirectory = edit.url.deletingLastPathComponent().standardizedFileURL
+            refreshFolderChildren(affectedDirectory)
+            updateCurrentDirectoryItems(
+                removing: [edit.url],
+                selecting: []
+            )
+            notifyDirectoriesChanged([affectedDirectory])
         } catch {
             show(error)
         }

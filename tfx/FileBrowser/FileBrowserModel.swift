@@ -81,6 +81,7 @@ final class FileBrowserModel: ObservableObject {
     /// still in flight. The file pane reads this to decorate rows and
     /// render the branch indicator in the status line.
     @Published var gitRepositoryStatus: GitRepositoryStatus?
+    @Published var inlineNameEdit: InlineNameEdit?
 
     var allItems: [FileItem] = []
     var allItemLookup: [FileItem.ID: FileItem] = [:]

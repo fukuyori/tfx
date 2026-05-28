@@ -88,6 +88,10 @@ enum FileBrowserFileOperations {
             return nil
         }
 
+        return try createFolder(named: name, in: directory)
+    }
+
+    static func createFolder(named name: String, in directory: URL) throws -> FileCreateFolderResult? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
@@ -105,6 +109,10 @@ enum FileBrowserFileOperations {
             return nil
         }
 
+        return try createFile(named: name, in: directory)
+    }
+
+    static func createFile(named name: String, in directory: URL) throws -> FileCreateFileResult? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
@@ -124,6 +132,10 @@ enum FileBrowserFileOperations {
             return nil
         }
 
+        return try rename(item, to: name)
+    }
+
+    static func rename(_ item: FileItem, to name: String) throws -> FileRenameResult? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != item.name else { return nil }
 
