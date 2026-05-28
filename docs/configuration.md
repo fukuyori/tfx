@@ -8,22 +8,23 @@ tfx stores user-editable configuration in:
 ~/Library/Application Support/tfx/
 ```
 
-The main configuration file is `config.toml`. It contains design settings and
-shortcut overrides. This file is created automatically when tfx starts if it
-does not already exist. Existing files are not overwritten. If the file cannot be
-parsed, tfx falls back to the built-in defaults and shows a
+The main configuration file is `config.toml`. It contains design settings,
+startup layout settings, shortcut overrides, terminal-app settings, and
+extension-specific open-with settings. This file is created automatically when
+tfx starts if it does not already exist. Existing files are not overwritten. If
+the file cannot be parsed, tfx falls back to the built-in defaults and shows a
 startup configuration alert. tfx also reloads this file when the app becomes
 active again, so edits made in another editor are picked up when returning to
 tfx.
 
 ## Current Scope
 
-`config.toml` supports `[font]`, `[colors]`, `[opacity]`, `[shortcuts]`,
-`[terminal]`, and `[openWith]`. The configuration loaders intentionally accept
-a small TOML subset for these first slices:
+`config.toml` supports `[font]`, `[colors]`, `[opacity]`, `[startup]`,
+`[shortcuts]`, `[terminal]`, and `[openWith]`. The configuration loaders
+intentionally accept a small TOML subset for these first slices:
 
 - Top-level `version = 1`
-- `[font]`, `[colors]`, `[opacity]`, `[shortcuts]`, `[terminal]`, and `[openWith]` tables
+- `[font]`, `[colors]`, `[opacity]`, `[startup]`, `[shortcuts]`, `[terminal]`, and `[openWith]` tables
 - String values in double quotes
 - Numeric font size values
 - Color values as `"#RRGGBB"`
@@ -60,6 +61,15 @@ size = 13
 # inactivePane = 0.5
 # disabledItem = 0.45
 
+[startup]
+# "single" starts with one pane and one tab.
+# "split" starts with two panes. If rightFolder / rightFolders is omitted, the
+# previous right-pane tabs are reused.
+# "restore" reuses the previous split state and pane tabs.
+layout = "single"
+# rightFolder = "~/Downloads"
+# rightFolders = ["~/Downloads", "~/Documents"]
+
 [shortcuts]
 reload = "cmd+r"
 openTerminal = "cmd+t"
@@ -75,6 +85,8 @@ newTab = "cmd+shift+t"
 closeTab = "cmd+w"
 previousTab = "cmd+shift+["
 nextTab = "cmd+shift+]"
+toggleTerminalPane = "cmd+option+t"
+focusTerminalPane = "cmd+option+shift+t"
 
 # Optional application launch overrides.
 #
@@ -227,6 +239,45 @@ so the configured background opacity is visible.
 | `dragPreviewShadow` | `0.18` | Floating pinned-folder drag preview shadow opacity. |
 | `subtleBackground` | `0.07` | Very subtle backgrounds, currently used by the path breadcrumb control. |
 
+### `[startup]`
+
+Controls the file-pane layout used when tfx starts.
+
+```toml
+[startup]
+layout = "single"
+# rightFolder = "~/Downloads"
+# rightFolders = ["~/Downloads", "~/Documents", "~/Desktop"]
+```
+
+| Value | Behavior |
+| --- | --- |
+| `"single"` | Always starts with one file pane and one tab. This is the default. |
+| `"split"` | Always starts in split view. The left pane starts with one tab; the right pane opens `rightFolders` / `rightFolder` when set, otherwise it reuses the previous right-pane tabs. |
+| `"restore"` | Restores the previous split/single state and saved pane tabs. |
+
+`rightFolders` is optional and only affects `layout = "split"`. It opens each
+valid folder as a right-pane tab, with the first item active:
+
+```toml
+[startup]
+layout = "split"
+rightFolders = ["~/Downloads", "~/Documents", "~/Desktop"]
+```
+
+`rightFolder` remains supported for a single right-pane startup tab:
+
+```toml
+[startup]
+layout = "split"
+rightFolder = "~/Downloads"
+```
+
+Both settings accept absolute paths or `~`-expanded user paths. If
+`rightFolders` is set, it takes precedence over `rightFolder`. If no valid
+right-side startup folder is available, tfx keeps the previous right-pane
+display.
+
 ### `[shortcuts]`
 
 Defined in `config.toml`.
@@ -295,6 +346,8 @@ Supported action keys:
 | `closeTab` | `cmd+w` | Close the active tab. The last tab in a pane stays open. |
 | `previousTab` | `cmd+shift+[` | Select the previous tab in the active pane. |
 | `nextTab` | `cmd+shift+]` | Select the next tab in the active pane. |
+| `toggleTerminalPane` | `cmd+option+t` | Show or hide the built-in terminal pane. |
+| `focusTerminalPane` | `cmd+option+shift+t` | Show and focus the built-in terminal pane. |
 
 If two actions resolve to the same shortcut, tfx reports a configuration error
 and uses the built-in shortcut defaults.

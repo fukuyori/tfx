@@ -85,7 +85,7 @@ extension TerminalFileManagerView {
                         .buttonStyle(.plain)
                         .help(tab.directory.path)
 
-                        if paneTabs.count > 1 && tab.id == activeID {
+                        if shouldShowCloseButton(forTabID: tab.id, activeID: activeID, tabCount: paneTabs.count) {
                             Button {
                                 closeActiveTab(in: paneID)
                             } label: {
@@ -122,6 +122,10 @@ extension TerminalFileManagerView {
                 .fill(isPaneActive ? theme.paneBorderActive : theme.paneBorderInactive)
                 .frame(height: 1)
         }
+    }
+
+    func shouldShowCloseButton(forTabID tabID: FilePaneTab.ID, activeID: FilePaneTab.ID, tabCount: Int) -> Bool {
+        tabID == activeID && (tabCount > 1 || isSplitViewVisible)
     }
 
     func tabTitle(for directory: URL) -> String {

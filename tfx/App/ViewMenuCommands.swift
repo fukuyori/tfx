@@ -10,7 +10,8 @@ import SwiftUI
 /// `FileBrowserModel` instances that live on the view, not in defaults.
 struct ViewMenuCommands: Commands {
     @AppStorage("TerminalFileManager.isPreviewVisible") private var isPreviewVisible = true
-    @AppStorage("TerminalFileManager.isSplitViewVisible") private var isSplitViewVisible = true
+    @AppStorage("TerminalFileManager.isSplitViewVisible") private var isSplitViewVisible = false
+    @AppStorage("TerminalFileManager.isTerminalPaneVisible") private var isTerminalPaneVisible = false
     @ObservedObject var shortcutStore: ShortcutStore
 
     var body: some Commands {
@@ -20,6 +21,14 @@ struct ViewMenuCommands: Commands {
 
             Toggle("Split View", isOn: $isSplitViewVisible)
                 .keyboardShortcut(shortcutStore.info(.toggleSplit))
+
+            Toggle("Built-in Terminal Pane", isOn: $isTerminalPaneVisible)
+                .keyboardShortcut(shortcutStore.info(.toggleTerminalPane))
+
+            Button("Focus Built-in Terminal") {
+                NotificationCenter.default.post(name: .terminalFileManagerFocusTerminalPane, object: nil)
+            }
+            .keyboardShortcut(shortcutStore.info(.focusTerminalPane))
 
             Divider()
 

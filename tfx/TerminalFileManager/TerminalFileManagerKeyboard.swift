@@ -154,6 +154,16 @@ extension TerminalFileManagerView {
             return true
         }
 
+        if shortcutStore.info(.toggleTerminalPane).matches(event) {
+            toggleTerminalPane()
+            return true
+        }
+
+        if shortcutStore.info(.focusTerminalPane).matches(event) {
+            focusTerminalPane()
+            return true
+        }
+
         if shortcutStore.info(.reload).matches(event) {
             model.reload()
             return true
@@ -229,12 +239,19 @@ extension TerminalFileManagerView {
     }
 
     private func focusStops() -> [FocusStop] {
-        isSplitViewVisible ? [.folderTree, .fileLeft, .fileRight] : [.folderTree, .fileLeft]
+        var stops: [FocusStop] = isSplitViewVisible ? [.folderTree, .fileLeft, .fileRight] : [.folderTree, .fileLeft]
+        if isTerminalPaneVisible {
+            stops.append(.terminal)
+        }
+        return stops
     }
 
     private func currentFocusStop() -> FocusStop {
         if activeArea == .folderTree {
             return .folderTree
+        }
+        if activeArea == .terminal {
+            return .terminal
         }
         return activePane == .left ? .fileLeft : .fileRight
     }
@@ -252,6 +269,8 @@ extension TerminalFileManagerView {
             activePane = .right
             activeArea = .files
             rightModel.ensureFileSelection()
+        case .terminal:
+            focusTerminalPane()
         }
     }
 }
@@ -260,5 +279,6 @@ private enum FocusStop {
     case folderTree
     case fileLeft
     case fileRight
+    case terminal
 }
 #endif

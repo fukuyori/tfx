@@ -9,6 +9,7 @@ enum BrowserPaneID: String {
 enum ActiveArea: String {
     case files
     case folderTree
+    case terminal
 }
 
 enum FolderTreeSelectionSection: Hashable {

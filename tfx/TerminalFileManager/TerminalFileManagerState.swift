@@ -72,6 +72,60 @@ extension TerminalFileManagerView {
         // the View menu, or a keyboard shortcut.
     }
 
+    func setTerminalPaneVisible(_ isVisible: Bool, focus: Bool = false) {
+        isTerminalPaneVisible = isVisible
+        guard isVisible else {
+            deactivateTerminalPaneIfNeeded()
+            return
+        }
+        if focus {
+            activateTerminalPane()
+        }
+    }
+
+    func toggleTerminalPane(focus: Bool = true) {
+        setTerminalPaneVisible(!isTerminalPaneVisible, focus: focus)
+    }
+
+    func focusTerminalPane() {
+        setTerminalPaneVisible(true, focus: true)
+    }
+
+    func onTerminalPaneVisibilityChange(isVisible: Bool) {
+        if isVisible {
+            activateTerminalPane()
+        } else {
+            deactivateTerminalPaneIfNeeded()
+        }
+    }
+
+    func activateTerminalPane() {
+        followActiveFolderIfNeeded()
+        activeArea = .terminal
+        DispatchQueue.main.async {
+            isTerminalInputFocused = true
+        }
+    }
+
+    func deactivateTerminalPaneIfNeeded() {
+        isTerminalInputFocused = false
+        if activeArea == .terminal {
+            activeArea = .files
+        }
+    }
+
+    func refocusTerminalInputAfterCommandIfNeeded(isRunning: Bool) {
+        guard !isRunning, isTerminalPaneVisible, activeArea == .terminal else { return }
+        DispatchQueue.main.async {
+            isTerminalInputFocused = true
+        }
+    }
+
+    func followActiveFolderIfNeeded() {
+        guard terminalFollowsActiveFolder else { return }
+        terminalModel.followDirectory(activeModel.currentDirectory)
+    }
+
     /// Side-effect handler for `isSplitViewVisible` changes. Invoked from
     /// `.onChange` in the view body so toolbar, menu, and shortcut paths all
     /// converge here.
@@ -158,5 +212,7 @@ extension Notification.Name {
     static let terminalFileManagerCloseTab = Notification.Name("TerminalFileManager.closeTab")
     static let terminalFileManagerPreviousTab = Notification.Name("TerminalFileManager.previousTab")
     static let terminalFileManagerNextTab = Notification.Name("TerminalFileManager.nextTab")
+    static let terminalFileManagerToggleTerminalPane = Notification.Name("TerminalFileManager.toggleTerminalPane")
+    static let terminalFileManagerFocusTerminalPane = Notification.Name("TerminalFileManager.focusTerminalPane")
 }
 #endif

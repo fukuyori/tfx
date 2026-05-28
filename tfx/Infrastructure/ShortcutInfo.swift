@@ -208,6 +208,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case closeTab
     case previousTab
     case nextTab
+    case toggleTerminalPane
+    case focusTerminalPane
 
     var id: String { rawValue }
 }
@@ -243,7 +245,9 @@ enum Shortcuts {
         .newTab: ShortcutInfo(key: "t", modifiers: [.command, .shift]),
         .closeTab: ShortcutInfo(key: "w", modifiers: .command),
         .previousTab: ShortcutInfo(key: "[", modifiers: [.command, .shift]),
-        .nextTab: ShortcutInfo(key: "]", modifiers: [.command, .shift])
+        .nextTab: ShortcutInfo(key: "]", modifiers: [.command, .shift]),
+        .toggleTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option]),
+        .focusTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option, .shift])
     ]
 
     static func info(_ action: ShortcutAction) -> ShortcutInfo {
@@ -524,6 +528,8 @@ enum ShortcutConfigurationLoader {
     closeTab = "cmd+w"
     previousTab = "cmd+shift+["
     nextTab = "cmd+shift+]"
+    toggleTerminalPane = "cmd+option+t"
+    focusTerminalPane = "cmd+option+shift+t"
     """
 }
 

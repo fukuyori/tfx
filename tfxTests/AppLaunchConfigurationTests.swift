@@ -10,6 +10,11 @@ struct AppLaunchConfigurationTests {
         let configuration = try AppLaunchConfigurationLoader.parse("""
         version = 1
 
+        [startup]
+        layout = "split"
+        rightFolder = "~/Downloads"
+        rightFolders = ["~/Downloads", "~/Documents"]
+
         [terminal]
         app = "/Applications/iTerm.app"
 
@@ -19,10 +24,60 @@ struct AppLaunchConfigurationTests {
         ".tar.gz" = "com.example.ArchiveApp"
         """)
 
+        #expect(configuration.startupLayout == .split)
+        #expect(configuration.startupRightFolder?.path == NSString(string: "~/Downloads").expandingTildeInPath)
+        #expect(configuration.startupRightFolders.map(\.path) == [
+            NSString(string: "~/Downloads").expandingTildeInPath,
+            NSString(string: "~/Documents").expandingTildeInPath,
+        ])
+        #expect(configuration.startupRightFolderURLs.map(\.path) == configuration.startupRightFolders.map(\.path))
         #expect(configuration.terminalApplication == .path(URL(fileURLWithPath: "/Applications/iTerm.app")))
         #expect(configuration.openWithApplications["md"] == .bundleIdentifier("com.microsoft.VSCode"))
         #expect(configuration.openWithApplications["pdf"] == .path(URL(fileURLWithPath: "/Applications/Preview.app")))
         #expect(configuration.openWithApplications["tar.gz"] == .bundleIdentifier("com.example.ArchiveApp"))
+    }
+
+    @Test
+    func parsesStartupRestoreLayout() throws {
+        let configuration = try AppLaunchConfigurationLoader.parse("""
+        version = 1
+
+        [startup]
+        layout = "restore"
+        """)
+
+        #expect(configuration.startupLayout == .restore)
+    }
+
+    @Test
+    func configuredStartupDirectoryKeepsProtectedUserFolder() {
+        let downloads = URL(fileURLWithPath: NSString(string: "~/Downloads").expandingTildeInPath)
+            .standardizedFileURL
+
+        #expect(TerminalFileManagerView.startupDirectory(downloads) == downloads)
+    }
+
+    @Test
+    func configuredStartupTabsKeepMultipleProtectedUserFolders() throws {
+        let folders = ["~/Downloads", "~/Documents"].map {
+            URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath).standardizedFileURL
+        }
+        let tabs = try #require(TerminalFileManagerView.startupTabs(folders))
+
+        #expect(tabs.tabs.map(\.directory) == folders)
+        #expect(tabs.activeDirectory == folders[0])
+    }
+
+    @Test
+    func rejectsInvalidStartupLayout() {
+        #expect(throws: AppLaunchConfigurationError.self) {
+            _ = try AppLaunchConfigurationLoader.parse("""
+            version = 1
+
+            [startup]
+            layout = "previous"
+            """)
+        }
     }
 
     @Test

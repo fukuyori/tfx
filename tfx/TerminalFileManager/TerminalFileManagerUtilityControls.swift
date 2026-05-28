@@ -22,6 +22,16 @@ extension TerminalFileManagerView {
             .keyboardShortcut(shortcutStore.info(.openTerminal))
             .quickHelp("Open Terminal here", shortcut: shortcutStore.info(.openTerminal), text: $hoverHelpText)
 
+            Toggle(isOn: $isTerminalPaneVisible) {
+                Image(systemName: "terminal.fill")
+            }
+            .toggleStyle(.button)
+            .quickHelp(
+                isTerminalPaneVisible ? LocalizedStringResource("Hide built-in terminal") : LocalizedStringResource("Show built-in terminal"),
+                shortcut: shortcutStore.info(.toggleTerminalPane),
+                text: $hoverHelpText
+            )
+
             Toggle(isOn: $isPreviewVisible) {
                 Image(systemName: "sidebar.right")
             }

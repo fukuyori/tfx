@@ -273,6 +273,15 @@ enum DesignConfigurationLoader {
     # inactivePane = 0.5
     # disabledItem = 0.45
 
+    [startup]
+    # "single" starts with one pane and one tab.
+    # "split" starts with two panes. If rightFolder / rightFolders is omitted, the
+    # previous right-pane tabs are reused.
+    # "restore" reuses the previous split state and pane tabs.
+    layout = "single"
+    # rightFolder = "~/Downloads"
+    # rightFolders = ["~/Downloads", "~/Documents"]
+
     [shortcuts]
     reload = "cmd+r"
     openTerminal = "cmd+t"
@@ -288,6 +297,8 @@ enum DesignConfigurationLoader {
     closeTab = "cmd+w"
     previousTab = "cmd+shift+["
     nextTab = "cmd+shift+]"
+    toggleTerminalPane = "cmd+option+t"
+    focusTerminalPane = "cmd+option+shift+t"
 
     # Optional application launch overrides.
     #

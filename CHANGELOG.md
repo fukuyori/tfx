@@ -4,6 +4,26 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.4] - 2026-05-29
+
+Startup layout and built-in terminal polish.
+
+### Added
+
+- Added the first built-in terminal pane slice with toggle/focus shortcuts, command execution in the active folder, and persisted visibility/height.
+
+### Changed
+
+- In split view, the close button now appears even when a pane has only one tab; closing that last tab hides the pane and leaves the other pane in single-pane view.
+- Added `[startup] layout = "single" | "split" | "restore"` to `config.toml` so launch can start with one pane, start in split view, or restore the previous split/tab state. `layout = "split"` also supports `rightFolder` and `rightFolders`; when omitted, the previous right-pane display is reused.
+- Changed the built-in terminal default shortcuts to `cmd+option+t` and `cmd+option+shift+t` to avoid the risky backtick key position.
+- Updated the version to `0.6.4` and the build number to `36`.
+
+### Fixed
+
+- `rightFolder = "~/Downloads"` now honors the configured folder instead of falling back to the home directory.
+- Opening the built-in terminal pane now moves focus to the terminal input, terminal-pane clicks focus the input, and command completion keeps terminal focus when the terminal is active.
+
 ## [0.6.3] - 2026-05-29
 
 Pane tabs.

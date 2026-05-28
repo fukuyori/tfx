@@ -62,6 +62,30 @@ extension TerminalFileManagerView {
         return RestoredFilePaneTabs(tabs: tabs, activeIndex: activeIndex)
     }
 
+    static func startupDirectory(_ configuredURL: URL?) -> URL? {
+        guard let configuredURL else { return nil }
+        let url = configuredURL.standardizedFileURL
+
+        if PrivacyProtectedDirectories.enclosingProtectedDirectory(for: url) != nil {
+            return url
+        }
+
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return nil
+        }
+        return url
+    }
+
+    static func startupTabs(_ configuredURLs: [URL]) -> RestoredFilePaneTabs? {
+        let tabs = configuredURLs.compactMap { url -> FilePaneTab? in
+            guard let directory = startupDirectory(url) else { return nil }
+            return FilePaneTab(directory: directory)
+        }
+        guard !tabs.isEmpty else { return nil }
+        return RestoredFilePaneTabs(tabs: tabs, activeIndex: 0)
+    }
+
     private static func safeRestorationParentForTabs(forPrivacyProtectedUserDirectory url: URL) -> URL? {
         guard let protectedDirectory = PrivacyProtectedDirectories.enclosingProtectedDirectory(for: url) else {
             return nil
@@ -132,7 +156,10 @@ extension TerminalFileManagerView {
     func closeActiveTab(in paneID: BrowserPaneID? = nil) {
         let paneID = paneID ?? activePane
         var paneTabs = tabs(for: paneID)
-        guard paneTabs.count > 1 else { return }
+        guard paneTabs.count > 1 else {
+            closeSingleTabPaneIfPossible(paneID)
+            return
+        }
 
         let closingIndex = activeTabIndex(for: paneID)
         paneTabs.remove(at: closingIndex)
@@ -144,6 +171,13 @@ extension TerminalFileManagerView {
         activeArea = .files
         modelForPane(paneID).navigate(to: nextTab.directory, recordsHistory: false)
         persistTabs(for: paneID)
+    }
+
+    func closeSingleTabPaneIfPossible(_ paneID: BrowserPaneID) {
+        guard isSplitViewVisible else { return }
+        activePane = paneID == .left ? .right : .left
+        activeArea = .files
+        setSplitViewVisible(false)
     }
 
     func selectAdjacentTab(delta: Int, in paneID: BrowserPaneID? = nil) {

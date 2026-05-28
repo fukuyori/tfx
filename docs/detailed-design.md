@@ -91,6 +91,8 @@ The header contains navigation, breadcrumb path navigation, search, sorting, fil
 
 The current directory path is displayed as a horizontally scrollable breadcrumb bar. Each path segment is clickable and calls the same directory navigation path as file-pane and folder-tree navigation. The bar scrolls to the trailing end when the current directory changes so the deepest folder remains visible.
 
+The built-in terminal pane is a bottom command pane. The first implementation runs one shell command at a time in the pane's current directory and captures stdout/stderr into a transcript. Its working directory follows the active file pane when `TerminalFileManager.terminalFollowsActiveFolder` is enabled. Full PTY behavior for interactive TUI programs is intentionally left for the next terminal slice.
+
 ### 5.2 Folder Tree Pane
 
 `FolderTreePane` displays a single tree rooted at `/`. If pinned folders exist, a `PINNED` section is shown before the normal `FOLDERS` tree. On first launch, Home, Documents, and Downloads are seeded as default pinned folders.
@@ -133,7 +135,7 @@ Preview type is selected by `PreviewKind` from the URL extension and content typ
 | `leftModel` | `@StateObject` | Left file pane model. |
 | `rightModel` | `@StateObject` | Right file pane model. |
 | `isPreviewVisible` | `@AppStorage` | Preview pane visibility. |
-| `isSplitViewVisible` | `@AppStorage` | Split-pane visibility. |
+| `isSplitViewVisible` | `@AppStorage` | Split-pane visibility during the current session. Startup behavior is controlled by `[startup].layout` in `config.toml`. |
 | `activePaneRawValue` | `@AppStorage` | Active file pane. |
 | `activeAreaRawValue` | `@AppStorage` | Active keyboard target. |
 | `folderTreeWidth` | `@AppStorage` | Folder tree width. |
@@ -416,10 +418,13 @@ The persisted flag `Preview.showsRawSource` applies to all eligible files in bot
 | --- | --- |
 | `TerminalFileManager.leftDirectory` | Last left pane directory. |
 | `TerminalFileManager.rightDirectory` | Last right pane directory. |
-| `TerminalFileManager.leftTabs` | JSON-encoded left-pane tab paths and active index. |
-| `TerminalFileManager.rightTabs` | JSON-encoded right-pane tab paths and active index. |
+| `TerminalFileManager.leftTabs` | JSON-encoded left-pane tab paths and active index. Saved during the session; restored only when `[startup].layout = "restore"`. |
+| `TerminalFileManager.rightTabs` | JSON-encoded right-pane tab paths and active index. Saved during the session; restored when `[startup].layout = "restore"` or when `[startup].layout = "split"` has no valid `rightFolder` / `rightFolders`. |
 | `TerminalFileManager.isPreviewVisible` | Preview pane visibility. |
-| `TerminalFileManager.isSplitViewVisible` | Split-pane visibility. |
+| `TerminalFileManager.isSplitViewVisible` | Split-pane visibility during the current session. Restored on launch only when `[startup].layout = "restore"`. |
+| `TerminalFileManager.isTerminalPaneVisible` | Built-in terminal pane visibility. |
+| `TerminalFileManager.terminalPaneHeight` | Built-in terminal pane height. |
+| `TerminalFileManager.terminalFollowsActiveFolder` | Built-in terminal follows the active file pane directory. |
 | `TerminalFileManager.activePane` | Active pane. |
 | `TerminalFileManager.activeArea` | Active keyboard target. |
 | `TerminalFileManager.folderTreeWidth` | Folder tree width. |

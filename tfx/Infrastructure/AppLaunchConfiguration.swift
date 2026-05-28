@@ -3,16 +3,32 @@ import AppKit
 import Foundation
 
 struct AppLaunchConfiguration: Equatable {
+    var startupLayout: StartupLayoutMode = .single
+    var startupRightFolder: URL?
+    var startupRightFolders: [URL] = []
     var terminalApplication: ApplicationReference?
     var openWithApplications: [String: ApplicationReference] = [:]
 
     static let `default` = AppLaunchConfiguration()
+
+    var startupRightFolderURLs: [URL] {
+        if !startupRightFolders.isEmpty {
+            return startupRightFolders
+        }
+        return startupRightFolder.map { [$0] } ?? []
+    }
 
     func application(forFile url: URL) -> ApplicationReference? {
         let extensionName = url.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !extensionName.isEmpty else { return nil }
         return openWithApplications[extensionName]
     }
+}
+
+enum StartupLayoutMode: String, Equatable {
+    case single
+    case split
+    case restore
 }
 
 enum ApplicationReference: Equatable {
@@ -105,6 +121,25 @@ enum AppLaunchConfigurationLoader {
                 default:
                     continue
                 }
+            case "startup":
+                switch key {
+                case "layout":
+                    let rawLayout = try parseString(value, line: lineNumber)
+                    guard let layout = StartupLayoutMode(rawValue: rawLayout) else {
+                        throw AppLaunchConfigurationError.invalidStartupLayout(line: lineNumber)
+                    }
+                    configuration.startupLayout = layout
+                case "rightFolder":
+                    configuration.startupRightFolder = URL(
+                        fileURLWithPath: NSString(string: try parseString(value, line: lineNumber)).expandingTildeInPath
+                    ).standardizedFileURL
+                case "rightFolders":
+                    configuration.startupRightFolders = try parseStringArray(value, line: lineNumber).map {
+                        URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath).standardizedFileURL
+                    }
+                default:
+                    continue
+                }
             case "openWith":
                 let extensionName = try parseKey(key, line: lineNumber)
                     .trimmingCharacters(in: CharacterSet(charactersIn: ".").union(.whitespacesAndNewlines))
@@ -159,6 +194,19 @@ enum AppLaunchConfigurationLoader {
         return String(value.dropFirst().dropLast())
     }
 
+    private static func parseStringArray(_ value: String, line: Int) throws -> [String] {
+        guard value.hasPrefix("["), value.hasSuffix("]") else {
+            throw AppLaunchConfigurationError.invalidString(line: line)
+        }
+
+        let body = value.dropFirst().dropLast().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty else { return [] }
+
+        return try body.split(separator: ",", omittingEmptySubsequences: false).map { item in
+            try parseString(item.trimmingCharacters(in: .whitespacesAndNewlines), line: line)
+        }
+    }
+
     private static func parseInt(_ value: String, line: Int) throws -> Int {
         guard let parsed = Int(value) else {
             throw AppLaunchConfigurationError.invalidNumber(line: line)
@@ -173,6 +221,7 @@ enum AppLaunchConfigurationError: LocalizedError {
     case invalidString(line: Int)
     case invalidNumber(line: Int)
     case invalidExtension(line: Int)
+    case invalidStartupLayout(line: Int)
     case unsupportedVersion(Int)
     case applicationUnavailable(String)
 
@@ -188,6 +237,8 @@ enum AppLaunchConfigurationError: LocalizedError {
             return "Invalid app launch number at line \(line)."
         case let .invalidExtension(line):
             return "Invalid extension key at line \(line)."
+        case let .invalidStartupLayout(line):
+            return "Invalid startup layout at line \(line). Use \"single\", \"split\", or \"restore\"."
         case let .unsupportedVersion(version):
             return "Unsupported config version \(version)."
         case let .applicationUnavailable(reference):

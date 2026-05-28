@@ -210,15 +210,15 @@ Goal:
 
 Tasks:
 
-- Embed a PTY-backed terminal view (evaluate SwiftTerm or a similar library before writing custom).
-- Default shell from `$SHELL`; working directory follows the active pane's current folder (configurable, default on).
-- Commands: toggle terminal pane, focus terminal pane, run command on selected files.
-- Persistence: visibility, height, font size.
+- Embed a PTY-backed terminal view (evaluate SwiftTerm or a similar library before writing custom). First slice uses a command-runner pane without full PTY/TUI behavior.
+- Default shell from `$SHELL`; working directory follows the active pane's current folder (configurable, default on). First slice is implemented.
+- Commands: toggle terminal pane, focus terminal pane, run command on selected files. Toggle/focus are implemented; selected-file command helpers remain future work.
+- Persistence: visibility, height, font size. Visibility and height are implemented.
 
 Done when:
 
-- A terminal pane can be toggled on / off through a menu item and a keyboard shortcut.
-- Active pane folder changes drive a `cd` in the terminal when the follow-folder setting is on.
+- A terminal pane can be toggled on / off through a menu item and a keyboard shortcut. First slice is implemented.
+- Active pane folder changes drive a `cd` in the terminal when the follow-folder setting is on. First slice is implemented.
 
 ### 2.5 Permissions and Owner Editing
 

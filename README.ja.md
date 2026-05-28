@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.6.3**
+Version: **0.6.4**
 
 [English](README.md) | 日本語
 
@@ -36,6 +36,7 @@ Version: **0.6.3**
 - zip ファイルを展開せずに閲覧
 - 閲覧中の zip ファイルからファイルをコピー
 - ターミナルアプリを現在フォルダで開く
+- アクティブフォルダに追従する内蔵コマンドターミナルペイン
 - New File / New Folder / インライン Rename / Move to Trash / Reveal in Finder
 - 「このアプリケーションで開く」サブメニュー（候補アプリ一覧と「その他…」ピッカー）
 - 自動更新: 外部からのディレクトリ変更を検知してファイル一覧を自動リフレッシュ
@@ -82,6 +83,8 @@ Version: **0.6.3**
 - `Command + Shift + T`: 新規タブ
 - `Command + W`: タブを閉じる
 - `Command + Shift + [` / `Command + Shift + ]`: 前 / 次のタブ
+- `Command + \``: 内蔵ターミナルペイン表示切り替え
+- `Command + Shift + \``: 内蔵ターミナルペインにフォーカス
 
 ## コマンドラインから起動
 

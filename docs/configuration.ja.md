@@ -14,10 +14,10 @@ tfx はアプリが再びアクティブになったタイミングでも `confi
 
 ## 現在の対応範囲
 
-`config.toml` は `[font]`、`[colors]`、`[opacity]`、`[shortcuts]`、`[terminal]`、`[openWith]` に対応しています。最初の実装では、設定ローダーが受け付ける TOML を意図的に小さな範囲に絞っています。
+`config.toml` は `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]` に対応しています。最初の実装では、設定ローダーが受け付ける TOML を意図的に小さな範囲に絞っています。
 
 - トップレベルの `version = 1`
-- `[font]`、`[colors]`、`[opacity]`、`[shortcuts]`、`[terminal]`、`[openWith]` テーブル
+- `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]` テーブル
 - ダブルクォートで囲んだ文字列
 - 数値のフォントサイズ
 - `"#RRGGBB"` 形式のカラー値
@@ -53,6 +53,15 @@ size = 13
 # inactivePane = 0.5
 # disabledItem = 0.45
 
+[startup]
+# "single" は 1 ペイン 1 タブで起動します。
+# "split" は左右 2 ペインで起動します。rightFolder / rightFolders を省略すると、
+# 前回の右ペインタブを再利用します。
+# "restore" は前回のスプリット状態とペインタブを復元します。
+layout = "single"
+# rightFolder = "~/Downloads"
+# rightFolders = ["~/Downloads", "~/Documents"]
+
 [shortcuts]
 reload = "cmd+r"
 openTerminal = "cmd+t"
@@ -68,6 +77,8 @@ newTab = "cmd+shift+t"
 closeTab = "cmd+w"
 previousTab = "cmd+shift+["
 nextTab = "cmd+shift+]"
+toggleTerminalPane = "cmd+option+t"
+focusTerminalPane = "cmd+option+shift+t"
 
 # Optional application launch overrides.
 #
@@ -212,6 +223,41 @@ headerSecondary = 0.75
 | `dragPreviewShadow` | `0.18` | ピン留めフォルダのドラッグプレビュー影の透過度です。 |
 | `subtleBackground` | `0.07` | ごく薄い背景です。現在はパス breadcrumb コントロールで使われます。 |
 
+### `[startup]`
+
+tfx 起動時のファイルペイン構成を設定します。
+
+```toml
+[startup]
+layout = "single"
+# rightFolder = "~/Downloads"
+# rightFolders = ["~/Downloads", "~/Documents", "~/Desktop"]
+```
+
+| 値 | 動作 |
+| --- | --- |
+| `"single"` | 常に 1 ペイン 1 タブで起動します。デフォルトです。 |
+| `"split"` | 常にスプリット表示で起動します。左は 1 タブで開始し、右は `rightFolders` / `rightFolder` があればそのフォルダをタブで開き、なければ前回の右ペインタブを使います。 |
+| `"restore"` | 前回のシングル / スプリット状態と保存済みペインタブを復元します。 |
+
+`rightFolders` は任意で、`layout = "split"` のときだけ使われます。有効な各フォルダを右ペインのタブとして開き、先頭のフォルダをアクティブにします。
+
+```toml
+[startup]
+layout = "split"
+rightFolders = ["~/Downloads", "~/Documents", "~/Desktop"]
+```
+
+単一タブだけを開く従来の `rightFolder` も引き続き使えます。
+
+```toml
+[startup]
+layout = "split"
+rightFolder = "~/Downloads"
+```
+
+どちらも絶対パスまたは `~` 付きのユーザーパスを指定できます。`rightFolders` が設定されている場合は `rightFolder` より優先されます。有効な右側起動フォルダがない場合、tfx は前回の右ペイン表示を維持します。
+
 ### `[shortcuts]`
 
 `config.toml` に定義します。
@@ -280,6 +326,8 @@ copyPath = "cmd+option+c"
 | `closeTab` | `cmd+w` | アクティブタブを閉じます。ペイン内の最後のタブは閉じません。 |
 | `previousTab` | `cmd+shift+[` | アクティブペインの前のタブを選択します。 |
 | `nextTab` | `cmd+shift+]` | アクティブペインの次のタブを選択します。 |
+| `toggleTerminalPane` | `cmd+option+t` | 内蔵ターミナルペインの表示 / 非表示を切り替えます。 |
+| `focusTerminalPane` | `cmd+option+shift+t` | 内蔵ターミナルペインを表示してフォーカスします。 |
 
 2 つのアクションが同じショートカットに解決された場合、tfx は設定エラーを報告し、内蔵ショートカットデフォルトを使います。
 
