@@ -68,6 +68,26 @@ enum MarkdownHTMLDocument {
           border-left: 3px solid color-mix(in srgb, CanvasText 35%, Canvas);
           color: color-mix(in srgb, CanvasText 75%, Canvas);
         }
+        table {
+          display: block;
+          max-width: 100%;
+          margin: 1em 0;
+          overflow-x: auto;
+          border-collapse: collapse;
+        }
+        th,
+        td {
+          padding: 6px 10px;
+          border: 1px solid color-mix(in srgb, CanvasText 22%, Canvas);
+          vertical-align: top;
+        }
+        th {
+          font-weight: 600;
+          background: color-mix(in srgb, CanvasText 8%, Canvas);
+        }
+        tbody tr:nth-child(even) {
+          background: color-mix(in srgb, CanvasText 4%, Canvas);
+        }
         img { max-width: 100%; height: auto; }
         a { color: LinkText; }
         </style>

@@ -373,7 +373,7 @@ Preview views are selected from the primary selected URL or from visible multi-p
 
 `PDFPreview` renders the first page through `QLThumbnailGenerator`. The PDF parser and any embedded resources run inside Apple's sandboxed Quick Look XPC service (`com.apple.quicklook.QuickLookSatellite`); only the resulting `NSImage` returns to tfx. Embedded JavaScript and AcroForms cannot execute (no interactive view), PDF link / external-file actions cannot fire, parser exploits land in the satellite instead of in tfx, and resource attacks are capped by the satellite's own limits. The trade-off — no multi-page scrolling, no text selection — is acceptable because the preview pane is for at-a-glance file identification rather than reading.
 
-`MarkdownPreview` converts Markdown to HTML with the built-in renderer and displays it in a `WKWebView`. The supported baseline syntax includes headings, paragraphs, lists, code blocks, block quotes, inline code, emphasis, and links. The renderer is hardened against an attacker-controlled markdown file:
+`MarkdownPreview` converts Markdown to HTML with the built-in renderer and displays it in a `WKWebView`. The supported baseline syntax includes headings, paragraphs, lists, code blocks, block quotes, tables, inline code, emphasis, and links. The renderer is hardened against an attacker-controlled markdown file:
 
 - `WKWebpagePreferences.allowsContentJavaScript = false`, so injected `<script>` tags and `javascript:` URLs cannot run.
 - The HTML is loaded with `baseURL: nil`, so relative `file://` references inside the rendered document cannot resolve to arbitrary local files.

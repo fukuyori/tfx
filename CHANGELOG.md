@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.6] - 2026-05-29
+
+Markdown preview polish.
+
+### Fixed
+
+- Markdown preview now renders pipe tables, including left, center, and right column alignment markers.
+
+### Changed
+
+- Updated the version to `0.6.6` and the build number to `38`.
+
 ## [0.6.5] - 2026-05-29
 
 Built-in terminal refinements.
