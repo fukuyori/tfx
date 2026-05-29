@@ -192,11 +192,13 @@ Zip archive entries are represented as `FileItem` values with virtual URLs. Thes
 
 ### 8.1 Launch
 
-1. `tfxApp` presents `ContentView`.
-2. On macOS, `ContentView` creates `TerminalFileManagerView`.
-3. `TerminalFileManagerView.init()` restores the last left and right directories from `UserDefaults`.
-4. If the restored directories no longer exist, both panes start at Home. Saved Desktop, Documents, and Downloads paths are not auto-restored at launch to avoid macOS privacy prompts before the user explicitly opens those folders.
-5. Each `FileBrowserModel` runs `reload()` and expands the current folder's ancestor chain in the folder tree. Subfolders start collapsed unless they are on that ancestor path.
+1. `tfxApp` parses command-line launch options. `--help` / `-h` prints usage and exits, while `--version` / `-v` prints the app version and exits before creating the SwiftUI scene.
+2. `tfxApp` presents `ContentView`.
+3. On macOS, `ContentView` creates `TerminalFileManagerView`.
+4. `TerminalFileManagerView.init()` applies command-line overrides for the initial directory, startup layout (`--single` / `-1`, `--split` / `-2`, `--restore` / `-r`), preview visibility (`--preview` / `-p`, `--no-preview` / `-P`), and built-in terminal visibility (`--terminal` / `-t`, `--no-terminal` / `-T`).
+5. If no launch argument supplies an initial directory, `TerminalFileManagerView.init()` restores the last left and right directories from `UserDefaults`.
+6. If the restored directories no longer exist, both panes start at Home. Saved Desktop, Documents, and Downloads paths are not auto-restored at launch to avoid macOS privacy prompts before the user explicitly opens those folders.
+7. Each `FileBrowserModel` runs `reload()` and expands the current folder's ancestor chain in the folder tree. Subfolders start collapsed unless they are on that ancestor path.
 
 ### 8.2 Directory Loading
 

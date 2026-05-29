@@ -8,6 +8,7 @@
 import SwiftUI
 #if os(macOS)
 import AppKit
+import Darwin
 #endif
 
 @main
@@ -19,6 +20,20 @@ struct tfxApp: App {
     @StateObject private var designStore = DesignStore()
     @StateObject private var shortcutStore = ShortcutStore()
 #endif
+
+    init() {
+#if os(macOS)
+        let launchArguments = AppLaunchArguments.parse()
+        if launchArguments.shouldPrintHelp {
+            print(AppLaunchArguments.helpText)
+            Darwin.exit(0)
+        }
+        if launchArguments.shouldPrintVersion {
+            print(AppLaunchArguments.versionString())
+            Darwin.exit(0)
+        }
+#endif
+    }
 
     var body: some Scene {
         WindowGroup {

@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.6.6**
+Version: **0.6.7**
 
 [English](README.md) | 日本語
 
@@ -98,6 +98,31 @@ open -a tfx "$PWD"
 
 ```sh
 open -a tfx /path/to/folder
+```
+
+インストール済みアプリのバージョンを表示:
+
+```sh
+/Applications/tfx.app/Contents/MacOS/tfx -v
+```
+
+コマンドラインヘルプを表示:
+
+```sh
+/Applications/tfx.app/Contents/MacOS/tfx -h
+```
+
+起動時のレイアウトやペイン表示は、1回の起動だけ上書きできます。
+
+```sh
+tfx -1                 # --single
+tfx -2                 # --split
+tfx -r                 # --restore
+tfx -p                 # --preview
+tfx -P                 # --no-preview
+tfx -t                 # --terminal
+tfx -T                 # --no-terminal
+tfx -2 -P -t ~/Downloads
 ```
 
 `-n` や `--args` は使わず、フォルダを `open` の対象として渡してください。`--args` は起動引数扱いになり、macOS の通常のフォルダオープン経路を通りません。

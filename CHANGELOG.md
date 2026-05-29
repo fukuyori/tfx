@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.7] - 2026-05-29
+
+Command-line launch polish.
+
+### Added
+
+- Added launch options for printing help and the app version, overriding startup layout, and forcing preview / built-in terminal pane visibility for a single launch. Each option has a short form.
+
+### Changed
+
+- Updated the version to `0.6.7` and the build number to `39`.
+
 ## [0.6.6] - 2026-05-29
 
 Markdown preview polish.

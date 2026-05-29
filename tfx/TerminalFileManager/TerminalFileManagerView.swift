@@ -36,11 +36,14 @@ struct TerminalFileManagerView: View {
     @Environment(\.theme) var theme
     @EnvironmentObject var shortcutStore: ShortcutStore
 
-    init(initialDirectory: URL? = AppLaunchArguments.initialDirectory()) {
+    init(launchArguments: AppLaunchArguments.Parsed = AppLaunchArguments.parse()) {
         let defaults = UserDefaults.standard
-        let launchConfiguration = (try? AppLaunchConfigurationLoader.load()) ?? .default
+        var launchConfiguration = (try? AppLaunchConfigurationLoader.load()) ?? .default
+        if let startupLayout = launchArguments.startupLayout {
+            launchConfiguration.startupLayout = startupLayout
+        }
         let homeURL = URL(fileURLWithPath: NSHomeDirectory())
-        let leftURL = initialDirectory ?? Self.restoredDirectory(forKey: "TerminalFileManager.leftDirectory", fallback: homeURL)
+        let leftURL = launchArguments.initialDirectory ?? Self.restoredDirectory(forKey: "TerminalFileManager.leftDirectory", fallback: homeURL)
         let restoredRightURL = Self.restoredDirectory(forKey: "TerminalFileManager.rightDirectory", fallback: leftURL)
         let configuredSplitRightTabs = Self.startupTabs(
             launchConfiguration.startupRightFolderURLs
@@ -110,6 +113,12 @@ struct TerminalFileManagerView: View {
         _rightActiveTabID = State(initialValue: initialRightActiveTabID)
 
         defaults.set(initialSplitViewVisible, forKey: "TerminalFileManager.isSplitViewVisible")
+        if let previewVisible = launchArguments.previewVisible {
+            defaults.set(previewVisible, forKey: "TerminalFileManager.isPreviewVisible")
+        }
+        if let terminalVisible = launchArguments.terminalVisible {
+            defaults.set(terminalVisible, forKey: "TerminalFileManager.isTerminalPaneVisible")
+        }
         defaults.set(BrowserPaneID.left.rawValue, forKey: "TerminalFileManager.activePane")
         defaults.set(ActiveArea.files.rawValue, forKey: "TerminalFileManager.activeArea")
     }

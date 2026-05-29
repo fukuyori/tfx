@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.6.6**
+Version: **0.6.7**
 
 English | [日本語](README.ja.md)
 
@@ -98,6 +98,31 @@ Open a specific directory:
 
 ```sh
 open -a tfx /path/to/folder
+```
+
+Show the installed app version:
+
+```sh
+/Applications/tfx.app/Contents/MacOS/tfx -v
+```
+
+Show command-line help:
+
+```sh
+/Applications/tfx.app/Contents/MacOS/tfx -h
+```
+
+Startup layout and pane visibility can be overridden for one launch:
+
+```sh
+tfx -1                 # --single
+tfx -2                 # --split
+tfx -r                 # --restore
+tfx -p                 # --preview
+tfx -P                 # --no-preview
+tfx -t                 # --terminal
+tfx -T                 # --no-terminal
+tfx -2 -P -t ~/Downloads
 ```
 
 Do not use `-n` or `--args`; pass the folder as the item for `open` instead. `--args` is treated as a launch argument and does not use macOS's normal folder-open path.
