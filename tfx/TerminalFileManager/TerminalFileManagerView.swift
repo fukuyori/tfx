@@ -133,7 +133,7 @@ struct TerminalFileManagerView: View {
                 name: "TerminalFileManagerWindow",
                 allowsTransparency: design.opacity.background < 1
             ))
-            .background(KeyboardEventHandler(isEnabled: !isSearchFocused && !isTerminalInputFocused) { event in
+            .background(KeyboardEventHandler(isEnabled: !isSearchFocused && activeArea != .terminal) { event in
                 handleKeyEvent(event)
             })
             .background(Color.clear)
@@ -328,6 +328,7 @@ struct TerminalFileManagerView: View {
 
             BuiltInTerminalPane(
                 model: terminalModel,
+                isActive: activeArea == .terminal,
                 isInputFocused: $isTerminalInputFocused,
                 activate: focusTerminalPane
             )

@@ -97,6 +97,7 @@ extension TerminalFileManagerView {
 
     func onTerminalPaneVisibilityChange(isVisible: Bool) {
         if isVisible {
+            terminalModel.open()
             activateTerminalPane()
         } else {
             deactivateTerminalPaneIfNeeded()
@@ -104,6 +105,7 @@ extension TerminalFileManagerView {
     }
 
     func activateTerminalPane() {
+        terminalModel.open()
         activeArea = .terminal
         DispatchQueue.main.async {
             isTerminalInputFocused = true

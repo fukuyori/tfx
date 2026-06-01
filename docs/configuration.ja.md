@@ -117,10 +117,24 @@ size = 13
 | キー | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
 | `ui` | string | `"system"` | フォルダツリー、ヘッダー、ペインタイトル、プレビューテキスト、ダイアログ風 UI などに使う UI 向けフォントです。 |
-| `mono` | string | `"monospace"` | ファイル一覧、ステータス行、Raw text、JSON、CSV プレビューなどに使う等幅フォントです。 |
+| `mono` | string | `"monospace"` | ファイル一覧、ステータス行、Raw text、JSON、CSV プレビュー、内蔵ターミナルペインなどに使う等幅フォントです。 |
 | `size` | number | `13` | 基準フォントサイズです。単位は point、範囲は `8` から `40` です。 |
 
 `"system"` はプラットフォーム標準の UI フォントです。`"monospace"` はプラットフォーム標準の等幅フォントです。それ以外の文字列はフォントファミリー名として SwiftUI / AppKit に渡されます。指定したフォントが利用できない場合は、プラットフォーム側のフォールバックが使われます。
+
+内蔵ターミナルは WebView 内の xterm.js で描画されます。`mono` と
+`size` は内蔵ターミナルにも使われますが、フォントは CSS の
+font-family スタックとして解決されます。`mono = "monospace"` の場合、
+ターミナルは次の順にフォールバックします。
+
+```text
+"SF Mono", Menlo, Monaco, "Courier New", monospace
+```
+
+`mono` にカスタムフォント名を指定した場合は、その名前をフォールバック
+スタックの先頭に置きます。ターミナル出力には、`SF Mono`、`Menlo`、
+`Monaco`、`JetBrains Mono`、`Cascadia Mono` などの実際の等幅フォントを
+指定してください。
 
 ### `[colors]`
 
@@ -384,6 +398,7 @@ pdf = "/Applications/Preview.app"
 | Raw text プレビュー | `mono` | `size` |
 | JSON プレビュー | `mono` | `size` |
 | CSV プレビュー | `mono` | `size` |
+| 内蔵ターミナルペイン | `mono` | `size` |
 | ヘッダー | `ui` | `size - 1`、最小 `8` |
 | ペインタイトルのパス欄 | `ui` | `size - 1`、最小 `8` |
 | ステータス行 | `mono` | `size - 2`、最小 `8` |
@@ -424,6 +439,26 @@ ui = "system"
 mono = "JetBrains Mono"
 size = 13
 ```
+
+内蔵ターミナルとその他の等幅表示に Menlo を使う例:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "Menlo"
+size = 13
+```
+
+内蔵ターミナルは次のカラートークンも使います。
+
+| ターミナル領域 | カラートークン |
+| --- | --- |
+| ターミナル背景 | `fileListBackground` |
+| ターミナル文字 | `fileForeground` |
+| ターミナルカーソル | `directoryForeground` |
+| ターミナル選択範囲 | `fileListRowSelected` |
 
 主要なファイル / フォルダ色だけを変更する例:
 

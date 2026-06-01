@@ -1,9 +1,11 @@
 #if os(macOS)
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct BuiltInTerminalPane: View {
     @ObservedObject var model: BuiltInTerminalModel
+    let isActive: Bool
     @FocusState.Binding var isInputFocused: Bool
     let activate: () -> Void
 
@@ -24,46 +26,30 @@ struct BuiltInTerminalPane: View {
                     .foregroundStyle(theme.headerForeground)
 
                 Spacer(minLength: 8)
+
+                Button {
+                    activate()
+                    model.sendInterrupt()
+                } label: {
+                    Image(systemName: "stop.circle")
+                        .foregroundStyle(theme.headerForeground)
+                }
+                .buttonStyle(.plain)
+                .help("Send Ctrl+C")
             }
             .padding(.horizontal, 10)
             .frame(height: 28)
             .background(theme.headerBackground.opacity(design.opacity.background))
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    Text(model.transcript)
-                        .font(design.fonts.swiftUIFont(for: .previewCode))
-                        .foregroundStyle(theme.fileForeground)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(10)
-                        .id("terminal-bottom")
-                }
-                .background(theme.fileListBackground.opacity(design.opacity.background))
-                .onChange(of: model.transcript) {
-                    proxy.scrollTo("terminal-bottom", anchor: .bottom)
-                }
-            }
-
-            HStack(spacing: 8) {
-                Text("$")
-                    .font(design.fonts.swiftUIFont(for: .previewCode))
-                    .foregroundStyle(theme.directoryForeground)
-
-                TextField("Command", text: $model.commandText)
-                    .textFieldStyle(.plain)
-                    .font(design.fonts.swiftUIFont(for: .previewCode))
-                    .foregroundStyle(theme.fileForeground)
-                    .focused($isInputFocused)
-                    .disabled(model.isRunning)
-                    .onSubmit {
-                        model.submitCommand()
-                        activate()
-                    }
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(theme.statusLineBackground.opacity(design.opacity.background))
+            XtermTerminalWebView(
+                model: model,
+                isActive: isActive,
+                theme: theme,
+                design: design,
+                isInputFocused: $isInputFocused,
+                activate: activate
+            )
+            .background(theme.fileListBackground.opacity(design.opacity.background))
         }
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded {

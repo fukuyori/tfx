@@ -4,6 +4,16 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.8] - 2026-06-01
+
+Built-in terminal rendering.
+
+### Changed
+
+- Reworked the built-in terminal display to use xterm.js in a WebView backed by the app's PTY session.
+- Improved built-in terminal focus handling, startup sequencing, resize handling, and monospace font resolution.
+- Updated the version to `0.6.8` and the build number to `40`.
+
 ## [0.6.7] - 2026-05-29
 
 Command-line launch polish.

@@ -125,13 +125,25 @@ size = 13
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `ui` | string | `"system"` | Font family for UI-oriented roles such as folder tree, headers, pane title, preview text, and dialog-like surfaces. |
-| `mono` | string | `"monospace"` | Font family for file-list rows, status line, raw text, JSON, and CSV previews. |
+| `mono` | string | `"monospace"` | Font family for file-list rows, status line, raw text, JSON, CSV previews, and the built-in terminal pane. |
 | `size` | number | `13` | Base font size in points. Valid range: `8` through `40`. |
 
 `"system"` means the platform system UI font. `"monospace"` means the
 platform monospaced system font. Any other string is treated as a font family
 name and passed to SwiftUI / AppKit. If a named font is unavailable, rendering
 falls back through the platform font APIs.
+
+The built-in terminal is rendered by xterm.js inside a WebView. It uses the
+same `mono` and `size` settings, but the font is resolved as a CSS font-family
+stack. When `mono = "monospace"` is used, the terminal falls back through:
+
+```text
+"SF Mono", Menlo, Monaco, "Courier New", monospace
+```
+
+When `mono` names a custom font, that name is placed before the fallback stack.
+For terminal output, prefer a true monospaced font such as `SF Mono`, `Menlo`,
+`Monaco`, `JetBrains Mono`, or `Cascadia Mono`.
 
 ### `[colors]`
 
@@ -412,6 +424,7 @@ The user-facing configuration stays small, while the app maps roles internally:
 | Raw text preview | `mono` | `size` |
 | JSON preview | `mono` | `size` |
 | CSV preview | `mono` | `size` |
+| Built-in terminal pane | `mono` | `size` |
 | Headers | `ui` | `size - 1`, minimum `8` |
 | Pane title path field | `ui` | `size - 1`, minimum `8` |
 | Status line | `mono` | `size - 2`, minimum `8` |
@@ -452,6 +465,26 @@ ui = "system"
 mono = "JetBrains Mono"
 size = 13
 ```
+
+Use Menlo for the built-in terminal and other monospaced surfaces:
+
+```toml
+version = 1
+
+[font]
+ui = "system"
+mono = "Menlo"
+size = 13
+```
+
+The built-in terminal also uses these color tokens:
+
+| Terminal area | Color token |
+| --- | --- |
+| Terminal background | `fileListBackground` |
+| Terminal text | `fileForeground` |
+| Terminal cursor | `directoryForeground` |
+| Terminal selection | `fileListRowSelected` |
 
 Change only the primary file and folder colors:
 
