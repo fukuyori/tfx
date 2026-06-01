@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.10] - 2026-06-02
+
+Preview-pane and window interaction refinements.
+
+### Added
+
+- Added title-bar double-click handling to toggle the window's display size.
+
+### Changed
+
+- Reworked preview-pane toggling so the window expands to the right without moving position, keeping the file list from shrinking when screen space allows.
+- Cleaned up preview-pane state handling so window resizing is isolated to the preview visibility transition.
+- Updated the version to `0.6.10` and the build number to `42`.
+
 ## [0.6.9] - 2026-06-01
 
 Built-in terminal and split-preview refinements.
@@ -17,6 +31,7 @@ Built-in terminal and split-preview refinements.
 
 - Dropping files or folders directly onto the xterm.js WebView terminal now inserts shell-quoted paths, matching drops on the surrounding terminal pane.
 - Dropped paths inserted into a running terminal session now include a trailing space so multiple inserted paths do not run together.
+- Markdown preview now renders image syntax, including linked badge images, while keeping external `https:` images blocked until the user presses the load-images button for the current preview.
 - Updated the version to `0.6.9` and the build number to `41`.
 
 ### Fixed

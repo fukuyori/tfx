@@ -1,4 +1,6 @@
 #if os(macOS)
+import AppKit
+import CoreText
 import Foundation
 import SwiftUI
 
@@ -106,10 +108,10 @@ enum DesignConfigurationLoader {
         switch key {
         case "ui":
             let family = try parseString(value, line: line)
-            fonts.uiFamily = family == "system" ? nil : family
+            fonts.uiFamily = family == "system" ? nil : ConfiguredFontRegistrar.resolve(family)
         case "mono":
             let family = try parseString(value, line: line)
-            fonts.monoFamily = family == "monospace" ? nil : family
+            fonts.monoFamily = family == "monospace" ? nil : ConfiguredFontRegistrar.resolve(family)
         case "size":
             let parsed = try parseDouble(value, line: line)
             guard parsed >= 8, parsed <= 40 else {
@@ -310,6 +312,62 @@ enum DesignConfigurationLoader {
     # md = "com.microsoft.VSCode"
     # pdf = "/Applications/Preview.app"
     """
+}
+
+private enum ConfiguredFontRegistrar {
+    private static var didRegisterUserFonts = false
+
+    static func resolve(_ family: String) -> String {
+        guard !family.isEmpty else { return family }
+        if NSFont(name: family, size: 13) != nil {
+            return family
+        }
+
+        registerUserFontsIfNeeded()
+
+        if let font = NSFont(name: family, size: 13) {
+            return font.familyName ?? family
+        }
+
+        return family
+    }
+
+    private static func registerUserFontsIfNeeded() {
+        guard !didRegisterUserFonts else { return }
+        didRegisterUserFonts = true
+
+        let fileManager = FileManager.default
+        let directories = [
+            fileManager.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library", isDirectory: true)
+                .appendingPathComponent("Fonts", isDirectory: true),
+            URL(fileURLWithPath: "/Library/Fonts", isDirectory: true)
+        ]
+
+        for directory in directories {
+            guard let urls = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else {
+                continue
+            }
+
+            for url in urls where isFontFile(url) {
+                var error: Unmanaged<CFError>?
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+            }
+        }
+    }
+
+    private static func isFontFile(_ url: URL) -> Bool {
+        switch url.pathExtension.lowercased() {
+        case "ttf", "otf", "ttc":
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 enum DesignConfigurationError: LocalizedError {

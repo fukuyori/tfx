@@ -84,6 +84,37 @@ struct BuiltInTerminalModelTests {
     }
 
     @Test
+    func terminalInputCDUpdatesCurrentDirectory() {
+        let initialDirectory = URL(fileURLWithPath: NSHomeDirectory())
+        let targetDirectory = URL(fileURLWithPath: "/tmp").standardizedFileURL
+        let model = BuiltInTerminalModel(
+            currentDirectory: initialDirectory,
+            shellPath: "/bin/sh"
+        )
+
+        model.sendTerminalInput("cd /tmp\r")
+
+        #expect(model.currentDirectory == targetDirectory)
+        model.commandText = "exit"
+        model.submitCommand()
+    }
+
+    @Test
+    func closeAllowsFollowingDirectoryBeforeReopen() {
+        let model = BuiltInTerminalModel(
+            currentDirectory: URL(fileURLWithPath: NSHomeDirectory()),
+            shellPath: "/bin/sh"
+        )
+        let targetDirectory = URL(fileURLWithPath: "/tmp").standardizedFileURL
+
+        model.open()
+        model.close()
+        model.followDirectory(targetDirectory)
+
+        #expect(model.currentDirectory == targetDirectory)
+    }
+
+    @Test
     func exitCommandRequestsPaneClose() {
         let model = BuiltInTerminalModel(currentDirectory: URL(fileURLWithPath: "/tmp"))
         let initialRequestID = model.terminalExitRequestID

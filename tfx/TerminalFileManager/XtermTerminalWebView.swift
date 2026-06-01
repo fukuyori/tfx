@@ -10,10 +10,16 @@ struct XtermTerminalWebView: NSViewRepresentable {
     let theme: Theme
     let design: DesignTokens
     @FocusState.Binding var isInputFocused: Bool
+    @Binding var isPathDropTarget: Bool
     let activate: () -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(model: model, isInputFocused: $isInputFocused, activate: activate)
+        Coordinator(
+            model: model,
+            isInputFocused: $isInputFocused,
+            isPathDropTarget: $isPathDropTarget,
+            activate: activate
+        )
     }
 
     func makeNSView(context: Context) -> WKWebView {
@@ -37,6 +43,9 @@ struct XtermTerminalWebView: NSViewRepresentable {
         view.onFileDrop = { [weak coordinator = context.coordinator] urls in
             coordinator?.handleDroppedFileURLs(urls)
         }
+        view.onFileDragStateChange = { [weak coordinator = context.coordinator] isTargeted in
+            coordinator?.setPathDropTarget(isTargeted)
+        }
         context.coordinator.webView = view
         context.coordinator.startObservingOutput()
         view.loadHTMLString(htmlDocument(), baseURL: nil)
@@ -47,6 +56,7 @@ struct XtermTerminalWebView: NSViewRepresentable {
         context.coordinator.model = model
         context.coordinator.isActive = isActive
         context.coordinator.isInputFocused = $isInputFocused
+        context.coordinator.isPathDropTarget = $isPathDropTarget
         context.coordinator.activate = activate
         context.coordinator.applyTheme(theme: theme, design: design)
         if isActive {
@@ -200,6 +210,7 @@ struct XtermTerminalWebView: NSViewRepresentable {
         var model: BuiltInTerminalModel
         var isActive = false
         var isInputFocused: FocusState<Bool>.Binding
+        var isPathDropTarget: Binding<Bool>
         var activate: () -> Void
         weak var webView: WKWebView?
 
@@ -210,10 +221,12 @@ struct XtermTerminalWebView: NSViewRepresentable {
         init(
             model: BuiltInTerminalModel,
             isInputFocused: FocusState<Bool>.Binding,
+            isPathDropTarget: Binding<Bool>,
             activate: @escaping () -> Void
         ) {
             self.model = model
             self.isInputFocused = isInputFocused
+            self.isPathDropTarget = isPathDropTarget
             self.activate = activate
         }
 
@@ -235,7 +248,7 @@ struct XtermTerminalWebView: NSViewRepresentable {
             case "terminalInput":
                 guard let input = message.body as? String else { return }
                 activate()
-                model.sendText(input)
+                model.sendTerminalInput(input)
             case "terminalFocus":
                 activate()
                 isInputFocused.wrappedValue = true
@@ -290,10 +303,15 @@ struct XtermTerminalWebView: NSViewRepresentable {
 
         func handleDroppedFileURLs(_ urls: [URL]) {
             guard !urls.isEmpty else { return }
+            setPathDropTarget(false)
             activate()
             isInputFocused.wrappedValue = true
             model.insertPaths(urls)
             focusTerminal()
+        }
+
+        func setPathDropTarget(_ isTargeted: Bool) {
+            isPathDropTarget.wrappedValue = isTargeted
         }
 
         private func write(_ output: String) {
@@ -341,6 +359,7 @@ struct XtermTerminalWebView: NSViewRepresentable {
 
 private final class TerminalDropWebView: WKWebView {
     var onFileDrop: (([URL]) -> Void)?
+    var onFileDragStateChange: ((Bool) -> Void)?
 
     override init(frame: CGRect, configuration: WKWebViewConfiguration) {
         super.init(frame: frame, configuration: configuration)
@@ -353,17 +372,33 @@ private final class TerminalDropWebView: WKWebView {
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        droppedFileURLs(from: sender).isEmpty ? [] : .copy
+        let operation = droppedFileURLs(from: sender).isEmpty ? NSDragOperation() : .copy
+        onFileDragStateChange?(operation == .copy)
+        return operation
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
-        droppedFileURLs(from: sender).isEmpty ? [] : .copy
+        let operation = droppedFileURLs(from: sender).isEmpty ? NSDragOperation() : .copy
+        onFileDragStateChange?(operation == .copy)
+        return operation
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        onFileDragStateChange?(false)
+    }
+
+    override func draggingEnded(_ sender: NSDraggingInfo) {
+        onFileDragStateChange?(false)
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         let urls = droppedFileURLs(from: sender)
-        guard !urls.isEmpty else { return false }
+        guard !urls.isEmpty else {
+            onFileDragStateChange?(false)
+            return false
+        }
         onFileDrop?(urls)
+        onFileDragStateChange?(false)
         return true
     }
 
@@ -391,7 +426,7 @@ private struct XtermTheme {
         selectionBackground = Self.hex(theme.fileListRowSelected)
 
         let font = design.fonts.nsFont(for: .previewCode)
-        fontFamily = Self.cssFontFamily(for: design.fonts.monoFamily)
+        fontFamily = Self.cssFontFamily(for: design.fonts.monoFamily, resolvedFont: font)
         fontSize = max(8, Int(round(font.pointSize)))
     }
 
@@ -424,15 +459,30 @@ private struct XtermTheme {
         return String(format: "#%02X%02X%02X", red, green, blue)
     }
 
-    private static func cssFontFamily(for configuredFamily: String?) -> String {
+    nonisolated private static func cssFontFamily(for configuredFamily: String?, resolvedFont: NSFont) -> String {
         let fallback = "\"SF Mono\", Menlo, Monaco, \"Courier New\", monospace"
         guard let configuredFamily, !configuredFamily.isEmpty else {
             return fallback
         }
-        return "\(quoteFontFamily(configuredFamily)), \(fallback)"
+
+        let candidates = [
+            configuredFamily,
+            resolvedFont.familyName,
+            resolvedFont.fontName
+        ]
+        let configuredStack = candidates
+            .compactMap { $0 }
+            .reduce(into: [String]()) { result, family in
+                guard !result.contains(family) else { return }
+                result.append(family)
+            }
+            .map(quoteFontFamily)
+            .joined(separator: ", ")
+
+        return "\(configuredStack), \(fallback)"
     }
 
-    private static func quoteFontFamily(_ family: String) -> String {
+    nonisolated private static func quoteFontFamily(_ family: String) -> String {
         "\"\(family.replacingOccurrences(of: "\"", with: "\\\""))\""
     }
 }

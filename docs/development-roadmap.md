@@ -224,19 +224,24 @@ Done when:
 
 Goal:
 
-- Provide POSIX permission and owner / group editing through the UI.
+- Keep POSIX permission and owner / group editing out of the file-manager UI.
+  These operations are better handled explicitly from the command line through
+  the built-in terminal or an external terminal app.
 
 Tasks:
 
-- "Get Info" sheet showing chmod-style permission bits and current owner / group.
-- Permission edits apply through `FileManager.setAttributes(_:ofItemAtPath:)`.
-- Owner / group edits prompt for admin credentials when elevation is required (privileged helper or `AuthorizationServices`).
-- Failures (permission denied, requires admin, etc.) surface through `show(_:)`.
+- Continue showing permissions as read-only metadata in the file list and
+  preview metadata.
+- Do not add chmod / chown UI, privileged helpers, or Authorization Services
+  flows for owner / group edits.
+- Keep terminal access discoverable so users can run `chmod`, `chown`, and
+  related commands when needed.
 
 Done when:
 
-- A user can change permissions on a file they own without elevation.
-- Owner / group changes prompt for credentials when needed and roll back cleanly on cancel / failure.
+- Permissions remain visible as metadata.
+- Permission and owner edits are intentionally documented as command-line
+  operations rather than tfx UI operations.
 
 ### 2.7 Sparkle Auto-Update
 

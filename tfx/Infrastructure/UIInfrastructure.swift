@@ -34,11 +34,15 @@ struct WindowFrameAutosaver: NSViewRepresentable {
     let name: String
     var allowsTransparency = false
 
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
         DispatchQueue.main.async {
             view.window?.setFrameAutosaveName(name)
-            configureWindow(view.window)
+            configureWindow(view.window, coordinator: context.coordinator)
         }
         return view
     }
@@ -46,25 +50,57 @@ struct WindowFrameAutosaver: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         DispatchQueue.main.async {
             nsView.window?.setFrameAutosaveName(name)
-            configureWindow(nsView.window)
+            configureWindow(nsView.window, coordinator: context.coordinator)
         }
     }
 
-    private func configureWindow(_ window: NSWindow?) {
+    private func configureWindow(_ window: NSWindow?, coordinator: Coordinator) {
         guard let window else { return }
 
         window.isOpaque = !allowsTransparency
         window.backgroundColor = allowsTransparency ? .clear : .windowBackgroundColor
+        coordinator.installTitlebarDoubleClick(on: window)
+    }
+
+    final class Coordinator: NSObject {
+        private weak var window: NSWindow?
+        private weak var installedTitlebarView: NSView?
+        private lazy var doubleClickRecognizer: NSClickGestureRecognizer = {
+            let recognizer = NSClickGestureRecognizer(
+                target: self,
+                action: #selector(handleTitlebarDoubleClick(_:))
+            )
+            recognizer.numberOfClicksRequired = 2
+            return recognizer
+        }()
+
+        func installTitlebarDoubleClick(on window: NSWindow) {
+            self.window = window
+            guard let titlebarView = window.standardWindowButton(.closeButton)?.superview else {
+                return
+            }
+            guard installedTitlebarView !== titlebarView else {
+                return
+            }
+
+            if let installedTitlebarView {
+                installedTitlebarView.removeGestureRecognizer(doubleClickRecognizer)
+            }
+            titlebarView.addGestureRecognizer(doubleClickRecognizer)
+            installedTitlebarView = titlebarView
+        }
+
+        @objc private func handleTitlebarDoubleClick(_ recognizer: NSClickGestureRecognizer) {
+            guard recognizer.state == .ended else { return }
+            window?.zoom(nil)
+        }
     }
 }
 
 extension View {
     func quickHelp(_ message: LocalizedStringResource, text: Binding<String>) -> some View {
         let resolved = String(localized: message)
-        return onHover { isHovering in
-            text.wrappedValue = isHovering ? resolved : ""
-        }
-        .accessibilityHint(Text(resolved))
+        return modifier(QuickHelpBubbleModifier(message: resolved))
     }
 
     /// Hover-help variant that appends the keyboard shortcut display string
@@ -76,10 +112,11 @@ extension View {
     ) -> some View {
         let resolved = String(localized: message)
         let combined = "\(resolved)  \(shortcut.displayString)"
-        return onHover { isHovering in
-            text.wrappedValue = isHovering ? combined : ""
-        }
-        .accessibilityHint(Text(combined))
+        return modifier(QuickHelpBubbleModifier(message: combined))
+    }
+
+    func quickHelp(_ message: LocalizedStringResource) -> some View {
+        modifier(QuickHelpBubbleModifier(message: String(localized: message)))
     }
 
     /// Apply a `ShortcutInfo` as a `.keyboardShortcut` binding.
@@ -101,6 +138,16 @@ extension View {
                 NSCursor.pop()
             }
         }
+    }
+}
+
+private struct QuickHelpBubbleModifier: ViewModifier {
+    let message: String
+
+    func body(content: Content) -> some View {
+        content
+            .help(Text(message))
+            .accessibilityHint(Text(message))
     }
 }
 #endif

@@ -21,6 +21,9 @@ final class BuiltInTerminalModel: ObservableObject {
     private var shellPath: String
     private var session: PTYTerminalSession?
     private var outputDecoder = TerminalOutputDecoder()
+    private var interactiveCommandBuffer = ""
+    private var isIgnoringEscapeSequence = false
+    private var isClosingSessionExplicitly = false
 
     init(
         currentDirectory: URL = URL(fileURLWithPath: NSHomeDirectory()),
@@ -51,6 +54,18 @@ final class BuiltInTerminalModel: ObservableObject {
         startSessionIfNeeded()
     }
 
+    func close() {
+        let activeSession = session
+        if activeSession != nil {
+            isClosingSessionExplicitly = true
+        }
+        session = nil
+        isRunning = false
+        interactiveCommandBuffer = ""
+        isIgnoringEscapeSequence = false
+        activeSession?.terminate()
+    }
+
     func reportStartupError(_ message: String) {
         appendTerminalOutput("Terminal startup error: \(message)\n")
         isRunning = false
@@ -72,8 +87,15 @@ final class BuiltInTerminalModel: ObservableObject {
     }
 
     func sendInterrupt() {
-        startSessionIfNeeded()
-        session?.write(Data([3]))
+        sendControlCharacter(0x03)
+    }
+
+    func sendQuit() {
+        sendControlCharacter(0x1C)
+    }
+
+    func sendSuspend() {
+        sendControlCharacter(0x1A)
     }
 
     func sendEndOfTransmission() {
@@ -85,6 +107,13 @@ final class BuiltInTerminalModel: ObservableObject {
         guard !text.isEmpty else { return }
         startSessionIfNeeded()
         session?.write(text)
+    }
+
+    func sendTerminalInput(_ input: String) {
+        guard !input.isEmpty else { return }
+        startSessionIfNeeded()
+        session?.write(input)
+        recordTerminalInput(input)
     }
 
     func sendReturn() {
@@ -132,6 +161,14 @@ final class BuiltInTerminalModel: ObservableObject {
         session?.write("\u{1B}[D")
     }
 
+    private func sendControlCharacter(_ byte: UInt8) {
+        startSessionIfNeeded()
+        session?.write(Data([byte]))
+        if let scalar = UnicodeScalar(UInt32(byte)) {
+            recordTerminalInput(String(scalar))
+        }
+    }
+
     func insertPaths(_ urls: [URL]) {
         let arguments = urls
             .map { Self.shellQuotedPath($0.path) }
@@ -139,7 +176,7 @@ final class BuiltInTerminalModel: ObservableObject {
         guard !arguments.isEmpty else { return }
 
         if session != nil {
-            sendText(arguments + " ")
+            sendTerminalInput(arguments + " ")
             return
         }
 
@@ -167,7 +204,11 @@ final class BuiltInTerminalModel: ObservableObject {
                         guard let self else { return }
                         self.session = nil
                         self.isRunning = false
-                        self.terminalExitRequestID = UUID()
+                        if self.isClosingSessionExplicitly {
+                            self.isClosingSessionExplicitly = false
+                        } else {
+                            self.terminalExitRequestID = UUID()
+                        }
                     }
                 }
             )
@@ -207,6 +248,36 @@ final class BuiltInTerminalModel: ObservableObject {
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue {
             currentDirectory = url
+        }
+    }
+
+    private func recordTerminalInput(_ input: String) {
+        for scalar in input.unicodeScalars {
+            if isIgnoringEscapeSequence {
+                if scalar.value >= 0x40, scalar.value <= 0x7E {
+                    isIgnoringEscapeSequence = false
+                }
+                continue
+            }
+
+            switch scalar.value {
+            case 0x1B:
+                isIgnoringEscapeSequence = true
+            case 0x03, 0x15, 0x1A, 0x1C:
+                interactiveCommandBuffer = ""
+            case 0x08, 0x7F:
+                if !interactiveCommandBuffer.isEmpty {
+                    interactiveCommandBuffer.removeLast()
+                }
+            case 0x0A, 0x0D:
+                let command = interactiveCommandBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+                interactiveCommandBuffer = ""
+                updateCurrentDirectoryIfSimpleCD(command)
+            default:
+                if scalar.value >= 0x20 {
+                    interactiveCommandBuffer.append(Character(scalar))
+                }
+            }
         }
     }
 

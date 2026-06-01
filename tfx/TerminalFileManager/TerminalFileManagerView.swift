@@ -27,6 +27,7 @@ struct TerminalFileManagerView: View {
     @State private var previewDragStartWidth: Double?
     @State var fileSplitDragStartRatio: Double?
     @State private var terminalDragStartHeight: Double?
+    @State var previewAutoResizeDelta: CGFloat = 0
     @State var isFileListSettingsPresented = false
     @State var hoverHelpText = ""
     @State private var hasAppliedStartupFocus = false

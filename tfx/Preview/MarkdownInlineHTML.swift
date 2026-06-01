@@ -7,8 +7,71 @@ enum MarkdownInlineHTML {
         html = html.replacingOccurrences(of: #"`([^`]+)`"#, with: "<code>$1</code>", options: .regularExpression)
         html = html.replacingOccurrences(of: #"\*\*([^*]+)\*\*"#, with: "<strong>$1</strong>", options: .regularExpression)
         html = html.replacingOccurrences(of: #"\*([^*]+)\*"#, with: "<em>$1</em>", options: .regularExpression)
+        html = rewriteLinkedImages(in: html)
+        html = rewriteImages(in: html)
         html = rewriteLinks(in: html)
         return html
+    }
+
+    /// Replace linked image badges such as
+    /// `[![Rust](https://img.shields.io/...)](https://www.rust-lang.org/)`
+    /// before normal link rewriting sees the inner image syntax.
+    private static func rewriteLinkedImages(in html: String) -> String {
+        guard let regex = try? NSRegularExpression(
+            pattern: #"\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)"#
+        ) else {
+            return html
+        }
+        let nsHTML = html as NSString
+        let matches = regex.matches(
+            in: html,
+            range: NSRange(location: 0, length: nsHTML.length)
+        )
+
+        let result = nsHTML.mutableCopy() as! NSMutableString
+        for match in matches.reversed() {
+            let alt = nsHTML.substring(with: match.range(at: 1))
+            let imageURL = nsHTML.substring(with: match.range(at: 2))
+            let linkURL = nsHTML.substring(with: match.range(at: 3))
+
+            let imageHTML = imageElement(alt: alt, rawURL: imageURL)
+            let replacement: String
+            if isSafeURL(linkURL) {
+                replacement = "<a href=\"\(escapeAttribute(linkURL))\">\(imageHTML)</a>"
+            } else {
+                replacement = imageHTML
+            }
+            result.replaceCharacters(in: match.range, with: replacement)
+        }
+        return result as String
+    }
+
+    private static func rewriteImages(in html: String) -> String {
+        guard let regex = try? NSRegularExpression(
+            pattern: #"!\[([^\]]*)\]\(([^)]+)\)"#
+        ) else {
+            return html
+        }
+        let nsHTML = html as NSString
+        let matches = regex.matches(
+            in: html,
+            range: NSRange(location: 0, length: nsHTML.length)
+        )
+
+        let result = nsHTML.mutableCopy() as! NSMutableString
+        for match in matches.reversed() {
+            let alt = nsHTML.substring(with: match.range(at: 1))
+            let rawURL = nsHTML.substring(with: match.range(at: 2))
+            result.replaceCharacters(in: match.range, with: imageElement(alt: alt, rawURL: rawURL))
+        }
+        return result as String
+    }
+
+    private static func imageElement(alt: String, rawURL: String) -> String {
+        guard isSafeImageURL(rawURL) else {
+            return alt
+        }
+        return "<img alt=\"\(escapeAttribute(alt))\" src=\"\(escapeAttribute(rawURL))\">"
     }
 
     /// Replace `[text](url)` runs with `<a href="…">…</a>` only when the
@@ -71,6 +134,16 @@ enum MarkdownInlineHTML {
         }
         let scheme = trimmed[trimmed.startIndex..<colon].lowercased()
         let schemeAllowed: Set<String> = ["http", "https", "mailto"]
+        return schemeAllowed.contains(scheme)
+    }
+
+    private static func isSafeImageURL(_ rawURL: String) -> Bool {
+        let trimmed = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let colon = trimmed.firstIndex(of: ":") else {
+            return true
+        }
+        let scheme = trimmed[trimmed.startIndex..<colon].lowercased()
+        let schemeAllowed: Set<String> = ["http", "https", "data"]
         return schemeAllowed.contains(scheme)
     }
 

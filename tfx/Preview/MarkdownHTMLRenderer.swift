@@ -8,12 +8,16 @@ enum MarkdownHTMLRenderer {
         case trailing
     }
 
-    static func htmlDocument(for markdown: String, cancellation: PreviewLoadCancellation) -> String? {
+    static func htmlDocument(
+        for markdown: String,
+        allowsExternalImages: Bool = false,
+        cancellation: PreviewLoadCancellation
+    ) -> String? {
         guard !cancellation.isCancelled else { return nil }
         guard let body = markdownToHTML(markdown, cancellation: cancellation) else { return nil }
         guard !cancellation.isCancelled else { return nil }
 
-        return MarkdownHTMLDocument.document(body: body)
+        return MarkdownHTMLDocument.document(body: body, allowsExternalImages: allowsExternalImages)
     }
 
     private static func markdownToHTML(_ markdown: String, cancellation: PreviewLoadCancellation) -> String? {

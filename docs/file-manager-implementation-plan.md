@@ -301,7 +301,8 @@ Improve file list details.
 - Add created date.
 - Add kind or extension.
 - Add permissions.
-- Add owner and group if useful.
+- Keep owner and group changes out of the UI; use the terminal for `chown` /
+  `chgrp` when needed.
 - Add symlink target.
 - Add disk free space in status area.
 

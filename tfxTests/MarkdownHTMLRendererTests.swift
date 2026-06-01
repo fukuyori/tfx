@@ -59,5 +59,36 @@ struct MarkdownHTMLRendererTests {
         #expect(html?.contains("<table>") == false)
         #expect(html?.contains("| Name | Value |") == true)
     }
+
+    @Test
+    func rendersLinkedExternalImageAsImage() {
+        let markdown = """
+        [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+        """
+
+        let html = MarkdownHTMLRenderer.htmlDocument(
+            for: markdown,
+            cancellation: PreviewLoadCancellation()
+        )
+
+        #expect(html?.contains(#"<a href="https://www.rust-lang.org/"><img alt="Rust" src="https://img.shields.io/badge/rust-1.70%2B-orange.svg"></a>"#) == true)
+        #expect(html?.contains("img-src data:;") == true)
+    }
+
+    @Test
+    func allowsExternalImagesWhenRequested() {
+        let markdown = """
+        ![Version](https://img.shields.io/badge/version-0.4.2-green.svg)
+        """
+
+        let html = MarkdownHTMLRenderer.htmlDocument(
+            for: markdown,
+            allowsExternalImages: true,
+            cancellation: PreviewLoadCancellation()
+        )
+
+        #expect(html?.contains(#"<img alt="Version" src="https://img.shields.io/badge/version-0.4.2-green.svg">"#) == true)
+        #expect(html?.contains("img-src data: https:;") == true)
+    }
 }
 #endif

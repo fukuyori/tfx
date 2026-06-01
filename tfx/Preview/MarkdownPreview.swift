@@ -4,6 +4,7 @@ import WebKit
 
 struct MarkdownPreview: NSViewRepresentable {
     let url: URL
+    let allowsExternalImages: Bool
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -34,15 +35,18 @@ struct MarkdownPreview: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: WKWebView, context: Context) {
-        guard context.coordinator.currentURL != url else { return }
+        guard context.coordinator.currentURL != url ||
+              context.coordinator.allowsExternalImages != allowsExternalImages else { return }
 
         context.coordinator.cancellation?.cancel()
         let cancellation = PreviewLoadCancellation()
         context.coordinator.cancellation = cancellation
         context.coordinator.currentURL = url
+        context.coordinator.allowsExternalImages = allowsExternalImages
         context.coordinator.generation += 1
         let generation = context.coordinator.generation
         let targetURL = url
+        let allowsExternalImages = allowsExternalImages
 
         nsView.loadHTMLString(MarkdownHTMLRenderer.loadingHTML, baseURL: nil)
 
@@ -51,7 +55,11 @@ struct MarkdownPreview: NSViewRepresentable {
             let markdown = (try? String(contentsOf: targetURL, encoding: .utf8))
                 ?? String(decoding: ((try? Data(contentsOf: targetURL)) ?? Data()), as: UTF8.self)
             guard !cancellation.isCancelled else { return }
-            guard let html = MarkdownHTMLRenderer.htmlDocument(for: markdown, cancellation: cancellation) else { return }
+            guard let html = MarkdownHTMLRenderer.htmlDocument(
+                for: markdown,
+                allowsExternalImages: allowsExternalImages,
+                cancellation: cancellation
+            ) else { return }
 
             DispatchQueue.main.async {
                 guard context.coordinator.generation == generation, !cancellation.isCancelled else { return }
@@ -73,6 +81,7 @@ struct MarkdownPreview: NSViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         var currentURL: URL?
+        var allowsExternalImages = false
         var generation = 0
         var cancellation: PreviewLoadCancellation?
 

@@ -133,6 +133,11 @@ platform monospaced system font. Any other string is treated as a font family
 name and passed to SwiftUI / AppKit. If a named font is unavailable, rendering
 falls back through the platform font APIs.
 
+When a configured font is not already visible to AppKit, tfx scans
+`~/Library/Fonts` and `/Library/Fonts` for `.ttf`, `.otf`, and `.ttc` files and
+registers them for the current app process. This allows user-installed fonts
+such as `CaskaydiaCove NF` to be used without restarting macOS font services.
+
 The built-in terminal is rendered by xterm.js inside a WebView. It uses the
 same `mono` and `size` settings, but the font is resolved as a CSS font-family
 stack. When `mono = "monospace"` is used, the terminal falls back through:
@@ -142,8 +147,9 @@ stack. When `mono = "monospace"` is used, the terminal falls back through:
 ```
 
 When `mono` names a custom font, that name is placed before the fallback stack.
+tfx also adds the resolved family name and PostScript font name when available.
 For terminal output, prefer a true monospaced font such as `SF Mono`, `Menlo`,
-`Monaco`, `JetBrains Mono`, or `Cascadia Mono`.
+`Monaco`, `JetBrains Mono`, `Cascadia Mono`, or `CaskaydiaCove NF`.
 
 ### `[colors]`
 

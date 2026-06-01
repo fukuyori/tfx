@@ -80,6 +80,7 @@ extension TerminalFileManagerView {
         let wasVisible = isTerminalPaneVisible
         isTerminalPaneVisible = isVisible
         guard isVisible else {
+            terminalModel.close()
             deactivateTerminalPaneIfNeeded()
             return
         }
@@ -101,9 +102,11 @@ extension TerminalFileManagerView {
 
     func onTerminalPaneVisibilityChange(isVisible: Bool) {
         if isVisible {
+            terminalModel.followDirectory(activeModel.currentDirectory)
             terminalModel.open()
             activateTerminalPane()
         } else {
+            terminalModel.close()
             deactivateTerminalPaneIfNeeded()
         }
     }
@@ -150,56 +153,51 @@ extension TerminalFileManagerView {
         )
     }
 
-    /// Side-effect handler for `isPreviewVisible` changes. Resizes the
-    /// window so that toggling preview reveals or hides the pane by
-    /// growing / shrinking the window to the right, rather than squeezing
-    /// the existing folder-tree and file-pane widths.
+    /// Keep the file area from shrinking when the preview pane is shown by
+    /// expanding the window width only. The origin is intentionally preserved
+    /// so toggling preview never moves the window.
     func onPreviewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
-        guard let window = previewToggleTargetWindow() else { return }
-
-        var frame = window.frame
-        let folderWidth = clampedFolderWidth(totalWidth: frame.width)
-        let previewPaneWidth = clampedPreviewWidth(totalWidth: frame.width, folderWidth: folderWidth)
-        // The preview area takes the actual clamped preview width plus the
-        // 1pt drag-handle separator between file area and preview pane.
-        let delta = previewPaneWidth + 1
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
 
         if newValue {
-            // Showing preview — extend the window to the right. Try to keep
-            // the window's left edge in place; if doing so pushes the right
-            // edge off the visible screen, shift left as needed.
-            frame.size.width += delta
-            if let visibleFrame = window.screen?.visibleFrame {
-                if frame.maxX > visibleFrame.maxX {
-                    let shiftedX = max(visibleFrame.minX, visibleFrame.maxX - frame.size.width)
-                    frame.origin.x = shiftedX
-                }
-                if frame.size.width > visibleFrame.width {
-                    frame.size.width = visibleFrame.width
-                    frame.origin.x = visibleFrame.minX
-                }
-            }
+            previewAutoResizeDelta = growWindowForPreview(window)
         } else {
-            // Hiding preview — pull the right edge back. Floor the width so
-            // the window cannot collapse below something usable.
-            frame.size.width = max(Self.minimumPreviewToggleWindowWidth, frame.size.width - delta)
+            shrinkWindowAfterPreview(window)
+            previewAutoResizeDelta = 0
         }
-
-        window.setFrame(frame, display: true, animate: true)
     }
 
-    /// Minimum width preserved when shrinking the window after the preview
-    /// pane is hidden. Roughly: folder tree minimum (180) + drag handle (1)
-    /// + file pane minimum (360) + window chrome / margins.
-    static let minimumPreviewToggleWindowWidth: CGFloat = 600
+    private func growWindowForPreview(_ window: NSWindow) -> CGFloat {
+        let currentFrame = window.frame
+        let contentWidth = window.contentLayoutRect.width
+        let folderWidth = clampedFolderWidth(totalWidth: contentWidth)
+        let previewPaneWidth = clampedPreviewWidth(totalWidth: contentWidth, folderWidth: folderWidth)
+        let requestedGrowth = previewPaneWidth + 1
+        let maximumFrameWidth = window.screen.map { screen in
+            max(currentFrame.width, screen.visibleFrame.maxX - currentFrame.minX)
+        } ?? currentFrame.width + requestedGrowth
+        let targetFrameWidth = min(currentFrame.width + requestedGrowth, maximumFrameWidth)
+        let actualGrowth = max(0, targetFrameWidth - currentFrame.width)
+        guard actualGrowth > 0 else { return 0 }
 
-    /// Resolve the window the preview-visibility resize should target. We
-    /// prefer `NSApp.keyWindow` so the resize follows the user's active
-    /// window when multiple tfx windows are open.
-    private func previewToggleTargetWindow() -> NSWindow? {
-        NSApp.keyWindow ?? NSApp.mainWindow
+        var frame = currentFrame
+        frame.size.width = targetFrameWidth
+        frame.origin = currentFrame.origin
+        window.setFrame(frame, display: true, animate: false)
+        return actualGrowth
     }
+
+    private func shrinkWindowAfterPreview(_ window: NSWindow) {
+        guard previewAutoResizeDelta > 0 else { return }
+
+        var frame = window.frame
+        frame.size.width = max(Self.minimumPreviewWindowWidth, frame.width - previewAutoResizeDelta)
+        frame.origin = window.frame.origin
+        window.setFrame(frame, display: true, animate: false)
+    }
+
+    private static let minimumPreviewWindowWidth: CGFloat = 600
 
     /// Swap the left and right pane directories. No-op when split is off or
     /// both panes are already on the same directory. Navigation records

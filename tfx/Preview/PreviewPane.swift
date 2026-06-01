@@ -6,15 +6,18 @@ struct PreviewPane: View {
     @State private var selectedPreviewURLs: Set<URL> = []
     @State private var visibleMultiPreviewURLs: Set<URL> = []
     @State private var activeMultiPreviewURLs: Set<URL> = []
+    @State private var isPrimaryPreviewReady = false
+    @State private var allowsExternalImages = false
     @AppStorage("Preview.showsRawSource") private var showsRawSource = false
     private let maxActiveMultiPreviews = 3
+    private let primaryPreviewDelayNanoseconds: UInt64 = 120_000_000
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 0) {
-            if anyURLSupportsRawSourceToggle {
-                renderingModeToggle
+            if shouldShowPreviewControls {
+                previewControls
             }
             content
         }
@@ -26,7 +29,7 @@ struct PreviewPane: View {
         Group {
             if urls.count == 1, let url = urls.first {
                 VStack(spacing: 0) {
-                    preview(for: url)
+                    primaryPreview(for: url)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     if !shouldHideFileInfo(for: url) {
                         PreviewFileInfoView(url: url)
@@ -70,10 +73,30 @@ struct PreviewPane: View {
             }
         }
         .onChange(of: urls) {
+            isPrimaryPreviewReady = false
+            allowsExternalImages = false
             let availableURLs = Set(urls.map(\.standardizedFileURL))
             selectedPreviewURLs = selectedPreviewURLs.intersection(availableURLs)
             visibleMultiPreviewURLs = visibleMultiPreviewURLs.intersection(availableURLs)
             updateActiveMultiPreviews()
+        }
+        .onChange(of: showsRawSource) {
+            isPrimaryPreviewReady = false
+            allowsExternalImages = false
+        }
+    }
+
+    @ViewBuilder
+    private func primaryPreview(for url: URL) -> some View {
+        if isPrimaryPreviewReady {
+            preview(for: url)
+        } else {
+            DeferredPreviewPlaceholder(url: url)
+                .task(id: primaryPreviewTaskID(for: url)) {
+                    try? await Task.sleep(nanoseconds: primaryPreviewDelayNanoseconds)
+                    guard !Task.isCancelled else { return }
+                    isPrimaryPreviewReady = true
+                }
         }
     }
 
@@ -107,7 +130,7 @@ struct PreviewPane: View {
             case .video:
                 VideoPreview(url: url)
             case .markdown:
-                MarkdownPreview(url: url)
+                MarkdownPreview(url: url, allowsExternalImages: allowsExternalImages)
             case .csv:
                 CSVPreview(url: url)
             case .json:
@@ -120,31 +143,71 @@ struct PreviewPane: View {
         }
     }
 
-    private var renderingModeToggle: some View {
+    private var previewControls: some View {
         HStack {
             Spacer()
-            Button {
-                showsRawSource.toggle()
-            } label: {
-                Image(systemName: "eye")
-                    .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
-                    .foregroundStyle(showsRawSource ? Color.secondary : Color.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background {
-                        if !showsRawSource {
-                            RoundedRectangle(cornerRadius: 5)
-                                .fill(Color.accentColor)
-                        }
-                    }
+
+            if shouldShowExternalImageButton {
+                externalImageButton
             }
-            .buttonStyle(.plain)
-            .help(toggleHelpText)
-            .accessibilityLabel(toggleHelpText)
+
+            if anyURLSupportsRawSourceToggle {
+                renderingModeToggle
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(theme.headerBackground.opacity(design.opacity.background))
+    }
+
+    private var renderingModeToggle: some View {
+        Button {
+            showsRawSource.toggle()
+        } label: {
+            Image(systemName: "eye")
+                .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
+                .foregroundStyle(showsRawSource ? Color.secondary : Color.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background {
+                    if !showsRawSource {
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color.accentColor)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .quickHelp(toggleHelpTextResource)
+        .accessibilityLabel(toggleHelpText)
+    }
+
+    private var externalImageButton: some View {
+        Button {
+            allowsExternalImages = true
+        } label: {
+            Image(systemName: "photo")
+                .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.accentColor)
+                }
+        }
+        .buttonStyle(.plain)
+        .quickHelp("Load external images")
+        .accessibilityLabel(Text("Load external images"))
+        .padding(.trailing, 8)
+    }
+
+    private var shouldShowExternalImageButton: Bool {
+        guard !showsRawSource, !allowsExternalImages else { return false }
+        return urls.contains { PreviewKindCache.shared.kind(for: $0) == .markdown }
+    }
+
+    private var shouldShowPreviewControls: Bool {
+        anyURLSupportsRawSourceToggle || shouldShowExternalImageButton
     }
 
     private var toggleHelpText: Text {
@@ -153,12 +216,20 @@ struct PreviewPane: View {
         showsRawSource ? Text("Show rendered preview") : Text("Show source")
     }
 
+    private var toggleHelpTextResource: LocalizedStringResource {
+        showsRawSource ? "Show rendered preview" : "Show source"
+    }
+
     private var anyURLSupportsRawSourceToggle: Bool {
         urls.contains { Self.supportsRawSourceToggle($0) }
     }
 
     private var previewBackground: Color {
         theme.fileListBackground.opacity(design.opacity.background)
+    }
+
+    private func primaryPreviewTaskID(for url: URL) -> String {
+        "\(url.standardizedFileURL.path)|\(showsRawSource)|\(allowsExternalImages)"
     }
 
     private func shouldShowRawSource(for url: URL) -> Bool {

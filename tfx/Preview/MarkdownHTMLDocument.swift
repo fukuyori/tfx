@@ -13,14 +13,17 @@ enum MarkdownHTMLDocument {
     /// change inadvertently lets HTML through. WKWebView already has
     /// JavaScript globally disabled in `WKWebViewConfiguration`; the
     /// CSP is defense in depth.
-    private static let csp = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
+    private static func csp(allowsExternalImages: Bool) -> String {
+        let imageSource = allowsExternalImages ? "data: https:" : "data:"
+        return "default-src 'none'; style-src 'unsafe-inline'; img-src \(imageSource); base-uri 'none'; form-action 'none'"
+    }
 
     static let loadingHTML = """
     <!doctype html>
     <html>
     <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="\(csp)">
+    <meta http-equiv="Content-Security-Policy" content="\(csp(allowsExternalImages: false))">
     <style>
     :root { color-scheme: light dark; }
     body {
@@ -36,13 +39,13 @@ enum MarkdownHTMLDocument {
     </html>
     """
 
-    static func document(body: String) -> String {
+    static func document(body: String, allowsExternalImages: Bool = false) -> String {
         """
         <!doctype html>
         <html>
         <head>
         <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="\(csp)">
+        <meta http-equiv="Content-Security-Policy" content="\(csp(allowsExternalImages: allowsExternalImages))">
         <style>
         :root { color-scheme: light dark; }
         body {

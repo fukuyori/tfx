@@ -19,6 +19,20 @@ struct BuiltInTerminalPane: View {
                 Image(systemName: "terminal")
                     .foregroundStyle(theme.headerForeground)
 
+                HStack(spacing: 4) {
+                    controlButton(label: "⌃C", help: "Send Ctrl+C") {
+                        model.sendInterrupt()
+                    }
+
+                    controlButton(label: "⌃\\", help: "Send Ctrl+\\") {
+                        model.sendQuit()
+                    }
+
+                    controlButton(label: "⌃Z", help: "Send Ctrl+Z") {
+                        model.sendSuspend()
+                    }
+                }
+
                 Text(model.currentDirectory.path)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -26,16 +40,6 @@ struct BuiltInTerminalPane: View {
                     .foregroundStyle(theme.headerForeground)
 
                 Spacer(minLength: 8)
-
-                Button {
-                    activate()
-                    model.sendInterrupt()
-                } label: {
-                    Image(systemName: "stop.circle")
-                        .foregroundStyle(theme.headerForeground)
-                }
-                .buttonStyle(.plain)
-                .help("Send Ctrl+C")
             }
             .padding(.horizontal, 10)
             .frame(height: 28)
@@ -47,6 +51,7 @@ struct BuiltInTerminalPane: View {
                 theme: theme,
                 design: design,
                 isInputFocused: $isInputFocused,
+                isPathDropTarget: $isPathDropTarget,
                 activate: activate
             )
             .background(theme.fileListBackground.opacity(design.opacity.background))
@@ -67,6 +72,30 @@ struct BuiltInTerminalPane: View {
             Rectangle()
                 .stroke(isPathDropTarget ? theme.paneBorderKeyboardTarget : theme.paneBorderActive, lineWidth: isPathDropTarget ? 2 : 1)
         )
+    }
+
+    private func controlButton(
+        label: LocalizedStringKey,
+        help: LocalizedStringKey,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            activate()
+            action()
+        } label: {
+            Text(label)
+                .font(design.fonts.swiftUIFont(for: .caption).monospaced())
+                .foregroundStyle(theme.headerForeground)
+                .frame(minWidth: 30, minHeight: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(theme.fileListRowSelected.opacity(0.45), in: RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(theme.paneBorderInactive, lineWidth: 1)
+        )
+        .help(help)
     }
 }
 
