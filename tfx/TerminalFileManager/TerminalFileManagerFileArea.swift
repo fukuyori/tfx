@@ -6,11 +6,11 @@ extension TerminalFileManagerView {
     var fileArea: some View {
         if isSplitViewVisible {
             GeometryReader { geometry in
-                let totalWidth = max(geometry.size.width, 760)
+                let totalWidth = max(geometry.size.width, 0)
                 let dividerWidth: CGFloat = 1
-                let availableWidth = max(300, totalWidth - dividerWidth)
+                let availableWidth = max(0, totalWidth - dividerWidth)
                 let leftWidth = clampedLeftFileWidth(availableWidth: availableWidth)
-                let rightWidth = max(260, availableWidth - leftWidth)
+                let rightWidth = max(0, availableWidth - leftWidth)
 
                 HStack(spacing: 0) {
                     filePane(.left)
@@ -30,6 +30,8 @@ extension TerminalFileManagerView {
                     filePane(.right)
                         .frame(width: rightWidth, height: geometry.size.height)
                 }
+                .frame(width: totalWidth, height: geometry.size.height)
+                .clipped()
             }
         } else {
             filePane(activePane)
@@ -38,9 +40,10 @@ extension TerminalFileManagerView {
     }
 
     func clampedLeftFileWidth(availableWidth: CGFloat) -> CGFloat {
-        let minPaneWidth = min(260.0, max(120.0, Double(availableWidth) / 2))
-        let maxPaneWidth = max(minPaneWidth, Double(availableWidth) - minPaneWidth)
-        return CGFloat(clamp(Double(availableWidth) * fileSplitRatio, min: minPaneWidth, max: maxPaneWidth))
+        Self.clampedLeftFileWidth(
+            availableWidth: availableWidth,
+            fileSplitRatio: fileSplitRatio
+        )
     }
 
     func filePane(_ paneID: BrowserPaneID) -> some View {

@@ -4,6 +4,27 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.6.9] - 2026-06-01
+
+Built-in terminal and split-preview refinements.
+
+### Added
+
+- Added regression coverage for split-pane width calculation so split panes stay inside the file area when the preview pane is visible or hidden.
+- Added regression coverage for inserting dropped paths into a running built-in terminal session.
+
+### Changed
+
+- Dropping files or folders directly onto the xterm.js WebView terminal now inserts shell-quoted paths, matching drops on the surrounding terminal pane.
+- Dropped paths inserted into a running terminal session now include a trailing space so multiple inserted paths do not run together.
+- Updated the version to `0.6.9` and the build number to `41`.
+
+### Fixed
+
+- Fixed the right split pane appearing behind the translucent preview pane when split view, preview, and the built-in terminal pane were visible together.
+- Fixed preview-pane hiding in split view not shrinking the window by the actual visible preview width.
+- Fixed the built-in terminal retaining keyboard input after the user clicked or operated another area of the file manager.
+
 ## [0.6.8] - 2026-06-01
 
 Built-in terminal rendering.

@@ -139,7 +139,7 @@ final class BuiltInTerminalModel: ObservableObject {
         guard !arguments.isEmpty else { return }
 
         if session != nil {
-            sendText(arguments)
+            sendText(arguments + " ")
             return
         }
 

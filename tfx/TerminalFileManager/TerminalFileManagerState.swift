@@ -55,6 +55,10 @@ extension TerminalFileManagerView {
     }
 
     func clamp(_ value: Double, min minValue: Double, max maxValue: Double) -> Double {
+        Self.clampedDouble(value, min: minValue, max: maxValue)
+    }
+
+    static func clampedDouble(_ value: Double, min minValue: Double, max maxValue: Double) -> Double {
         Swift.min(Swift.max(value, minValue), maxValue)
     }
 
@@ -154,10 +158,12 @@ extension TerminalFileManagerView {
         guard oldValue != newValue else { return }
         guard let window = previewToggleTargetWindow() else { return }
 
-        // The preview area takes `previewWidth` plus the 1pt drag-handle
-        // separator that sits between the file area and the preview pane.
-        let delta = CGFloat(previewWidth) + 1
         var frame = window.frame
+        let folderWidth = clampedFolderWidth(totalWidth: frame.width)
+        let previewPaneWidth = clampedPreviewWidth(totalWidth: frame.width, folderWidth: folderWidth)
+        // The preview area takes the actual clamped preview width plus the
+        // 1pt drag-handle separator between file area and preview pane.
+        let delta = previewPaneWidth + 1
 
         if newValue {
             // Showing preview — extend the window to the right. Try to keep

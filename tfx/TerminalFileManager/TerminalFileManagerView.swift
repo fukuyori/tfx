@@ -161,6 +161,11 @@ struct TerminalFileManagerView: View {
             .onChange(of: terminalModel.terminalExitRequestID) {
                 closeTerminalPaneFromExitCommand()
             }
+            .onChange(of: activeArea) { _, newValue in
+                if newValue != .terminal {
+                    isTerminalInputFocused = false
+                }
+            }
             .onChange(of: isSplitViewVisible) { oldValue, newValue in
                 onSplitViewVisibilityChange(from: oldValue, to: newValue)
             }
@@ -378,16 +383,42 @@ struct TerminalFileManagerView: View {
         NSApp.activate()
     }
 
-    private func clampedFolderWidth(totalWidth: CGFloat) -> CGFloat {
-        CGFloat(clamp(folderTreeWidth, min: 180, max: max(180, Double(totalWidth - 520))))
+    func clampedFolderWidth(totalWidth: CGFloat) -> CGFloat {
+        Self.clampedFolderWidth(
+            totalWidth: totalWidth,
+            storedFolderWidth: folderTreeWidth
+        )
     }
 
-    private func clampedPreviewWidth(totalWidth: CGFloat, folderWidth: CGFloat) -> CGFloat {
-        CGFloat(clamp(previewWidth, min: 240, max: max(240, Double(totalWidth - folderWidth - 360))))
+    func clampedPreviewWidth(totalWidth: CGFloat, folderWidth: CGFloat) -> CGFloat {
+        Self.clampedPreviewWidth(
+            totalWidth: totalWidth,
+            folderWidth: folderWidth,
+            storedPreviewWidth: previewWidth
+        )
     }
 
     private func clampedTerminalHeight(totalHeight: CGFloat) -> CGFloat {
         CGFloat(clamp(terminalPaneHeight, min: 120, max: max(120, Double(totalHeight - 260))))
+    }
+
+    static func clampedFolderWidth(totalWidth: CGFloat, storedFolderWidth: Double) -> CGFloat {
+        CGFloat(clampedDouble(storedFolderWidth, min: 180, max: max(180, Double(totalWidth - 520))))
+    }
+
+    static func clampedPreviewWidth(
+        totalWidth: CGFloat,
+        folderWidth: CGFloat,
+        storedPreviewWidth: Double
+    ) -> CGFloat {
+        CGFloat(clampedDouble(storedPreviewWidth, min: 240, max: max(240, Double(totalWidth - folderWidth - 360))))
+    }
+
+    static func clampedLeftFileWidth(availableWidth: CGFloat, fileSplitRatio: Double) -> CGFloat {
+        guard availableWidth > 0 else { return 0 }
+        let minPaneWidth = min(260.0, Double(availableWidth) / 2)
+        let maxPaneWidth = max(minPaneWidth, Double(availableWidth) - minPaneWidth)
+        return CGFloat(clampedDouble(Double(availableWidth) * fileSplitRatio, min: minPaneWidth, max: maxPaneWidth))
     }
 
 }

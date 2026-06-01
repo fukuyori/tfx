@@ -64,6 +64,26 @@ struct BuiltInTerminalModelTests {
     }
 
     @Test
+    func insertPathsWritesSeparatedArgumentsToRunningPTY() async throws {
+        let model = BuiltInTerminalModel(
+            currentDirectory: URL(fileURLWithPath: "/tmp"),
+            shellPath: "/bin/sh"
+        )
+        model.open()
+        model.sendText("printf %s ")
+        model.insertPaths([URL(fileURLWithPath: "/tmp/a file.txt")])
+        model.sendReturn()
+
+        for _ in 0..<50 where !model.transcript.contains("/tmp/a file.txt") {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        #expect(model.transcript.contains("/tmp/a file.txt"))
+        model.commandText = "exit"
+        model.submitCommand()
+    }
+
+    @Test
     func exitCommandRequestsPaneClose() {
         let model = BuiltInTerminalModel(currentDirectory: URL(fileURLWithPath: "/tmp"))
         let initialRequestID = model.terminalExitRequestID

@@ -31,9 +31,12 @@ struct XtermTerminalWebView: NSViewRepresentable {
         configuration.defaultWebpagePreferences = preferences
         configuration.userContentController = userContentController
 
-        let view = WKWebView(frame: .zero, configuration: configuration)
+        let view = TerminalDropWebView(frame: .zero, configuration: configuration)
         view.setValue(false, forKey: "drawsBackground")
         view.navigationDelegate = context.coordinator
+        view.onFileDrop = { [weak coordinator = context.coordinator] urls in
+            coordinator?.handleDroppedFileURLs(urls)
+        }
         context.coordinator.webView = view
         context.coordinator.startObservingOutput()
         view.loadHTMLString(htmlDocument(), baseURL: nil)
@@ -48,6 +51,8 @@ struct XtermTerminalWebView: NSViewRepresentable {
         context.coordinator.applyTheme(theme: theme, design: design)
         if isActive {
             context.coordinator.focusTerminal()
+        } else {
+            context.coordinator.blurTerminal()
         }
     }
 
@@ -165,6 +170,9 @@ struct XtermTerminalWebView: NSViewRepresentable {
           window.tfxFocus = function() {
             term.focus();
           };
+          window.tfxBlur = function() {
+            term.blur();
+          };
           window.tfxApplyTheme = function(options) {
             term.options.fontFamily = options.fontFamily;
             term.options.fontSize = options.fontSize;
@@ -268,6 +276,26 @@ struct XtermTerminalWebView: NSViewRepresentable {
             }
         }
 
+        func blurTerminal() {
+            isInputFocused.wrappedValue = false
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let webView = self.webView else { return }
+                webView.evaluateJavaScript("window.tfxBlur && window.tfxBlur();", completionHandler: nil)
+                if let firstResponder = webView.window?.firstResponder as? NSView,
+                   firstResponder == webView || firstResponder.isDescendant(of: webView) {
+                    webView.window?.makeFirstResponder(nil)
+                }
+            }
+        }
+
+        func handleDroppedFileURLs(_ urls: [URL]) {
+            guard !urls.isEmpty else { return }
+            activate()
+            isInputFocused.wrappedValue = true
+            model.insertPaths(urls)
+            focusTerminal()
+        }
+
         private func write(_ output: String) {
             guard isReady else {
                 pendingOutput.append(output)
@@ -308,6 +336,43 @@ struct XtermTerminalWebView: NSViewRepresentable {
             }
             return String(json.dropFirst().dropLast())
         }
+    }
+}
+
+private final class TerminalDropWebView: WKWebView {
+    var onFileDrop: (([URL]) -> Void)?
+
+    override init(frame: CGRect, configuration: WKWebViewConfiguration) {
+        super.init(frame: frame, configuration: configuration)
+        registerForDraggedTypes([.fileURL])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        droppedFileURLs(from: sender).isEmpty ? [] : .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        droppedFileURLs(from: sender).isEmpty ? [] : .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let urls = droppedFileURLs(from: sender)
+        guard !urls.isEmpty else { return false }
+        onFileDrop?(urls)
+        return true
+    }
+
+    private func droppedFileURLs(from sender: NSDraggingInfo) -> [URL] {
+        let pasteboard = sender.draggingPasteboard
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [
+            .urlReadingFileURLsOnly: true
+        ]
+        return pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL] ?? []
     }
 }
 
