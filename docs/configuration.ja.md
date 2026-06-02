@@ -8,16 +8,16 @@ tfx はユーザーが編集できる設定を次の場所に保存します。
 ~/Library/Application Support/tfx/
 ```
 
-メインの設定ファイルは `config.toml` です。デザイン設定、ショートカット、ターミナルアプリ、拡張子ごとの「このアプリケーションで開く」設定を記述できます。このファイルが存在しない場合、tfx は起動時に自動作成します。既存ファイルは上書きしません。ファイルを解析できない場合、tfx は内蔵デフォルトにフォールバックし、起動時に設定エラーのアラートを表示します。
+メインの設定ファイルは `config.toml` です。デザイン設定、ショートカット、ターミナルアプリ、拡張子ごとの「このアプリケーションで開く」設定、プレビュー動作、ユーザー定義コマンドを記述できます。このファイルが存在しない場合、tfx は起動時に自動作成します。既存ファイルは上書きしません。ファイルを解析できない場合、tfx は内蔵デフォルトにフォールバックし、起動時に設定エラーのアラートを表示します。
 
 tfx はアプリが再びアクティブになったタイミングでも `config.toml` を再読み込みします。別のエディタで設定を編集した場合は、tfx に戻ると変更が反映されます。
 
 ## 現在の対応範囲
 
-`config.toml` は `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]`、`[[commands]]` に対応しています。最初の実装では、設定ローダーが受け付ける TOML を意図的に小さな範囲に絞っています。
+`config.toml` は `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]`、`[preview]`、`[preview.extensions]`、`[preview.markdown]`、`[[commands]]` に対応しています。最初の実装では、設定ローダーが受け付ける TOML を意図的に小さな範囲に絞っています。
 
 - トップレベルの `version = 1`
-- `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]`、`[[commands]]` テーブル
+- `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]`、`[preview]`、`[preview.extensions]`、`[preview.markdown]`、`[[commands]]` テーブル
 - ダブルクォートで囲んだ文字列
 - 数値のフォントサイズ
 - `"#RRGGBB"` 形式のカラー値
@@ -26,7 +26,7 @@ tfx はアプリが再びアクティブになったタイミングでも `confi
 - 絶対パスまたは bundle identifier によるアプリ指定
 - クォート外の `#` コメント
 
-その他のセクションは現時点では無視されます。Lua や Markdown プレビュー設定はロード対象としてはまだ実装されていません。
+その他のセクションは現時点では無視されます。Lua スクリプトはロード対象としてはまだ実装されていません。
 
 ## デフォルトファイル
 
@@ -89,6 +89,17 @@ focusTerminalPane = "cmd+option+shift+t"
 # [openWith]
 # md = "com.microsoft.VSCode"
 # pdf = "/Applications/Preview.app"
+#
+# [preview]
+# default = "auto"
+#
+# [preview.extensions]
+# md = "rendered"
+# log = "text"
+# zip = "none"
+#
+# [preview.markdown]
+# externalImages = "button"
 ```
 
 ## キー
@@ -392,6 +403,64 @@ pdf = "/Applications/Preview.app"
 
 未設定の拡張子は通常の macOS デフォルトアプリ動作を使います。ディレクトリ、zip ナビゲーション、アーカイブ内部ファイルは既存の tfx 動作を維持します。
 
+### `[preview]`
+
+プレビュー動作を設定します。`default` は `[preview.extensions]` に未設定の拡張子へ適用されます。
+
+```toml
+[preview]
+default = "auto"
+```
+
+| キー | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `default` | string | `"auto"` | 拡張子ごとの上書きがない場合のプレビューモードです。 |
+
+プレビューモード:
+
+| モード | 動作 |
+| --- | --- |
+| `auto` | tfx の既定判定を使います。対応ファイルではレンダリング / ソース表示の切り替えができます。 |
+| `rendered` | その拡張子をレンダリング表示に固定します。 |
+| `text` | その拡張子を Raw text 表示に固定します。 |
+| `none` | その拡張子の内容プレビューを無効にします。ファイル情報は表示されます。 |
+
+### `[preview.extensions]`
+
+拡張子ごとのプレビュー動作を上書きします。キーは先頭のドットを除いた拡張子です。複合拡張子のキーはクォートできます。
+
+```toml
+[preview.extensions]
+md = "rendered"
+markdown = "rendered"
+txt = "text"
+log = "text"
+json = "text"
+zip = "none"
+"tar.gz" = "none"
+```
+
+### `[preview.markdown]`
+
+Markdown 固有のプレビュー動作を設定します。
+
+```toml
+[preview.markdown]
+externalImages = "button"
+```
+
+| キー | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `externalImages` | string | `"button"` | `button`、`always`、`never` を指定します。 |
+
+Markdown の外部画像モード:
+
+| モード | 動作 |
+| --- | --- |
+| `button` | 現在のプレビューで画像読み込みボタンを押すまで、外部 `https:` 画像をブロックします。 |
+| `always` | 外部 `https:` 画像を最初から読み込みます。 |
+| `never` | 外部画像を常にブロックします。 |
+
 ### `[[commands]]`
 
 ファイル一覧のコンテキストメニューにユーザー定義コマンドを追加します。コマンドは、現在の選択内容がフィルタに一致するときだけ表示されます。`shortcut` を設定した場合、そのショートカットは組み込みショートカットより先に判定されます。
@@ -449,6 +518,8 @@ shortcut = "cmd+shift+g"
 パス系トークンは自動的にシェルクォートされます。`{scripts}` はそのままのパスとして置換されるため、空白を含む可能性がある場合は `run` 側でクォートしてください。`$NAME` または `${NAME}` 形式の環境変数は、トークン置換の前に展開されます。
 
 ユーザー定義コマンドは専用の別プロセスで実行されます。プロセスの working directory は、最初に選択された項目の親フォルダです。選択がない場合は現在のフォルダです。`cd {dir}` はそのコマンドプロセス内だけに作用し、すでに開いている内蔵ターミナルの対話シェルのカレントディレクトリは変更しません。`terminal = true` の場合、stdout/stderr を内蔵ターミナルペインの Output タブへ表示します。`terminal = false` の場合、stdout/stderr は破棄されます。
+
+ユーザー定義コマンドに不正な値がある場合、設定エラーのアラートにはコマンド番号と、すでに解析できていれば `name` も表示されます。長い `config.toml` でも、不正な `target` などを見つけやすくするためです。
 
 複数行スクリプトは TOML のリテラル文字列で記述できます。実行時に一時スクリプトファイルへ書き出され、`shell` 経由で実行されます。
 
@@ -794,6 +865,7 @@ tfx は次のような内容を設定エラーとして扱います。
 - カラー値がクォートされた `#RRGGBB` 文字列ではない
 - 透過度が `0...1` の範囲外
 - アプリ起動設定の代入または文字列構文が不正
+- プレビューモード、Markdown 外部画像モード、拡張子キー、代入構文が不正
 - ユーザー定義コマンドの代入、boolean、target、selection、shortcut、複数行スクリプト終端が不正
 - 設定されたターミナル / open-with アプリが利用時に見つからない
 - 未対応の `version`
@@ -802,4 +874,4 @@ tfx は次のような内容を設定エラーとして扱います。
 
 ## 今後の予定
 
-拡張子ごとのより高度なプレビュー動作は、ユーザー定義コマンドとは別に追加します。
+組み込みの設定テーブルを超えるカスタマイズとして、Lua スクリプト対応は今後の予定に残っています。

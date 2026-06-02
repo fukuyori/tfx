@@ -9,22 +9,24 @@ tfx stores user-editable configuration in:
 ```
 
 The main configuration file is `config.toml`. It contains design settings,
-startup layout settings, shortcut overrides, terminal-app settings, and
-extension-specific open-with settings. This file is created automatically when
-tfx starts if it does not already exist. Existing files are not overwritten. If
-the file cannot be parsed, tfx falls back to the built-in defaults and shows a
-startup configuration alert. tfx also reloads this file when the app becomes
-active again, so edits made in another editor are picked up when returning to
-tfx.
+startup layout settings, shortcut overrides, terminal-app settings,
+extension-specific open-with settings, preview behavior, and user-defined
+commands. This file is created automatically when tfx starts if it does not
+already exist. Existing files are not overwritten. If the file cannot be parsed,
+tfx falls back to the built-in defaults and shows a startup configuration alert.
+tfx also reloads this file when the app becomes active again, so edits made in
+another editor are picked up when returning to tfx.
 
 ## Current Scope
 
 `config.toml` supports `[font]`, `[colors]`, `[opacity]`, `[startup]`,
-`[shortcuts]`, `[terminal]`, `[openWith]`, and `[[commands]]`. The configuration loaders
-intentionally accept a small TOML subset for these first slices:
+`[shortcuts]`, `[terminal]`, `[openWith]`, `[preview]`,
+`[preview.extensions]`, `[preview.markdown]`, and `[[commands]]`. The
+configuration loaders intentionally accept a small TOML subset for these first
+slices:
 
 - Top-level `version = 1`
-- `[font]`, `[colors]`, `[opacity]`, `[startup]`, `[shortcuts]`, `[terminal]`, `[openWith]`, and `[[commands]]` tables
+- `[font]`, `[colors]`, `[opacity]`, `[startup]`, `[shortcuts]`, `[terminal]`, `[openWith]`, `[preview]`, `[preview.extensions]`, `[preview.markdown]`, and `[[commands]]` tables
 - String values in double quotes
 - Numeric font size values
 - Color values as `"#RRGGBB"`
@@ -33,8 +35,8 @@ intentionally accept a small TOML subset for these first slices:
 - Application references as absolute app paths or bundle identifiers
 - `#` comments outside quoted strings
 
-Other sections are ignored for now. Lua and Markdown preview settings are
-planned but not implemented in the current configuration loaders.
+Other sections are ignored for now. Lua scripting is planned but not
+implemented in the current configuration loaders.
 
 ## Default File
 
@@ -97,6 +99,17 @@ focusTerminalPane = "cmd+option+shift+t"
 # [openWith]
 # md = "com.microsoft.VSCode"
 # pdf = "/Applications/Preview.app"
+#
+# [preview]
+# default = "auto"
+#
+# [preview.extensions]
+# md = "rendered"
+# log = "text"
+# zip = "none"
+#
+# [preview.markdown]
+# externalImages = "button"
 ```
 
 ## Keys
@@ -417,6 +430,66 @@ Compound extension keys can be quoted:
 Unknown extensions keep the normal macOS default-app behavior. Directories,
 zip navigation, and archive-internal files keep their existing tfx behavior.
 
+### `[preview]`
+
+Controls preview behavior. `default` applies when an extension is not listed in
+`[preview.extensions]`.
+
+```toml
+[preview]
+default = "auto"
+```
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `default` | string | `"auto"` | Preview mode for extensions without an override. |
+
+Preview modes:
+
+| Mode | Behavior |
+| --- | --- |
+| `auto` | Use tfx's built-in preview selection. The rendered/source toggle is available for supported files. |
+| `rendered` | Force the rendered preview path for that extension. |
+| `text` | Force raw text preview for that extension. |
+| `none` | Disable content preview for that extension. File metadata still appears. |
+
+### `[preview.extensions]`
+
+Overrides preview behavior by extension. Keys are extensions without the
+leading dot. Compound extension keys can be quoted.
+
+```toml
+[preview.extensions]
+md = "rendered"
+markdown = "rendered"
+txt = "text"
+log = "text"
+json = "text"
+zip = "none"
+"tar.gz" = "none"
+```
+
+### `[preview.markdown]`
+
+Controls Markdown-specific preview behavior.
+
+```toml
+[preview.markdown]
+externalImages = "button"
+```
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `externalImages` | string | `"button"` | `button`, `always`, or `never`. |
+
+External Markdown image modes:
+
+| Mode | Behavior |
+| --- | --- |
+| `button` | Block external `https:` images until the user presses the load-images button for the current preview. |
+| `always` | Load external `https:` images immediately. |
+| `never` | Always block external images. |
+
 ### `[[commands]]`
 
 Adds user-defined commands to the file-list context menus. Commands are shown
@@ -483,6 +556,10 @@ nothing is selected. `cd {dir}` affects that command process only; it does not
 change the current directory of an already open interactive built-in terminal
 session. When `terminal = true`, stdout/stderr is shown in the built-in terminal
 pane's Output tab. When `terminal = false`, stdout/stderr is discarded.
+
+When a user-defined command contains an invalid value, the configuration alert
+includes the command number and, if already parsed, the command name. This makes
+errors such as an invalid `target` easier to locate in a long `config.toml`.
 
 Multi-line scripts can be written with TOML literal strings. They are written
 to a temporary script file and run through `shell`.
@@ -833,6 +910,7 @@ tfx treats these as configuration errors:
 - Color values that are not quoted `#RRGGBB` strings
 - Opacity values outside `0...1`
 - Invalid application launch assignment or string syntax
+- Invalid preview mode, Markdown external-image mode, extension key, or assignment syntax
 - Invalid user-defined command assignment, boolean, target, selection, shortcut, or unterminated multi-line script
 - Unavailable configured terminal / open-with application when used
 - Unsupported `version`
@@ -843,5 +921,5 @@ Application launch errors are shown when the configured action is used.
 
 ## Planned Sections
 
-Richer preview behavior by extension will be added separately from user-defined
-commands.
+Lua scripting is still planned for future customization beyond the built-in
+configuration tables.

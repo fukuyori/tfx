@@ -13,6 +13,7 @@ struct PreviewPane: View {
     private let primaryPreviewDelayNanoseconds: UInt64 = 120_000_000
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
+    @EnvironmentObject private var previewConfigurationStore: PreviewConfigurationStore
 
     var body: some View {
         VStack(spacing: 0) {
@@ -84,6 +85,10 @@ struct PreviewPane: View {
             isPrimaryPreviewReady = false
             allowsExternalImages = false
         }
+        .onChange(of: previewConfigurationStore.configuration) {
+            isPrimaryPreviewReady = false
+            allowsExternalImages = false
+        }
     }
 
     @ViewBuilder
@@ -121,26 +126,47 @@ struct PreviewPane: View {
 
     @ViewBuilder
     private func preview(for url: URL) -> some View {
-        if shouldShowRawSource(for: url) {
+        switch previewMode(for: url) {
+        case .none:
+            noPreviewView
+        case .text:
             RawTextPreview(url: url)
-        } else {
-            switch PreviewKindCache.shared.kind(for: url) {
-            case .pdf:
-                PDFPreview(url: url)
-            case .video:
-                VideoPreview(url: url)
-            case .markdown:
-                MarkdownPreview(url: url, allowsExternalImages: allowsExternalImages)
-            case .csv:
-                CSVPreview(url: url)
-            case .json:
-                JSONPreview(url: url)
-            case .text:
-                RawTextPreview(url: url)
-            case .quickLook:
-                QuickLookPreview(url: url)
-            }
+        case .auto where shouldShowRawSource(for: url):
+            RawTextPreview(url: url)
+        case .auto, .rendered:
+            renderedPreview(for: url)
         }
+    }
+
+    @ViewBuilder
+    private func renderedPreview(for url: URL) -> some View {
+        switch PreviewKindCache.shared.kind(for: url) {
+        case .pdf:
+            PDFPreview(url: url)
+        case .video:
+            VideoPreview(url: url)
+        case .markdown:
+            MarkdownPreview(url: url, allowsExternalImages: shouldAllowExternalImages(for: url))
+        case .csv:
+            CSVPreview(url: url)
+        case .json:
+            JSONPreview(url: url)
+        case .text:
+            RawTextPreview(url: url)
+        case .quickLook:
+            QuickLookPreview(url: url)
+        }
+    }
+
+    private var noPreviewView: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "eye.slash")
+                .font(design.fonts.swiftUIFont(for: .title))
+            Text("No preview")
+        }
+        .font(design.fonts.swiftUIFont(for: .previewCode))
+        .foregroundStyle(theme.secondaryForeground)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var previewControls: some View {
@@ -202,8 +228,13 @@ struct PreviewPane: View {
     }
 
     private var shouldShowExternalImageButton: Bool {
-        guard !showsRawSource, !allowsExternalImages else { return false }
-        return urls.contains { PreviewKindCache.shared.kind(for: $0) == .markdown }
+        guard previewConfigurationStore.configuration.markdownExternalImages == .button else { return false }
+        guard !allowsExternalImages else { return false }
+        return urls.contains { url in
+            !shouldShowRawSource(for: url) &&
+                !isForcedTextOrNoPreview(for: url) &&
+                PreviewKindCache.shared.kind(for: url) == .markdown
+        }
     }
 
     private var shouldShowPreviewControls: Bool {
@@ -221,7 +252,10 @@ struct PreviewPane: View {
     }
 
     private var anyURLSupportsRawSourceToggle: Bool {
-        urls.contains { Self.supportsRawSourceToggle($0) }
+        urls.contains { url in
+            previewMode(for: url) == .auto &&
+                Self.supportsRawSourceToggle(url)
+        }
     }
 
     private var previewBackground: Color {
@@ -229,18 +263,47 @@ struct PreviewPane: View {
     }
 
     private func primaryPreviewTaskID(for url: URL) -> String {
-        "\(url.standardizedFileURL.path)|\(showsRawSource)|\(allowsExternalImages)"
+        let configuration = previewConfigurationStore.configuration
+        return "\(url.standardizedFileURL.path)|\(showsRawSource)|\(allowsExternalImages)|\(configuration.mode(for: url).rawValue)|\(configuration.markdownExternalImages.rawValue)"
     }
 
     private func shouldShowRawSource(for url: URL) -> Bool {
-        showsRawSource && Self.supportsRawSourceToggle(url)
+        previewMode(for: url) == .auto &&
+            showsRawSource &&
+            Self.supportsRawSourceToggle(url)
     }
 
     /// Suppress the file-info strip when the rendered Markdown/HTML view is
     /// taking over the pane. The strip reappears in source mode so the user
     /// keeps file metadata visible while reading raw text.
     private func shouldHideFileInfo(for url: URL) -> Bool {
-        !showsRawSource && Self.supportsRawSourceToggle(url)
+        guard !isForcedTextOrNoPreview(for: url) else { return false }
+        return !shouldShowRawSource(for: url) && Self.supportsRawSourceToggle(url)
+    }
+
+    private func previewMode(for url: URL) -> PreviewConfiguration.Mode {
+        previewConfigurationStore.configuration.mode(for: url)
+    }
+
+    private func isForcedTextOrNoPreview(for url: URL) -> Bool {
+        switch previewMode(for: url) {
+        case .text, .none:
+            return true
+        case .auto, .rendered:
+            return false
+        }
+    }
+
+    private func shouldAllowExternalImages(for url: URL) -> Bool {
+        guard PreviewKindCache.shared.kind(for: url) == .markdown else { return false }
+        switch previewConfigurationStore.configuration.markdownExternalImages {
+        case .always:
+            return true
+        case .button:
+            return allowsExternalImages
+        case .never:
+            return false
+        }
     }
 
     /// True when the URL has a rendered form that is meaningfully different

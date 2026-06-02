@@ -150,6 +150,7 @@ enum UserCommandConfigurationLoader {
         var commands: [UserCommand] = []
         var section = ""
         var draft: UserCommandDraft?
+        var commandIndex = 0
         var lineNumber = 0
         let lines = source.components(separatedBy: .newlines)
 
@@ -166,7 +167,8 @@ enum UserCommandConfigurationLoader {
 
             if strippedLine == "[[commands]]" {
                 finishDraft()
-                draft = UserCommandDraft()
+                commandIndex += 1
+                draft = UserCommandDraft(commandIndex: commandIndex)
                 section = "commands"
                 continue
             }
@@ -180,6 +182,14 @@ enum UserCommandConfigurationLoader {
 
             let parts = strippedLine.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
             guard parts.count == 2 else {
+                if section == "commands", let draft {
+                    throw UserCommandConfigurationError.invalidCommand(
+                        commandIndex: draft.commandIndex,
+                        name: draft.name,
+                        line: lineNumber,
+                        message: UserCommandConfigurationError.invalidAssignment(line: lineNumber).commandContextMessage
+                    )
+                }
                 throw UserCommandConfigurationError.invalidAssignment(line: lineNumber)
             }
 
@@ -196,17 +206,29 @@ enum UserCommandConfigurationLoader {
 
             guard section == "commands", draft != nil else { continue }
 
-            let resolvedValue: String
-            if value.hasPrefix("'''") {
-                resolvedValue = try parseMultilineLiteral(
-                    initialValue: value,
-                    lines: lines,
-                    lineNumber: &lineNumber
-                )
-            } else {
-                resolvedValue = value
+            do {
+                let resolvedValue: String
+                if value.hasPrefix("'''") {
+                    resolvedValue = try parseMultilineLiteral(
+                        initialValue: value,
+                        lines: lines,
+                        lineNumber: &lineNumber
+                    )
+                } else {
+                    resolvedValue = value
+                }
+                try draft?.apply(key: key, value: resolvedValue, line: lineNumber)
+            } catch let error as UserCommandConfigurationError {
+                if let draft {
+                    throw UserCommandConfigurationError.invalidCommand(
+                        commandIndex: draft.commandIndex,
+                        name: draft.name,
+                        line: lineNumber,
+                        message: error.commandContextMessage
+                    )
+                }
+                throw error
             }
-            try draft?.apply(key: key, value: resolvedValue, line: lineNumber)
         }
 
         finishDraft()
@@ -296,6 +318,7 @@ enum UserCommandConfigurationLoader {
 }
 
 private struct UserCommandDraft {
+    let commandIndex: Int
     var name: String?
     var run: String?
     var extensions: Set<String> = []
@@ -373,6 +396,7 @@ private struct UserCommandDraft {
 
 enum UserCommandConfigurationError: LocalizedError {
     case applicationSupportDirectoryUnavailable
+    case invalidCommand(commandIndex: Int, name: String?, line: Int, message: String)
     case invalidAssignment(line: Int)
     case invalidString(line: Int)
     case invalidNumber(line: Int)
@@ -386,6 +410,9 @@ enum UserCommandConfigurationError: LocalizedError {
         switch self {
         case .applicationSupportDirectoryUnavailable:
             return "Application Support directory is unavailable."
+        case let .invalidCommand(commandIndex, name, line, message):
+            let commandName = name.map { " \"\($0)\"" } ?? ""
+            return "Invalid user command #\(commandIndex)\(commandName) at line \(line): \(message)"
         case let .invalidAssignment(line):
             return "Invalid command assignment at line \(line)."
         case let .invalidString(line):
@@ -400,6 +427,31 @@ enum UserCommandConfigurationError: LocalizedError {
             return "Invalid command selection at line \(line). Use \"single\", \"multiple\", or \"any\"."
         case let .unterminatedLiteral(line):
             return "Unterminated command script literal near line \(line)."
+        case let .unsupportedVersion(version):
+            return "Unsupported config version \(version)."
+        }
+    }
+
+    fileprivate var commandContextMessage: String {
+        switch self {
+        case .applicationSupportDirectoryUnavailable:
+            return "Application Support directory is unavailable."
+        case let .invalidCommand(_, _, _, message):
+            return message
+        case .invalidAssignment:
+            return "Invalid command assignment."
+        case .invalidString:
+            return "Invalid command string."
+        case .invalidNumber:
+            return "Invalid command number."
+        case .invalidBool:
+            return "Invalid command boolean. Use true or false."
+        case .invalidTarget:
+            return "Invalid command target. Use \"file\", \"folder\", \"current\", or \"any\"."
+        case .invalidSelection:
+            return "Invalid command selection. Use \"single\", \"multiple\", or \"any\"."
+        case .unterminatedLiteral:
+            return "Unterminated command script literal."
         case let .unsupportedVersion(version):
             return "Unsupported config version \(version)."
         }

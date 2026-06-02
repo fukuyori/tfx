@@ -20,6 +20,7 @@ struct tfxApp: App {
     @StateObject private var designStore = DesignStore()
     @StateObject private var shortcutStore = ShortcutStore()
     @StateObject private var userCommandStore = UserCommandStore()
+    @StateObject private var previewConfigurationStore = PreviewConfigurationStore()
 #endif
 
     init() {
@@ -43,6 +44,7 @@ struct tfxApp: App {
                 .environmentObject(designStore)
                 .environmentObject(shortcutStore)
                 .environmentObject(userCommandStore)
+                .environmentObject(previewConfigurationStore)
                 .onOpenURL { url in
                     AppOpenDirectoryRouter.shared.open([url])
                 }
@@ -50,6 +52,7 @@ struct tfxApp: App {
                     designStore.reload()
                     shortcutStore.reload()
                     userCommandStore.reload()
+                    previewConfigurationStore.reload()
                 }
 #endif
         }

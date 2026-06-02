@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var designStore: DesignStore
     @EnvironmentObject private var shortcutStore: ShortcutStore
     @EnvironmentObject private var userCommandStore: UserCommandStore
+    @EnvironmentObject private var previewConfigurationStore: PreviewConfigurationStore
 #endif
 
     var body: some View {
@@ -39,7 +40,12 @@ struct ContentView: View {
 
 #if os(macOS)
     private var configurationError: String? {
-        [designStore.configurationError, shortcutStore.configurationError, userCommandStore.configurationError]
+        [
+            designStore.configurationError,
+            shortcutStore.configurationError,
+            userCommandStore.configurationError,
+            previewConfigurationStore.configurationError,
+        ]
             .compactMap { $0 }
             .joined(separator: "\n\n")
             .nilIfEmpty
@@ -49,6 +55,7 @@ struct ContentView: View {
         designStore.dismissConfigurationError()
         shortcutStore.dismissConfigurationError()
         userCommandStore.dismissConfigurationError()
+        previewConfigurationStore.dismissConfigurationError()
     }
 #endif
 }

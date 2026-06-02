@@ -4,6 +4,16 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.1] - 2026-06-02
+
+Documentation and configuration cleanup.
+
+### Changed
+
+- Cleaned up preview configuration documentation and reduced duplicated design notes.
+- Cleaned up preview-pane configuration handling and added compound extension matching for preview overrides.
+- Updated the version to `0.7.1` and the build number to `44`.
+
 ## [0.7.0] - 2026-06-02
 
 User-defined commands.

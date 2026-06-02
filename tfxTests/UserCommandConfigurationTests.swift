@@ -6,6 +6,93 @@ import Testing
 @Suite("UserCommandConfiguration")
 struct UserCommandConfigurationTests {
     @Test
+    func commandErrorsIncludeCommandIndexAndName() throws {
+        do {
+            _ = try UserCommandConfigurationLoader.parse("""
+            version = 1
+
+            [[commands]]
+            name = "Build Project"
+            run = "swift build"
+            target = "project"
+            """)
+            Issue.record("Expected command configuration error")
+        } catch {
+            let message = error.localizedDescription
+            #expect(message.contains("Invalid user command #1 \"Build Project\""))
+            #expect(message.contains("line 6"))
+            #expect(message.contains("Invalid command target"))
+        }
+    }
+
+    @Test
+    func commandErrorsIncludeCommandIndexBeforeNameIsKnown() throws {
+        do {
+            _ = try UserCommandConfigurationLoader.parse("""
+            version = 1
+
+            [[commands]]
+            name = Build Project
+            run = "swift build"
+            """)
+            Issue.record("Expected command configuration error")
+        } catch {
+            let message = error.localizedDescription
+            #expect(message.contains("Invalid user command #1"))
+            #expect(message.contains("line 4"))
+            #expect(message.contains("Invalid command string"))
+        }
+    }
+
+    @Test
+    func currentTargetMatchesEmptySelectionForEmptyAreaMenu() throws {
+        let commands = try UserCommandConfigurationLoader.parse("""
+        version = 1
+
+        [[commands]]
+        name = "git status"
+        run = "git -C {cwd} status"
+        target = "current"
+        selection = "single"
+        """)
+
+        let command = try #require(commands.first)
+
+        #expect(command.matches(selection: [], isGitRepository: false))
+    }
+
+    @Test
+    func currentTargetInvocationUsesCurrentDirectoryWithoutSelection() throws {
+        let commands = try UserCommandConfigurationLoader.parse("""
+        version = 1
+
+        [[commands]]
+        name = "pwd"
+        run = "printf {path}; printf {dir}; printf {cwd}"
+        target = "current"
+        """)
+
+        let command = try #require(commands.first)
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tfx-test-\(UUID().uuidString)", isDirectory: true)
+        let scriptsDirectory = directory.appendingPathComponent("scripts", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        let invocation = try UserCommandRunner.testInvocation(
+            for: command,
+            selection: [],
+            currentDirectory: directory,
+            scriptsDirectory: scriptsDirectory
+        )
+
+        #expect(invocation.workingDirectory.path == directory.path)
+        #expect(invocation.commandBody == "printf '\(directory.path)'; printf '\(directory.path)'; printf '\(directory.path)'")
+    }
+
+    @Test
     func folderTargetCanMatchExtensionFilter() throws {
         let commands = try UserCommandConfigurationLoader.parse("""
         version = 1

@@ -38,7 +38,7 @@ enum PreviewKind {
     /// Extensions routed to the built-in plain-text preview. Limited to
     /// common config and log formats so we do not steal Quick Look's
     /// syntax-highlighted source-code rendering for `.swift`, `.py`, etc.
-    private static let plainTextExtensions: Set<String> = [
+    nonisolated private static let plainTextExtensions: Set<String> = [
         "toml",
         "yaml", "yml",
         "ini", "cfg", "conf",

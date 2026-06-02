@@ -124,6 +124,9 @@ Preview type is selected by `PreviewKind` from the URL extension and content typ
 | Markdown | `MarkdownPreview` | Extension is `md`, `markdown`, `mdown`, or `mkd` |
 | Other | `QuickLookPreview` | Fallback |
 
+The final preview mode can be overridden by `config.toml`; see section 8.13 for
+the preview configuration flow.
+
 ## 6. State Management
 
 ### 6.1 Root State
@@ -385,7 +388,15 @@ Preview views are selected from the primary selected URL or from visible multi-p
 
 `PreviewTextLoader` is the shared reader used by `RawTextPreview`, `JSONPreview`, and `CSVPreview`. It checks `URLResourceKey.fileSizeKey` before reading any bytes and refuses sources above a 50 MB cap, returning a `.tooLarge` sentinel that each preview renders as a localized "File too large to preview" placeholder showing the actual and allowed sizes. Without this cap, a multi-GB log or an intentional bomb file would exhaust tfx's resident memory on selection.
 
-Future Markdown extensions will cover ruby text, math rendering, Mermaid diagrams, custom syntax, and CSS customization through TOML configuration.
+Preview behavior is configurable through `config.toml` without replacing the
+preview implementation. `[preview].default` applies to extensions with no
+explicit override, and `[preview.extensions]` can force selected extensions to
+the rendered pipeline, raw text, no content preview, or normal automatic
+selection. Markdown external images default to button-gated loading; `always`
+and `never` are available for users who prefer predictable loading behavior.
+
+Future Markdown extensions will cover ruby text, math rendering, Mermaid
+diagrams, custom syntax, and CSS customization.
 
 #### Source / Rendered Toggle
 

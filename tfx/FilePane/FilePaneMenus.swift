@@ -275,18 +275,27 @@ private struct UserCommandMenuItems: View {
     var body: some View {
         ForEach(matchingCommands) { command in
             if let shortcut = command.shortcut {
-                Button(command.name) {
+                Button {
                     activate()
                     executeUserCommand(command, selection)
+                } label: {
+                    commandLabel(command)
                 }
                 .keyboardShortcut(shortcut)
             } else {
-                Button(command.name) {
+                Button {
                     activate()
                     executeUserCommand(command, selection)
+                } label: {
+                    commandLabel(command)
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func commandLabel(_ command: UserCommand) -> some View {
+        Label(command.name, systemImage: command.terminal ? "terminal" : "play")
     }
 
     private var matchingCommands: [UserCommand] {
