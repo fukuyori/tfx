@@ -449,7 +449,7 @@ Preview modes:
 | Mode | Behavior |
 | --- | --- |
 | `auto` | Use tfx's built-in preview selection. The rendered/source toggle is available for supported files. |
-| `rendered` | Force the rendered preview path for that extension. |
+| `rendered` | Start in the rendered preview path for that extension. The rendered/source toggle remains available for supported text-based formats. |
 | `text` | Force raw text preview for that extension. |
 | `none` | Disable content preview for that extension. File metadata still appears. |
 
@@ -457,6 +457,18 @@ Preview modes:
 
 Overrides preview behavior by extension. Keys are extensions without the
 leading dot. Compound extension keys can be quoted.
+
+Use this table mainly for text-based formats whose preview mode is ambiguous or
+user-dependent, such as Markdown, HTML, CSV, JSON, plain text, and logs. Image,
+PDF, video, and other QuickLook-style formats normally do not need entries here:
+they do not have a meaningful raw text view, so `rendered` is effectively the
+normal preview behavior and `text` cannot make them readable as text.
+
+By default, tfx sends these extensions directly to the raw text preview:
+`toml`, `yaml`, `yml`, `ini`, `cfg`, `conf`, `log`, `txt`, and `env`.
+Markdown (`md`, `markdown`, `mdown`, `mkd`), CSV / TSV, JSON, and HTML are also
+text-based, but they have dedicated rendered previews or rendered/source
+switching behavior.
 
 ```toml
 [preview.extensions]

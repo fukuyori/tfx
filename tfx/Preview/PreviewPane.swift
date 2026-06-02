@@ -131,7 +131,7 @@ struct PreviewPane: View {
             noPreviewView
         case .text:
             RawTextPreview(url: url)
-        case .auto where shouldShowRawSource(for: url):
+        case .auto, .rendered where shouldShowRawSource(for: url):
             RawTextPreview(url: url)
         case .auto, .rendered:
             renderedPreview(for: url)
@@ -253,8 +253,7 @@ struct PreviewPane: View {
 
     private var anyURLSupportsRawSourceToggle: Bool {
         urls.contains { url in
-            previewMode(for: url) == .auto &&
-                Self.supportsRawSourceToggle(url)
+            Self.supportsRawSourceToggle(url, mode: previewMode(for: url))
         }
     }
 
@@ -268,9 +267,8 @@ struct PreviewPane: View {
     }
 
     private func shouldShowRawSource(for url: URL) -> Bool {
-        previewMode(for: url) == .auto &&
-            showsRawSource &&
-            Self.supportsRawSourceToggle(url)
+        showsRawSource &&
+            Self.supportsRawSourceToggle(url, mode: previewMode(for: url))
     }
 
     /// Suppress the file-info strip when the rendered Markdown/HTML view is
@@ -309,6 +307,17 @@ struct PreviewPane: View {
     /// True when the URL has a rendered form that is meaningfully different
     /// from its raw text. Markdown, HTML, CSV / TSV, and JSON all qualify.
     static func supportsRawSourceToggle(_ url: URL) -> Bool {
+        supportsRawSourceToggle(url, mode: .auto)
+    }
+
+    static func supportsRawSourceToggle(_ url: URL, mode: PreviewConfiguration.Mode) -> Bool {
+        switch mode {
+        case .auto, .rendered:
+            break
+        case .text, .none:
+            return false
+        }
+
         switch PreviewKindCache.shared.kind(for: url) {
         case .markdown, .csv, .json:
             return true

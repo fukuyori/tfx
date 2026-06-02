@@ -65,6 +65,15 @@ struct PreviewConfigurationTests {
     }
 
     @Test
+    func renderedModeStillSupportsRawSourceToggle() {
+        let markdownURL = URL(fileURLWithPath: "/tmp/readme.md")
+
+        #expect(PreviewPane.supportsRawSourceToggle(markdownURL, mode: .rendered))
+        #expect(!PreviewPane.supportsRawSourceToggle(markdownURL, mode: .text))
+        #expect(!PreviewPane.supportsRawSourceToggle(markdownURL, mode: PreviewConfiguration.Mode.none))
+    }
+
+    @Test
     func invalidPreviewModeThrows() {
         #expect(throws: PreviewConfigurationError.self) {
             _ = try PreviewConfigurationLoader.parse("""
