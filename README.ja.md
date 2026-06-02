@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.6.10**
+Version: **0.7.0**
 
 [English](README.md) | 日本語
 
@@ -148,7 +148,7 @@ tfx はユーザー設定を次の場所に作成し、読み込みます。
 ```
 
 現在対応している設定は、`config.toml` のコンパクトな `[font]`、`[colors]`、`[opacity]`、
-`[shortcuts]`、`[terminal]`、`[openWith]` ブロックです。
+`[shortcuts]`、`[terminal]`、`[openWith]`、`[[commands]]` ブロックです。
 
 ```toml
 version = 1
@@ -178,6 +178,14 @@ app = "/Applications/Ghostty.app"
 [openWith]
 md = "com.microsoft.VSCode"
 pdf = "/Applications/Preview.app"
+
+[[commands]]
+name = "Git Pull"
+run = "git -C {cwd} pull --ff-only"
+target = "current"
+requireGit = true
+terminal = true
+shortcut = "cmd+shift+g"
 ```
 
 対応キー、デザイントークンの適用先、例、エラー時の挙動は [`docs/configuration.ja.md`](docs/configuration.ja.md) を参照してください。

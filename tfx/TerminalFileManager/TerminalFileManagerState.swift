@@ -100,11 +100,30 @@ extension TerminalFileManagerView {
         setTerminalPaneVisible(true, focus: true)
     }
 
+    func executeUserCommand(_ command: UserCommand, selection: [FileItem], in model: FileBrowserModel) {
+        if command.terminal {
+            terminalModel.showOutput()
+            isTerminalPaneVisible = true
+        }
+
+        UserCommandRunner.execute(
+            command,
+            selection: selection,
+            currentDirectory: model.currentDirectory,
+            terminalModel: command.terminal ? terminalModel : nil,
+            onError: { error in
+                model.show(error)
+            }
+        )
+    }
+
     func onTerminalPaneVisibilityChange(isVisible: Bool) {
         if isVisible {
             terminalModel.followDirectory(activeModel.currentDirectory)
-            terminalModel.open()
-            activateTerminalPane()
+            if terminalModel.activeTab == .shell {
+                terminalModel.open()
+                activateTerminalPane()
+            }
         } else {
             terminalModel.close()
             deactivateTerminalPaneIfNeeded()

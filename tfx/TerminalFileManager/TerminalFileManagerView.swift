@@ -36,6 +36,7 @@ struct TerminalFileManagerView: View {
     @Environment(\.design) var design
     @Environment(\.theme) var theme
     @EnvironmentObject var shortcutStore: ShortcutStore
+    @EnvironmentObject var userCommandStore: UserCommandStore
 
     init(launchArguments: AppLaunchArguments.Parsed = AppLaunchArguments.parse()) {
         let defaults = UserDefaults.standard

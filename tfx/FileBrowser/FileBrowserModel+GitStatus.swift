@@ -110,6 +110,13 @@ extension FileBrowserModel {
     func gitStatus(for item: FileItem) -> GitFileStatus? {
         gitRepositoryStatus?.status(for: item.url)
     }
+
+    var isCurrentDirectoryGitRepository: Bool {
+        if gitRepositoryStatus != nil {
+            return true
+        }
+        return GitStatusReader.workTreeRoot(near: currentDirectory.standardizedFileURL) != nil
+    }
 }
 
 #endif

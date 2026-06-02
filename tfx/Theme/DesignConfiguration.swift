@@ -69,6 +69,10 @@ enum DesignConfigurationLoader {
                 continue
             }
 
+            guard ["", "font", "colors", "opacity"].contains(section) else {
+                continue
+            }
+
             let parts = line.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
             guard parts.count == 2 else {
                 throw DesignConfigurationError.invalidAssignment(line: lineNumber)

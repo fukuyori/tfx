@@ -4,6 +4,7 @@ struct ContentView: View {
 #if os(macOS)
     @EnvironmentObject private var designStore: DesignStore
     @EnvironmentObject private var shortcutStore: ShortcutStore
+    @EnvironmentObject private var userCommandStore: UserCommandStore
 #endif
 
     var body: some View {
@@ -38,7 +39,7 @@ struct ContentView: View {
 
 #if os(macOS)
     private var configurationError: String? {
-        [designStore.configurationError, shortcutStore.configurationError]
+        [designStore.configurationError, shortcutStore.configurationError, userCommandStore.configurationError]
             .compactMap { $0 }
             .joined(separator: "\n\n")
             .nilIfEmpty
@@ -47,6 +48,7 @@ struct ContentView: View {
     private func dismissConfigurationErrors() {
         designStore.dismissConfigurationError()
         shortcutStore.dismissConfigurationError()
+        userCommandStore.dismissConfigurationError()
     }
 #endif
 }

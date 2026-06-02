@@ -10,6 +10,7 @@ struct FilePaneFileList: View {
     let visibleColumns: [FileListColumn]
     @Binding var fileNameColumnWidth: Double
     let activate: () -> Void
+    let executeUserCommand: (UserCommand, [FileItem]) -> Void
     @State private var blankSelectionStartY: CGFloat?
     var body: some View {
         VStack(spacing: 0) {
@@ -165,7 +166,8 @@ struct FilePaneFileList: View {
                 FileItemContextMenu(
                     model: model,
                     item: item,
-                    activate: activate
+                    activate: activate,
+                    executeUserCommand: executeUserCommand
                 )
             }
         }

@@ -5,6 +5,11 @@ import Foundation
 
 @MainActor
 final class BuiltInTerminalModel: ObservableObject {
+    enum Tab {
+        case shell
+        case output
+    }
+
     struct OutputEvent: Equatable {
         let id: UUID
         let text: String
@@ -13,6 +18,9 @@ final class BuiltInTerminalModel: ObservableObject {
     @Published var currentDirectory: URL
     @Published var transcript: String
     @Published var displayTranscript: String
+    @Published private(set) var rawTerminalTranscript = ""
+    @Published var commandOutputTranscript = ""
+    @Published var activeTab: Tab = .shell
     @Published var outputEvent: OutputEvent?
     @Published var commandText = ""
     @Published var isRunning = false
@@ -51,7 +59,12 @@ final class BuiltInTerminalModel: ObservableObject {
     }
 
     func open() {
+        activeTab = .shell
         startSessionIfNeeded()
+    }
+
+    func showOutput() {
+        activeTab = .output
     }
 
     func close() {
@@ -69,6 +82,11 @@ final class BuiltInTerminalModel: ObservableObject {
     func reportStartupError(_ message: String) {
         appendTerminalOutput("Terminal startup error: \(message)\n")
         isRunning = false
+    }
+
+    func appendUserCommandOutput(_ output: String) {
+        commandOutputTranscript += output
+        activeTab = .output
     }
 
     func submitCommand() {
@@ -223,6 +241,7 @@ final class BuiltInTerminalModel: ObservableObject {
     }
 
     private func appendTerminalOutput(_ output: String) {
+        rawTerminalTranscript += output
         outputEvent = OutputEvent(id: UUID(), text: output)
         transcript = outputDecoder.renderedText(appending: output)
         displayTranscript = outputDecoder.renderedTextWithCursor()

@@ -14,10 +14,10 @@ tfx はアプリが再びアクティブになったタイミングでも `confi
 
 ## 現在の対応範囲
 
-`config.toml` は `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]` に対応しています。最初の実装では、設定ローダーが受け付ける TOML を意図的に小さな範囲に絞っています。
+`config.toml` は `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]`、`[[commands]]` に対応しています。最初の実装では、設定ローダーが受け付ける TOML を意図的に小さな範囲に絞っています。
 
 - トップレベルの `version = 1`
-- `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]` テーブル
+- `[font]`、`[colors]`、`[opacity]`、`[startup]`、`[shortcuts]`、`[terminal]`、`[openWith]`、`[[commands]]` テーブル
 - ダブルクォートで囲んだ文字列
 - 数値のフォントサイズ
 - `"#RRGGBB"` 形式のカラー値
@@ -392,6 +392,119 @@ pdf = "/Applications/Preview.app"
 
 未設定の拡張子は通常の macOS デフォルトアプリ動作を使います。ディレクトリ、zip ナビゲーション、アーカイブ内部ファイルは既存の tfx 動作を維持します。
 
+### `[[commands]]`
+
+ファイル一覧のコンテキストメニューにユーザー定義コマンドを追加します。コマンドは、現在の選択内容がフィルタに一致するときだけ表示されます。`shortcut` を設定した場合、そのショートカットは組み込みショートカットより先に判定されます。
+
+```toml
+[[commands]]
+name = "Open in VS Code"
+run = "code {path}"
+target = "any"
+selection = "single"
+
+[[commands]]
+name = "Optimize PNG"
+run = "pngquant --force --ext .png {paths}"
+extensions = ["png"]
+target = "file"
+terminal = true
+
+[[commands]]
+name = "Git Pull"
+run = "git -C {cwd} pull --ff-only"
+target = "current"
+requireGit = true
+terminal = true
+shortcut = "cmd+shift+g"
+```
+
+対応キー:
+
+| キー | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `name` | string | 必須 | メニュー表示名です。 |
+| `run` | string | 必須 | 実行するコマンドライン、または複数行スクリプト本文です。 |
+| `extensions` | string array | 全拡張子 | 対象ファイル拡張子です。先頭のドットは不要です。全対象にする場合は `["*"]` を使えます。 |
+| `target` | string | `"any"` | `file`、`folder`、`current`、`any` を指定します。`current` は現在のフォルダを対象にし、ファイル一覧の空白部分のメニューに表示されます。 |
+| `selection` | string | `"any"` | `single`、`multiple`、`any` を指定します。`target = "current"` では無視されます。 |
+| `requireGit` | boolean | `false` | Git ワークツリー内でだけ表示します。 |
+| `terminal` | boolean | `false` | stdout/stderr を内蔵ターミナルペインの Output タブへ表示します。 |
+| `shortcut` | string | なし | `[shortcuts]` と同じ文法のショートカットです。 |
+| `shell` | string | `$SHELL` または `/bin/zsh` | コマンド実行に使うシェルです。 |
+
+`run` で使えるトークン:
+
+| トークン | 値 |
+| --- | --- |
+| `{path}` | 最初に選択された項目のパスです。選択がない場合は現在のフォルダです。 |
+| `{paths}` | 選択されたすべての項目のパスです。空白区切りです。選択がない場合は現在のフォルダです。 |
+| `{dir}` | 最初に選択された項目の親フォルダです。選択がない場合は現在のフォルダです。 |
+| `{name}` | 最初に選択された項目の拡張子付きファイル名です。フォルダ選択時はフォルダ名です。 |
+| `{stem}` | 最初に選択された項目の拡張子なしファイル名です。 |
+| `{ext}` | 最初に選択された項目の拡張子です。先頭のドットは付きません。フォルダでは空文字列です。 |
+| `{cwd}` | 選択内容に関係なく、現在のフォルダです。 |
+| `{scripts}` | `config.toml` と同じ場所にある `scripts` フォルダです。必要に応じて自動作成されます。 |
+
+パス系トークンは自動的にシェルクォートされます。`{scripts}` はそのままのパスとして置換されるため、空白を含む可能性がある場合は `run` 側でクォートしてください。`$NAME` または `${NAME}` 形式の環境変数は、トークン置換の前に展開されます。
+
+ユーザー定義コマンドは専用の別プロセスで実行されます。プロセスの working directory は、最初に選択された項目の親フォルダです。選択がない場合は現在のフォルダです。`cd {dir}` はそのコマンドプロセス内だけに作用し、すでに開いている内蔵ターミナルの対話シェルのカレントディレクトリは変更しません。`terminal = true` の場合、stdout/stderr を内蔵ターミナルペインの Output タブへ表示します。`terminal = false` の場合、stdout/stderr は破棄されます。
+
+複数行スクリプトは TOML のリテラル文字列で記述できます。実行時に一時スクリプトファイルへ書き出され、`shell` 経由で実行されます。
+
+```toml
+[[commands]]
+name = "File Info"
+target = "file"
+terminal = true
+run = '''
+file {path}
+stat -f "size=%z modified=%Sm" {path}
+'''
+```
+
+`.xcodeproj` フォルダは、scheme 名や `.app` 名を固定せず、`xcodebuild` から先頭の scheme と wrapper 名を取得してビルド / 起動できます。
+
+```toml
+[[commands]]
+name = "Build and Run Xcode Project"
+extensions = ["xcodeproj"]
+target = "folder"
+terminal = true
+run = '''
+cd {dir}
+
+project={name}
+derived=".build/xcode"
+
+scheme=$(
+  xcodebuild -list -json -project "$project" |
+  /usr/bin/python3 -c 'import json,sys; p=json.load(sys.stdin).get("project",{}); s=p.get("schemes",[]); print(s[0] if s else "")'
+)
+
+if [ -z "$scheme" ]; then
+  echo "No scheme found in $project"
+  exit 1
+fi
+
+xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -derivedDataPath "$derived" build
+
+app=$(
+  xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -showBuildSettings 2>/dev/null |
+  awk -F" = " '/ WRAPPER_NAME = / { print $2; exit }'
+)
+
+if [ -z "$app" ]; then
+  echo "No app product found for scheme: $scheme"
+  exit 1
+fi
+
+open "$derived/Build/Products/Debug/$app"
+'''
+```
+
+複数の scheme がある場合、このサンプルは `xcodebuild -list -json` が返す先頭の scheme を使います。
+
 ## フォントロール対応
 
 ユーザー向け設定は小さく保ち、アプリ内部で各 UI ロールへ割り当てます。
@@ -681,6 +794,7 @@ tfx は次のような内容を設定エラーとして扱います。
 - カラー値がクォートされた `#RRGGBB` 文字列ではない
 - 透過度が `0...1` の範囲外
 - アプリ起動設定の代入または文字列構文が不正
+- ユーザー定義コマンドの代入、boolean、target、selection、shortcut、複数行スクリプト終端が不正
 - 設定されたターミナル / open-with アプリが利用時に見つからない
 - 未対応の `version`
 
@@ -688,4 +802,4 @@ tfx は次のような内容を設定エラーとして扱います。
 
 ## 今後の予定
 
-より高度な拡張子別動作は、ロードマップ上の Lua スクリプト対応が実装されたあとに追加する予定です。
+拡張子ごとのより高度なプレビュー動作は、ユーザー定義コマンドとは別に追加します。

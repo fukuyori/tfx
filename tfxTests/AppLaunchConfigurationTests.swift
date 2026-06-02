@@ -38,6 +38,28 @@ struct AppLaunchConfigurationTests {
     }
 
     @Test
+    func ignoresUserCommandsWithMultilineScripts() throws {
+        let configuration = try AppLaunchConfigurationLoader.parse("""
+        version = 1
+
+        [startup]
+        layout = "split"
+
+        [[commands]]
+        name = "swift run"
+        run = '''
+        cd {dir}
+        swift run
+        '''
+        extensions = ["xcodeproj"]
+        target = "folder"
+        terminal = true
+        """)
+
+        #expect(configuration.startupLayout == .split)
+    }
+
+    @Test
     func parsesStartupRestoreLayout() throws {
         let configuration = try AppLaunchConfigurationLoader.parse("""
         version = 1

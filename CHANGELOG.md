@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.0] - 2026-06-02
+
+User-defined commands.
+
+### Added
+
+- Added `[[commands]]` support in `config.toml` so context menus can run user-defined commands filtered by target type, extension, selection count, and Git work tree state.
+- Added command tokens such as `{path}`, `{paths}`, `{dir}`, `{name}`, `{stem}`, `{ext}`, `{cwd}`, and `{scripts}` with shell quoting for path-like values.
+- Added user-defined command shortcuts using the same shortcut grammar as built-in actions.
+- Added built-in terminal Output tab support for commands with `terminal = true`.
+- Added English and Japanese configuration documentation for user-defined commands, including an Xcode project build/run sample.
+
+### Changed
+
+- User-defined command output now appears in the built-in terminal pane's Output tab, separate from the interactive Shell tab.
+- Switching from Output back to Shell now synchronizes existing PTY output so the shell prompt is not lost when the terminal WebView is recreated.
+- Updated the version to `0.7.0` and the build number to `43`.
+
 ## [0.6.10] - 2026-06-02
 
 Preview-pane and window interaction refinements.

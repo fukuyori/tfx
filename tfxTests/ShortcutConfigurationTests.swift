@@ -30,6 +30,28 @@ struct ShortcutConfigurationTests {
     }
 
     @Test
+    func ignoresUserCommandsWithMultilineScripts() throws {
+        let shortcuts = try ShortcutConfigurationLoader.parse("""
+        version = 1
+
+        [shortcuts]
+        reload = "cmd+shift+r"
+
+        [[commands]]
+        name = "swift run"
+        run = '''
+        cd {dir}
+        swift run
+        '''
+        extensions = ["xcodeproj"]
+        target = "folder"
+        terminal = true
+        """)
+
+        #expect(shortcuts[.reload] == ShortcutInfo(key: "r", modifiers: [.command, .shift]))
+    }
+
+    @Test
     func rejectsUnknownAction() {
         #expect(throws: ShortcutConfigurationError.self) {
             _ = try ShortcutConfigurationLoader.parse("""

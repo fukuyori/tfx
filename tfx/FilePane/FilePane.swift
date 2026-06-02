@@ -11,6 +11,7 @@ struct FilePane: View {
     @Binding var fileNameColumnWidth: Double
     let columnConfiguration: FileListColumnConfiguration
     let activate: () -> Void
+    let executeUserCommand: (UserCommand, [FileItem]) -> Void
     let reloadRelatedPanes: () -> Void
 
     @Environment(\.design) private var design
@@ -44,7 +45,8 @@ struct FilePane: View {
                     isKeyboardTarget: isKeyboardTarget,
                     visibleColumns: visibleColumns,
                     fileNameColumnWidth: $fileNameColumnWidth,
-                    activate: activate
+                    activate: activate,
+                    executeUserCommand: executeUserCommand
                 )
                 .frame(minWidth: rowMinWidth)
                 .background(HorizontalScrollAccess(model: model))
@@ -66,7 +68,11 @@ struct FilePane: View {
                 )
             )
             .contextMenu {
-                EmptyFileAreaContextMenu(model: model, activate: activate)
+                EmptyFileAreaContextMenu(
+                    model: model,
+                    activate: activate,
+                    executeUserCommand: executeUserCommand
+                )
             }
 
             FilePaneStatusLine(

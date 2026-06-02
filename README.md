@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.6.10**
+Version: **0.7.0**
 
 English | [日本語](README.ja.md)
 
@@ -148,7 +148,7 @@ tfx creates and reads its user configuration from:
 ```
 
 The current configuration supports compact `[font]`, `[colors]`, `[opacity]`,
-`[shortcuts]`, `[terminal]`, and `[openWith]` blocks in `config.toml`:
+`[shortcuts]`, `[terminal]`, `[openWith]`, and `[[commands]]` blocks in `config.toml`:
 
 ```toml
 version = 1
@@ -178,6 +178,14 @@ app = "/Applications/Ghostty.app"
 [openWith]
 md = "com.microsoft.VSCode"
 pdf = "/Applications/Preview.app"
+
+[[commands]]
+name = "Git Pull"
+run = "git -C {cwd} pull --ff-only"
+target = "current"
+requireGit = true
+terminal = true
+shortcut = "cmd+shift+g"
 ```
 
 See [`docs/configuration.md`](docs/configuration.md) for supported keys, design token mapping, examples, and error handling.

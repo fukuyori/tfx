@@ -259,7 +259,7 @@ struct XtermTerminalWebView: NSViewRepresentable {
                 isReady = true
                 resize(from: message.body)
                 model.open()
-                flushPendingOutput()
+                syncCurrentOutput()
                 focusTerminal()
             case "terminalError":
                 if let error = message.body as? String {
@@ -322,11 +322,10 @@ struct XtermTerminalWebView: NSViewRepresentable {
             evaluate("window.tfxWrite(\(Self.jsonString(output)));")
         }
 
-        private func flushPendingOutput() {
-            guard !pendingOutput.isEmpty else { return }
-            let output = pendingOutput.joined()
+        private func syncCurrentOutput() {
             pendingOutput.removeAll()
-            write(output)
+            guard !model.rawTerminalTranscript.isEmpty else { return }
+            write(model.rawTerminalTranscript)
         }
 
         private func resize(from body: Any) {

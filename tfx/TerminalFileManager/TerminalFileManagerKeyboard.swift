@@ -57,6 +57,16 @@ extension TerminalFileManagerView {
     }
 
     private func handleConfiguredShortcut(_ event: NSEvent) -> Bool {
+        if let command = userCommandStore.firstMatchingShortcut(
+            for: event,
+            selection: activeModel.selectedItems,
+            currentDirectory: activeModel.currentDirectory,
+            isGitRepository: activeModel.isCurrentDirectoryGitRepository
+        ) {
+            executeUserCommand(command, selection: activeModel.selectedItems, in: activeModel)
+            return true
+        }
+
         if shortcutStore.info(.openItem).matches(event) {
             activeModel.activateFileSelection()
             return true

@@ -90,6 +90,28 @@ struct DesignConfigurationTests {
     }
 
     @Test
+    func ignoresUserCommandsWithMultilineScripts() throws {
+        let configuration = try DesignConfigurationLoader.parse("""
+        version = 1
+
+        [font]
+        size = 15
+
+        [[commands]]
+        name = "swift run"
+        run = '''
+        cd {dir}
+        swift run
+        '''
+        extensions = ["xcodeproj"]
+        target = "folder"
+        terminal = true
+        """)
+
+        #expect(configuration.fonts.baseSize == 15)
+    }
+
+    @Test
     func rejectsUnsupportedVersion() {
         #expect(throws: DesignConfigurationError.self) {
             _ = try DesignConfigurationLoader.parse("version = 2")

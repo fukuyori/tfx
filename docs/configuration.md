@@ -20,11 +20,11 @@ tfx.
 ## Current Scope
 
 `config.toml` supports `[font]`, `[colors]`, `[opacity]`, `[startup]`,
-`[shortcuts]`, `[terminal]`, and `[openWith]`. The configuration loaders
+`[shortcuts]`, `[terminal]`, `[openWith]`, and `[[commands]]`. The configuration loaders
 intentionally accept a small TOML subset for these first slices:
 
 - Top-level `version = 1`
-- `[font]`, `[colors]`, `[opacity]`, `[startup]`, `[shortcuts]`, `[terminal]`, and `[openWith]` tables
+- `[font]`, `[colors]`, `[opacity]`, `[startup]`, `[shortcuts]`, `[terminal]`, `[openWith]`, and `[[commands]]` tables
 - String values in double quotes
 - Numeric font size values
 - Color values as `"#RRGGBB"`
@@ -417,6 +417,131 @@ Compound extension keys can be quoted:
 Unknown extensions keep the normal macOS default-app behavior. Directories,
 zip navigation, and archive-internal files keep their existing tfx behavior.
 
+### `[[commands]]`
+
+Adds user-defined commands to the file-list context menus. Commands are shown
+only when the current selection matches their filters. A command shortcut, when
+set, is checked before built-in shortcuts.
+
+```toml
+[[commands]]
+name = "Open in VS Code"
+run = "code {path}"
+target = "any"
+selection = "single"
+
+[[commands]]
+name = "Optimize PNG"
+run = "pngquant --force --ext .png {paths}"
+extensions = ["png"]
+target = "file"
+terminal = true
+
+[[commands]]
+name = "Git Pull"
+run = "git -C {cwd} pull --ff-only"
+target = "current"
+requireGit = true
+terminal = true
+shortcut = "cmd+shift+g"
+```
+
+Supported keys:
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | required | Menu label. |
+| `run` | string | required | Command line or multi-line script body. |
+| `extensions` | string array | all | Matching file extensions without dots. Use `["*"]` for all. |
+| `target` | string | `"any"` | `file`, `folder`, `current`, or `any`. `current` acts on the current folder and appears in the empty-area context menu. |
+| `selection` | string | `"any"` | `single`, `multiple`, or `any`. Ignored for `target = "current"`. |
+| `requireGit` | boolean | `false` | Show only inside a Git work tree. |
+| `terminal` | boolean | `false` | Stream stdout/stderr to the built-in terminal pane's Output tab. |
+| `shortcut` | string | none | Shortcut using the same grammar as `[shortcuts]`. |
+| `shell` | string | `$SHELL` or `/bin/zsh` | Shell used to run the command. |
+
+Tokens in `run`:
+
+| Token | Value |
+| --- | --- |
+| `{path}` | First selected item path, or the current folder when nothing is selected. |
+| `{paths}` | All selected item paths separated by spaces, or the current folder when nothing is selected. |
+| `{dir}` | Parent folder of the first selected item, or the current folder. |
+| `{name}` | First selected item filename with extension. For a selected folder, this is the folder name. |
+| `{stem}` | First selected item filename without extension. |
+| `{ext}` | First selected item extension without the dot. Empty for folders. |
+| `{cwd}` | Current folder regardless of selection. |
+| `{scripts}` | `scripts` folder next to `config.toml`, created on demand. |
+
+Path-like tokens are shell-quoted automatically. `{scripts}` is substituted as
+a raw path, so quote it in `run` if the path may contain spaces. Environment
+variables in `$NAME` or `${NAME}` form are expanded before token substitution.
+
+User-defined commands run in their own process. The process working directory
+is the parent folder of the first selected item, or the current folder when
+nothing is selected. `cd {dir}` affects that command process only; it does not
+change the current directory of an already open interactive built-in terminal
+session. When `terminal = true`, stdout/stderr is shown in the built-in terminal
+pane's Output tab. When `terminal = false`, stdout/stderr is discarded.
+
+Multi-line scripts can be written with TOML literal strings. They are written
+to a temporary script file and run through `shell`.
+
+```toml
+[[commands]]
+name = "File Info"
+target = "file"
+terminal = true
+run = '''
+file {path}
+stat -f "size=%z modified=%Sm" {path}
+'''
+```
+
+Xcode project folders can be built and opened without hard-coding the scheme
+or app name by reading the first scheme and wrapper name from `xcodebuild`:
+
+```toml
+[[commands]]
+name = "Build and Run Xcode Project"
+extensions = ["xcodeproj"]
+target = "folder"
+terminal = true
+run = '''
+cd {dir}
+
+project={name}
+derived=".build/xcode"
+
+scheme=$(
+  xcodebuild -list -json -project "$project" |
+  /usr/bin/python3 -c 'import json,sys; p=json.load(sys.stdin).get("project",{}); s=p.get("schemes",[]); print(s[0] if s else "")'
+)
+
+if [ -z "$scheme" ]; then
+  echo "No scheme found in $project"
+  exit 1
+fi
+
+xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -derivedDataPath "$derived" build
+
+app=$(
+  xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -showBuildSettings 2>/dev/null |
+  awk -F" = " '/ WRAPPER_NAME = / { print $2; exit }'
+)
+
+if [ -z "$app" ]; then
+  echo "No app product found for scheme: $scheme"
+  exit 1
+fi
+
+open "$derived/Build/Products/Debug/$app"
+'''
+```
+
+If the project has multiple schemes, this sample uses the first scheme reported
+by `xcodebuild -list -json`.
+
 ## Font Role Mapping
 
 The user-facing configuration stays small, while the app maps roles internally:
@@ -708,6 +833,7 @@ tfx treats these as configuration errors:
 - Color values that are not quoted `#RRGGBB` strings
 - Opacity values outside `0...1`
 - Invalid application launch assignment or string syntax
+- Invalid user-defined command assignment, boolean, target, selection, shortcut, or unterminated multi-line script
 - Unavailable configured terminal / open-with application when used
 - Unsupported `version`
 
@@ -717,5 +843,5 @@ Application launch errors are shown when the configured action is used.
 
 ## Planned Sections
 
-Richer extension behavior will use Lua scripts once those roadmap items are
-implemented.
+Richer preview behavior by extension will be added separately from user-defined
+commands.

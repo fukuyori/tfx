@@ -13,7 +13,9 @@ struct FileItemContextMenu: View {
     @ObservedObject var model: FileBrowserModel
     let item: FileItem
     let activate: () -> Void
+    let executeUserCommand: (UserCommand, [FileItem]) -> Void
     @EnvironmentObject private var shortcutStore: ShortcutStore
+    @EnvironmentObject private var userCommandStore: UserCommandStore
 
     @ViewBuilder
     var body: some View {
@@ -46,6 +48,21 @@ struct FileItemContextMenu: View {
         }
 
         Divider()
+
+        UserCommandMenuItems(
+            model: model,
+            selection: model.selectedItems.isEmpty ? [item] : model.selectedItems,
+            activate: activate,
+            executeUserCommand: executeUserCommand
+        )
+
+        if !userCommandStore.matchingCommands(
+            selection: model.selectedItems.isEmpty ? [item] : model.selectedItems,
+            currentDirectory: model.currentDirectory,
+            isGitRepository: model.isCurrentDirectoryGitRepository
+        ).isEmpty {
+            Divider()
+        }
 
         Button("Move to Trash") {
             model.moveSelectedItemsToTrash()
@@ -167,10 +184,28 @@ struct FileItemContextMenu: View {
 struct EmptyFileAreaContextMenu: View {
     @ObservedObject var model: FileBrowserModel
     let activate: () -> Void
+    let executeUserCommand: (UserCommand, [FileItem]) -> Void
     @EnvironmentObject private var shortcutStore: ShortcutStore
+    @EnvironmentObject private var userCommandStore: UserCommandStore
 
     @ViewBuilder
     var body: some View {
+        let currentCommands = userCommandStore.matchingCommands(
+            selection: [],
+            currentDirectory: model.currentDirectory,
+            isGitRepository: model.isCurrentDirectoryGitRepository
+        )
+        if !currentCommands.isEmpty {
+            UserCommandMenuItems(
+                model: model,
+                selection: [],
+                activate: activate,
+                executeUserCommand: executeUserCommand
+            )
+
+            Divider()
+        }
+
         Button("New Folder") {
             activate()
             model.createFolder()
@@ -227,6 +262,39 @@ struct EmptyFileAreaContextMenu: View {
             model.openTerminal()
         }
         .keyboardShortcut(shortcutStore.info(.openTerminal))
+    }
+}
+
+private struct UserCommandMenuItems: View {
+    @ObservedObject var model: FileBrowserModel
+    let selection: [FileItem]
+    let activate: () -> Void
+    let executeUserCommand: (UserCommand, [FileItem]) -> Void
+    @EnvironmentObject private var userCommandStore: UserCommandStore
+
+    var body: some View {
+        ForEach(matchingCommands) { command in
+            if let shortcut = command.shortcut {
+                Button(command.name) {
+                    activate()
+                    executeUserCommand(command, selection)
+                }
+                .keyboardShortcut(shortcut)
+            } else {
+                Button(command.name) {
+                    activate()
+                    executeUserCommand(command, selection)
+                }
+            }
+        }
+    }
+
+    private var matchingCommands: [UserCommand] {
+        userCommandStore.matchingCommands(
+            selection: selection,
+            currentDirectory: model.currentDirectory,
+            isGitRepository: model.isCurrentDirectoryGitRepository
+        )
     }
 }
 

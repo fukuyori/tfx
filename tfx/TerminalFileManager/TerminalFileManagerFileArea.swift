@@ -63,6 +63,11 @@ extension TerminalFileManagerView {
                     activePane = paneID
                     activeArea = .files
                 },
+                executeUserCommand: { command, selection in
+                    activePane = paneID
+                    activeArea = .files
+                    executeUserCommand(command, selection: selection, in: paneModel)
+                },
                 reloadRelatedPanes: reloadAllPanes
             )
         }

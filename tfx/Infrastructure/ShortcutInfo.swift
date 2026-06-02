@@ -312,6 +312,10 @@ enum ShortcutConfigurationLoader {
         return parsed.shortcuts
     }
 
+    static func parseUserShortcut(_ value: String, line: Int) throws -> ShortcutInfo {
+        try parseShortcut(value, line: line)
+    }
+
     private static func parseConfiguration(_ source: String) throws -> ParsedShortcutConfiguration {
         var section = ""
         var resolved = Shortcuts.defaults
@@ -324,6 +328,10 @@ enum ShortcutConfigurationLoader {
 
             if line.hasPrefix("[") && line.hasSuffix("]") {
                 section = String(line.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+                continue
+            }
+
+            guard ["", "shortcuts"].contains(section) else {
                 continue
             }
 

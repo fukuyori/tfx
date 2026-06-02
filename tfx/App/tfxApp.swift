@@ -19,6 +19,7 @@ struct tfxApp: App {
     /// tokens through the SwiftUI environment.
     @StateObject private var designStore = DesignStore()
     @StateObject private var shortcutStore = ShortcutStore()
+    @StateObject private var userCommandStore = UserCommandStore()
 #endif
 
     init() {
@@ -41,12 +42,14 @@ struct tfxApp: App {
 #if os(macOS)
                 .environmentObject(designStore)
                 .environmentObject(shortcutStore)
+                .environmentObject(userCommandStore)
                 .onOpenURL { url in
                     AppOpenDirectoryRouter.shared.open([url])
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                     designStore.reload()
                     shortcutStore.reload()
+                    userCommandStore.reload()
                 }
 #endif
         }
