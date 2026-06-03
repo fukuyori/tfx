@@ -13,7 +13,11 @@ struct FilePaneFileList: View {
     let executeUserCommand: (UserCommand, [FileItem]) -> Void
     @State private var blankSelectionStartY: CGFloat?
     var body: some View {
-        VStack(spacing: 0) {
+        // Outer alignment is `.leading` so the column-header row hugs
+        // the left edge of the pane; without it, `VStack`'s default
+        // `.center` parks the row in the middle of any pane wider than
+        // the row itself.
+        VStack(alignment: .leading, spacing: 0) {
             FilePaneHeaderRow(
                 visibleColumns: visibleColumns,
                 fileNameColumnWidth: $fileNameColumnWidth
@@ -22,11 +26,14 @@ struct FilePaneFileList: View {
             ScrollViewReader { proxy in
                 GeometryReader { geometry in
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        // `alignment: .leading` keeps each file row
+                        // pinned to the left edge of the pane (matching
+                        // the header) instead of centering it.
+                        LazyVStack(alignment: .leading, spacing: 0) {
                             parentDirectoryRow
                             fileRows
                         }
-                        .frame(minHeight: geometry.size.height, alignment: .top)
+                        .frame(minHeight: geometry.size.height, alignment: .topLeading)
                         .contentShape(Rectangle())
                         .coordinateSpace(name: "file-list-content")
                         .simultaneousGesture(fileRangeSelectionGesture)

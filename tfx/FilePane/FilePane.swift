@@ -39,20 +39,37 @@ struct FilePane: View {
                 activate: activate
             )
 
-            ScrollView(.horizontal) {
-                FilePaneFileList(
-                    model: model,
-                    isKeyboardTarget: isKeyboardTarget,
-                    visibleColumns: visibleColumns,
-                    fileNameColumnWidth: $fileNameColumnWidth,
-                    activate: activate,
-                    executeUserCommand: executeUserCommand
-                )
-                .frame(minWidth: rowMinWidth)
-                .background(HorizontalScrollAccess(model: model))
+            // `GeometryReader` here absorbs the intrinsic minimum of
+            // the file list content so it does not propagate up to the
+            // pane's parent (and onward to the window). Inside the
+            // reader we pin the content width to `max(rowMinWidth,
+            // geometry.size.width)`: the rows always reserve enough
+            // room for every visible column (no row-internal column
+            // truncation), but the pane itself can be any width the
+            // user has dragged it to — when the pane is narrower than
+            // the rows, the surrounding `ScrollView(.horizontal)`
+            // takes over and scrolls. Without this wrap, the bare
+            // `.frame(minWidth: rowMinWidth)` makes SwiftUI report the
+            // pane's minimum width as `rowMinWidth`, which is what
+            // prevented the window from being shrunk below the total
+            // column width.
+            GeometryReader { geometry in
+                ScrollView(.horizontal) {
+                    FilePaneFileList(
+                        model: model,
+                        isKeyboardTarget: isKeyboardTarget,
+                        visibleColumns: visibleColumns,
+                        fileNameColumnWidth: $fileNameColumnWidth,
+                        activate: activate,
+                        executeUserCommand: executeUserCommand
+                    )
+                    .frame(width: max(rowMinWidth, geometry.size.width))
+                    .background(HorizontalScrollAccess(model: model))
+                }
+                .scrollIndicators(.visible, axes: .horizontal)
+                .background(ScrollViewScrollerConfiguration(axes: .horizontal, autohidesScrollers: false))
             }
-            .scrollIndicators(.visible, axes: .horizontal)
-            .background(ScrollViewScrollerConfiguration(axes: .horizontal, autohidesScrollers: false))
+            .frame(minWidth: 0, maxWidth: .infinity)
             .onTapGesture {
                 activate()
             }

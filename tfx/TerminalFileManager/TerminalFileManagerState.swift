@@ -161,6 +161,7 @@ extension TerminalFileManagerView {
     /// converge here.
     func onSplitViewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
+        applyWindowContentMinSize()
         guard newValue else { return }
 
         // Activating split — bring the other pane onto the same directory.
@@ -177,6 +178,7 @@ extension TerminalFileManagerView {
     /// so toggling preview never moves the window.
     func onPreviewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
+        applyWindowContentMinSize()
         guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
 
         if newValue {
@@ -184,6 +186,40 @@ extension TerminalFileManagerView {
         } else {
             shrinkWindowAfterPreview(window)
             previewAutoResizeDelta = 0
+        }
+    }
+
+    /// Push the layout's dynamic minimum content width into AppKit so
+    /// the user cannot drag the window narrower than the current
+    /// `isSplitViewVisible` / `isPreviewVisible` configuration can
+    /// honor. Deferred to the next runloop tick because mutating
+    /// `NSWindow.contentMinSize` (or `setFrame` after growth) from
+    /// inside SwiftUI's body / `.onChange` reentrantly triggers
+    /// AppKit's layout pipeline and trips
+    /// `_NSDetectedLayoutRecursion`.
+    func applyWindowContentMinSize() {
+        let isSplit = isSplitViewVisible
+        let isPreview = isPreviewVisible
+
+        DispatchQueue.main.async {
+            guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
+
+            let minWidth = TerminalFileManagerLayout.minimumWindowWidth(
+                isSplitViewVisible: isSplit,
+                isPreviewVisible: isPreview
+            )
+            let minHeight = TerminalFileManagerLayout.minimumWindowHeight
+            window.contentMinSize = NSSize(width: minWidth, height: minHeight)
+
+            // Grow the window if its current width is below the new
+            // minimum (e.g. the user toggled split on while the window
+            // was sitting at the single-pane minimum). Leave the
+            // origin alone so the window doesn't visually leap.
+            if window.frame.width < minWidth {
+                var frame = window.frame
+                frame.size.width = minWidth
+                window.setFrame(frame, display: true, animate: false)
+            }
         }
     }
 
