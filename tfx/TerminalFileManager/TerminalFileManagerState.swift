@@ -217,17 +217,15 @@ extension TerminalFileManagerView {
     /// AppKit's layout pipeline and trips
     /// `_NSDetectedLayoutRecursion`.
     func applyWindowContentMinSize() {
-        let isFolderTree = isFolderTreeVisible
+        let visiblePanes = LayoutPane.allCases.filter { isVisible($0) }
         let isSplit = isSplitViewVisible
-        let isPreview = isPreviewVisible
 
         DispatchQueue.main.async {
             guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
 
             let minWidth = TerminalFileManagerLayout.minimumWindowWidth(
-                isFolderTreeVisible: isFolderTree,
-                isSplitViewVisible: isSplit,
-                isPreviewVisible: isPreview
+                visiblePanes: visiblePanes,
+                isSplitViewVisible: isSplit
             )
             let minHeight = TerminalFileManagerLayout.minimumWindowHeight
             window.contentMinSize = NSSize(width: minWidth, height: minHeight)

@@ -24,11 +24,7 @@ enum TerminalFileManagerLayout {
     /// tree, no preview); wider configurations enforce a larger floor
     /// through `NSWindow.contentMinSize`.
     static var absoluteMinimumWindowWidth: CGFloat {
-        minimumWindowWidth(
-            isFolderTreeVisible: false,
-            isSplitViewVisible: false,
-            isPreviewVisible: false
-        )
+        minimumWindowWidth(visiblePanes: [], isSplitViewVisible: false)
     }
     /// Smallest window content height that still leaves room for the
     /// header, the file list, and the status line. Set to 300 so the
@@ -122,17 +118,19 @@ enum TerminalFileManagerLayout {
 
     /// Total window content width required for the given pane
     /// configuration. The window may not shrink below this value.
+    ///
+    /// Each entry in `visiblePanes` contributes its own
+    /// `minimumWidth + dividerWidth` to the floor; the file area
+    /// always contributes its own minimum (which itself depends on
+    /// the split state). Passing an empty `visiblePanes` yields the
+    /// absolute floor — single file pane, no folder tree, no preview.
     static func minimumWindowWidth(
-        isFolderTreeVisible: Bool,
-        isSplitViewVisible: Bool,
-        isPreviewVisible: Bool
+        visiblePanes: [LayoutPane],
+        isSplitViewVisible: Bool
     ) -> CGFloat {
         var width = minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
-        if isFolderTreeVisible {
-            width += minimumFolderTreeWidth + dividerWidth
-        }
-        if isPreviewVisible {
-            width += dividerWidth + minimumPreviewPaneWidth
+        for pane in visiblePanes {
+            width += pane.minimumWidth + dividerWidth
         }
         return width
     }

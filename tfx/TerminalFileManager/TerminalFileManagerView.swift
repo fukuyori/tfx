@@ -137,9 +137,8 @@ struct TerminalFileManagerView: View {
             .background(WindowMinSizeBinder(
                 minSize: NSSize(
                     width: TerminalFileManagerLayout.minimumWindowWidth(
-                        isFolderTreeVisible: isFolderTreeVisible,
-                        isSplitViewVisible: isSplitViewVisible,
-                        isPreviewVisible: isPreviewVisible
+                        visiblePanes: LayoutPane.allCases.filter { isVisible($0) },
+                        isSplitViewVisible: isSplitViewVisible
                     ),
                     height: TerminalFileManagerLayout.minimumWindowHeight
                 )
