@@ -173,38 +173,64 @@ extension TerminalFileManagerView {
         )
     }
 
-    /// Side-effect handler for `isFolderTreeVisible` changes. Refresh
-    /// the window's content-min so it now reflects whether the folder
-    /// tree contributes its `minimumFolderTreeWidth + divider` to the
-    /// floor. No window-resize side effect: hiding the folder tree
-    /// frees space the file area happily absorbs without a window
-    /// width change, and showing it again works the same way.
+    /// Per-pane visibility-change side effects, shared by folder and
+    /// preview. Folder + preview behave identically:
+    ///   - ON: grow the window by `stored width + divider`, capped
+    ///     to the screen's visible right edge. File area is preserved.
+    ///   - OFF: shrink the window by the same amount, capped to the
+    ///     freshly-computed content-min so the file area never drops
+    ///     below its own minimum.
+    /// No stored "delta" is kept; everything recomputes from the
+    /// current state at the moment of toggle, so the behavior is
+    /// order-independent and identical for both panes.
     func onFolderTreeVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
-        applyWindowContentMinSize()
-
-        // If keyboard focus was sitting on the folder tree when the
-        // pane was hidden, send focus back to the file area — leaving
-        // `activeArea == .folderTree` would route arrow keys, Return,
-        // etc. to a pane the user can no longer see.
+        // Focus fallback: arrow keys / Return must not route to an
+        // invisible pane.
         if !newValue, activeArea == .folderTree {
             activeArea = .files
         }
+        adjustWindowForPaneToggle(.folderTree, becomingVisible: newValue)
     }
 
-    /// Keep the file area from shrinking when the preview pane is shown by
-    /// expanding the window width only. The origin is intentionally preserved
-    /// so toggling preview never moves the window.
     func onPreviewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
-        applyWindowContentMinSize()
-        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
+        adjustWindowForPaneToggle(.preview, becomingVisible: newValue)
+    }
 
-        if newValue {
-            previewAutoResizeDelta = growWindowForPreview(window)
-        } else {
-            shrinkWindowAfterPreview(window)
-            previewAutoResizeDelta = 0
+    private func adjustWindowForPaneToggle(_ pane: LayoutPane, becomingVisible: Bool) {
+        let storedPaneWidth = max(Double(pane.minimumWidth), storedWidth(pane))
+        let snapshots = currentVisiblePaneSnapshots()
+        let isSplit = isSplitViewVisible
+        DispatchQueue.main.async {
+            guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
+            let newContentMinWidth = TerminalFileManagerLayout.minimumWindowWidth(
+                visiblePanes: snapshots,
+                isSplitViewVisible: isSplit
+            )
+            window.contentMinSize = NSSize(
+                width: newContentMinWidth,
+                height: TerminalFileManagerLayout.minimumWindowHeight
+            )
+            let currentFrame = window.frame
+            let chromeWidth = currentFrame.width - window.contentLayoutRect.width
+            let paneDelta = CGFloat(storedPaneWidth) + TerminalFileManagerLayout.dividerWidth
+            let minFrameWidth = newContentMinWidth + chromeWidth
+            let proposedWidth: CGFloat
+            if becomingVisible {
+                let maxFrameWidth = window.screen.map { screen in
+                    max(currentFrame.width, screen.visibleFrame.maxX - currentFrame.minX)
+                } ?? currentFrame.width + paneDelta
+                proposedWidth = min(currentFrame.width + paneDelta, maxFrameWidth)
+            } else {
+                proposedWidth = currentFrame.width - paneDelta
+            }
+            let targetFrameWidth = max(proposedWidth, minFrameWidth)
+            guard targetFrameWidth != currentFrame.width else { return }
+            var frame = currentFrame
+            frame.size.width = targetFrameWidth
+            frame.origin = currentFrame.origin
+            window.setFrame(frame, display: true, animate: false)
         }
     }
 
@@ -217,14 +243,14 @@ extension TerminalFileManagerView {
     /// AppKit's layout pipeline and trips
     /// `_NSDetectedLayoutRecursion`.
     func applyWindowContentMinSize() {
-        let visiblePanes = LayoutPane.allCases.filter { isVisible($0) }
+        let snapshots = currentVisiblePaneSnapshots()
         let isSplit = isSplitViewVisible
 
         DispatchQueue.main.async {
             guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
 
             let minWidth = TerminalFileManagerLayout.minimumWindowWidth(
-                visiblePanes: visiblePanes,
+                visiblePanes: snapshots,
                 isSplitViewVisible: isSplit
             )
             let minHeight = TerminalFileManagerLayout.minimumWindowHeight
@@ -241,37 +267,6 @@ extension TerminalFileManagerView {
             }
         }
     }
-
-    private func growWindowForPreview(_ window: NSWindow) -> CGFloat {
-        let currentFrame = window.frame
-        let contentWidth = window.contentLayoutRect.width
-        let folderWidth = clampedFolderWidth(totalWidth: contentWidth)
-        let previewPaneWidth = clampedPreviewWidth(totalWidth: contentWidth, folderWidth: folderWidth)
-        let requestedGrowth = previewPaneWidth + 1
-        let maximumFrameWidth = window.screen.map { screen in
-            max(currentFrame.width, screen.visibleFrame.maxX - currentFrame.minX)
-        } ?? currentFrame.width + requestedGrowth
-        let targetFrameWidth = min(currentFrame.width + requestedGrowth, maximumFrameWidth)
-        let actualGrowth = max(0, targetFrameWidth - currentFrame.width)
-        guard actualGrowth > 0 else { return 0 }
-
-        var frame = currentFrame
-        frame.size.width = targetFrameWidth
-        frame.origin = currentFrame.origin
-        window.setFrame(frame, display: true, animate: false)
-        return actualGrowth
-    }
-
-    private func shrinkWindowAfterPreview(_ window: NSWindow) {
-        guard previewAutoResizeDelta > 0 else { return }
-
-        var frame = window.frame
-        frame.size.width = max(Self.minimumPreviewWindowWidth, frame.width - previewAutoResizeDelta)
-        frame.origin = window.frame.origin
-        window.setFrame(frame, display: true, animate: false)
-    }
-
-    private static let minimumPreviewWindowWidth: CGFloat = 600
 
     /// Swap the left and right pane directories. No-op when split is off or
     /// both panes are already on the same directory. Navigation records

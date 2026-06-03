@@ -136,12 +136,16 @@ struct WindowFrameAutosaver: NSViewRepresentable {
         /// during a resize without triggering a render pass.
         private func currentRequiredContentMinSize(for window: NSWindow) -> NSSize {
             let defaults = UserDefaults.standard
-            let visiblePanes = LayoutPane.allCases.filter { pane in
-                defaults.object(forKey: pane.visibilityStorageKey) as? Bool ?? pane.defaultVisibility
+            let snapshots: [PaneSnapshot] = LayoutPane.allCases.compactMap { pane in
+                let isVisible = defaults.object(forKey: pane.visibilityStorageKey) as? Bool ?? pane.defaultVisibility
+                guard isVisible else { return nil }
+                let storedRaw = defaults.object(forKey: pane.widthStorageKey) as? Double ?? pane.defaultWidth
+                let displayed = max(pane.minimumWidth, CGFloat(storedRaw))
+                return PaneSnapshot(pane: pane, width: displayed)
             }
             let isSplit = defaults.object(forKey: "TerminalFileManager.isSplitViewVisible") as? Bool ?? false
             let width = TerminalFileManagerLayout.minimumWindowWidth(
-                visiblePanes: visiblePanes,
+                visiblePanes: snapshots,
                 isSplitViewVisible: isSplit
             )
             return NSSize(width: width, height: TerminalFileManagerLayout.minimumWindowHeight)

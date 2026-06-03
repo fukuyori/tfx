@@ -24,7 +24,7 @@ enum TerminalFileManagerLayout {
     /// tree, no preview); wider configurations enforce a larger floor
     /// through `NSWindow.contentMinSize`.
     static var absoluteMinimumWindowWidth: CGFloat {
-        minimumWindowWidth(visiblePanes: [], isSplitViewVisible: false)
+        minimumWindowWidth(visiblePanes: [] as [PaneSnapshot], isSplitViewVisible: false)
     }
     /// Smallest window content height that still leaves room for the
     /// header, the file list, and the status line. Set to 300 so the
@@ -119,18 +119,20 @@ enum TerminalFileManagerLayout {
     /// Total window content width required for the given pane
     /// configuration. The window may not shrink below this value.
     ///
-    /// Each entry in `visiblePanes` contributes its own
-    /// `minimumWidth + dividerWidth` to the floor; the file area
-    /// always contributes its own minimum (which itself depends on
-    /// the split state). Passing an empty `visiblePanes` yields the
-    /// absolute floor — single file pane, no folder tree, no preview.
+    /// Each `PaneSnapshot` contributes its *current* width — clamped
+    /// up to the pane's own minimum — plus one divider. So dragging
+    /// the folder wider raises the window floor; dragging it narrower
+    /// lowers it. This is the property that keeps `NSSplitView` from
+    /// being asked to lay out in a window narrower than the user's
+    /// stored pane widths need, which would otherwise force the
+    /// split to shrink one of the panes below its stored value.
     static func minimumWindowWidth(
-        visiblePanes: [LayoutPane],
+        visiblePanes: [PaneSnapshot],
         isSplitViewVisible: Bool
     ) -> CGFloat {
         var width = minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
-        for pane in visiblePanes {
-            width += pane.minimumWidth + dividerWidth
+        for snapshot in visiblePanes {
+            width += max(snapshot.pane.minimumWidth, snapshot.width) + dividerWidth
         }
         return width
     }

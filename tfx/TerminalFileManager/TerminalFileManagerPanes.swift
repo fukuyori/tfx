@@ -44,6 +44,17 @@ extension TerminalFileManagerView {
         return max(pane.minimumWidth, CGFloat(storedWidth(pane)))
     }
 
+    /// Snapshot of every visible pane's current displayed width.
+    /// Fed to `TerminalFileManagerLayout.minimumWindowWidth(...)` so
+    /// the window's content-min tracks the user's stored pane
+    /// widths — when the folder is dragged wider the window can no
+    /// longer shrink past the new total.
+    func currentVisiblePaneSnapshots() -> [PaneSnapshot] {
+        LayoutPane.allCases
+            .filter { isVisible($0) }
+            .map { PaneSnapshot(pane: $0, width: displayedWidth($0)) }
+    }
+
     // MARK: - Unified write API
 
     /// Set the pane's visibility. Routes through the `@AppStorage`

@@ -26,7 +26,6 @@ struct TerminalFileManagerView: View {
     @State private var folderDragStartWidth: Double?
     @State private var previewDragStartWidth: Double?
     @State private var terminalDragStartHeight: Double?
-    @State var previewAutoResizeDelta: CGFloat = 0
     @State var isFileListSettingsPresented = false
     @State var hoverHelpText = ""
     @State private var hasAppliedStartupFocus = false
@@ -137,7 +136,7 @@ struct TerminalFileManagerView: View {
             .background(WindowMinSizeBinder(
                 minSize: NSSize(
                     width: TerminalFileManagerLayout.minimumWindowWidth(
-                        visiblePanes: LayoutPane.allCases.filter { isVisible($0) },
+                        visiblePanes: currentVisiblePaneSnapshots(),
                         isSplitViewVisible: isSplitViewVisible
                     ),
                     height: TerminalFileManagerLayout.minimumWindowHeight

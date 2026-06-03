@@ -243,6 +243,19 @@ struct MainPaneSplitView: NSViewRepresentable {
             }
         }
 
+        /// Hide the divider next to a collapsed pane. Without this,
+        /// the would-be divider remains hit-testable and the user
+        /// can drag it to re-expand a pane they explicitly hid —
+        /// e.g. drag the file area's right edge to make the
+        /// hidden preview reappear.
+        func splitView(_ splitView: NSSplitView, shouldHideDividerAt dividerIndex: Int) -> Bool {
+            switch dividerIndex {
+            case 0: return folderHost?.isHidden ?? false
+            case 1: return previewHost?.isHidden ?? false
+            default: return false
+            }
+        }
+
         /// Persist user-drag results back to AppStorage. Skipped:
         /// - during `inLiveResize` (window itself being resized),
         ///   because window resize legitimately changes file area
