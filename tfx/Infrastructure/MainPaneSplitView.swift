@@ -48,10 +48,19 @@ struct MainPaneSplitView: NSViewRepresentable {
     @Binding var folderWidth: Double
     @Binding var previewWidth: Double
 
+    /// Whether the file area's own internal split is active. Drives
+    /// the file-area minimum width that this wrapper enforces (and
+    /// passes through to the window's `contentMinSize`).
+    let isSplitViewVisible: Bool
+
     /// Minimum width the file area must keep, used by the split
     /// view's coordinate-constraint delegate methods. Depends on
     /// whether the file area's own internal split is active.
     let fileAreaMinimumWidth: CGFloat
+
+    /// Smallest window content height — propagated to the window's
+    /// `contentMinSize` alongside the computed minimum width.
+    let minimumWindowHeight: CGFloat
 
     // MARK: - NSViewRepresentable
 
@@ -104,6 +113,14 @@ struct MainPaneSplitView: NSViewRepresentable {
         context.coordinator.updateHost(context.coordinator.previewHost, with: previewContent)
 
         DispatchQueue.main.async {
+            // Order matters: contentMinSize must be the new floor
+            // BEFORE setFrame in `resizeWindowForToggleIfNeeded` —
+            // otherwise NSWindow may refuse to shrink past the old
+            // (larger) min on a toggle OFF. `applyVisibility` and
+            // `applyStoredWidths` need the window already at the
+            // right size before they push subview positions.
+            context.coordinator.applyContentMinSize()
+            context.coordinator.resizeWindowForToggleIfNeeded()
             context.coordinator.applyVisibility(animated: false)
             context.coordinator.applyStoredWidths()
         }
@@ -124,6 +141,14 @@ struct MainPaneSplitView: NSViewRepresentable {
         /// programmatic positions back to `AppStorage` and clobber
         /// the user's stored preference.
         private var isApplyingProgrammaticLayout = false
+
+        /// Last-seen visibility state, used by
+        /// `resizeWindowForToggleIfNeeded` to detect a pane being
+        /// toggled on or off across `updateNSView` calls. `nil`
+        /// during the very first update so the initial pass doesn't
+        /// look like a toggle.
+        private var lastFolderVisible: Bool?
+        private var lastPreviewVisible: Bool?
 
         init(parent: MainPaneSplitView) {
             self.parent = parent
@@ -202,6 +227,78 @@ struct MainPaneSplitView: NSViewRepresentable {
             }
         }
 
+        // MARK: Window-level state (single owner of contentMinSize)
+
+        /// Write the window's `contentMinSize` from the current pane
+        /// state — visible panes contribute `max(min, stored) +
+        /// divider`, plus the file area's own minimum. This is the
+        /// **only** place in the app that mutates `contentMinSize`,
+        /// keeping the value coherent regardless of which user action
+        /// (toggle, drag, split) triggered the update.
+        func applyContentMinSize() {
+            guard let window = splitView?.window else { return }
+            var width = parent.fileAreaMinimumWidth
+            if parent.isFolderVisible {
+                let folderWidth = max(LayoutPane.folderTree.minimumWidth, CGFloat(parent.folderWidth))
+                width += folderWidth + (splitView?.dividerThickness ?? 1)
+            }
+            if parent.isPreviewVisible {
+                let previewWidth = max(LayoutPane.preview.minimumWidth, CGFloat(parent.previewWidth))
+                width += previewWidth + (splitView?.dividerThickness ?? 1)
+            }
+            let newMinSize = NSSize(width: width, height: parent.minimumWindowHeight)
+            if window.contentMinSize != newMinSize {
+                window.contentMinSize = newMinSize
+            }
+        }
+
+        /// On the first `updateNSView` after a side pane toggled,
+        /// resize the window symmetrically: grow by the pane's stored
+        /// width on ON (so the file area is preserved), shrink by
+        /// the same on OFF (so the file area returns to its prior
+        /// width). Capped to the screen edge on grow and to the
+        /// current `contentMinSize` on shrink (which `applyContentMinSize`
+        /// just made authoritative).
+        func resizeWindowForToggleIfNeeded() {
+            guard let window = splitView?.window else { return }
+            defer {
+                lastFolderVisible = parent.isFolderVisible
+                lastPreviewVisible = parent.isPreviewVisible
+            }
+            let folderChanged = lastFolderVisible != nil && lastFolderVisible != parent.isFolderVisible
+            let previewChanged = lastPreviewVisible != nil && lastPreviewVisible != parent.isPreviewVisible
+            guard folderChanged || previewChanged else { return }
+
+            let currentFrame = window.frame
+            let chromeWidth = currentFrame.width - window.contentLayoutRect.width
+            let minFrameWidth = window.contentMinSize.width + chromeWidth
+            var paneDelta: CGFloat = 0
+
+            if folderChanged {
+                let folderStored = max(LayoutPane.folderTree.minimumWidth, CGFloat(parent.folderWidth))
+                let signed = parent.isFolderVisible ? folderStored : -folderStored
+                paneDelta += signed + (splitView?.dividerThickness ?? 1) * (parent.isFolderVisible ? 1 : -1)
+            }
+            if previewChanged {
+                let previewStored = max(LayoutPane.preview.minimumWidth, CGFloat(parent.previewWidth))
+                let signed = parent.isPreviewVisible ? previewStored : -previewStored
+                paneDelta += signed + (splitView?.dividerThickness ?? 1) * (parent.isPreviewVisible ? 1 : -1)
+            }
+
+            let maxFrameWidth = window.screen.map { screen in
+                max(currentFrame.width, screen.visibleFrame.maxX - currentFrame.minX)
+            } ?? .infinity
+            let proposedWidth = currentFrame.width + paneDelta
+            let cappedHigh = min(proposedWidth, maxFrameWidth)
+            let targetFrameWidth = max(cappedHigh, minFrameWidth)
+            guard targetFrameWidth != currentFrame.width else { return }
+
+            var frame = currentFrame
+            frame.size.width = targetFrameWidth
+            frame.origin = currentFrame.origin
+            window.setFrame(frame, display: true, animate: false)
+        }
+
         // MARK: NSSplitViewDelegate — constraints & persistence
 
         /// Lower bound for each divider's position. NSSplitView calls
@@ -274,17 +371,28 @@ struct MainPaneSplitView: NSViewRepresentable {
                 return
             }
 
+            var didChangeWidth = false
             if parent.isFolderVisible, !folder.isHidden {
                 let newFolderWidth = Double(folder.frame.width)
                 if abs(newFolderWidth - parent.folderWidth) > 0.5 {
                     parent.folderWidth = newFolderWidth
+                    didChangeWidth = true
                 }
             }
             if parent.isPreviewVisible, !preview.isHidden {
                 let newPreviewWidth = Double(preview.frame.width)
                 if abs(newPreviewWidth - parent.previewWidth) > 0.5 {
                     parent.previewWidth = newPreviewWidth
+                    didChangeWidth = true
                 }
+            }
+
+            // Drag changed a stored width: refresh contentMinSize so
+            // dragging a pane wider raises the window's floor (the
+            // user can no longer shrink the window past the new
+            // stored width).
+            if didChangeWidth {
+                applyContentMinSize()
             }
         }
     }

@@ -324,9 +324,11 @@ struct TerminalFileManagerView: View {
                 get: { previewWidth },
                 set: { setStoredWidth(.preview, $0) }
             ),
+            isSplitViewVisible: isSplitViewVisible,
             fileAreaMinimumWidth: TerminalFileManagerLayout.minimumFileAreaWidth(
                 isSplitViewVisible: isSplitViewVisible
-            )
+            ),
+            minimumWindowHeight: TerminalFileManagerLayout.minimumWindowHeight
         )
     }
 
