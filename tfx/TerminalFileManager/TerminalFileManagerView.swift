@@ -14,7 +14,7 @@ struct TerminalFileManagerView: View {
     @AppStorage("TerminalFileManager.terminalPaneHeight") var terminalPaneHeight = TerminalFileManagerLayout.defaultTerminalPaneHeight
     @AppStorage("TerminalFileManager.activePane") var activePaneRawValue = BrowserPaneID.left.rawValue
     @AppStorage("TerminalFileManager.activeArea") var activeAreaRawValue = ActiveArea.files.rawValue
-    @AppStorage("TerminalFileManager.folderTreeWidth") private var folderTreeWidth = TerminalFileManagerLayout.defaultFolderTreeWidth
+    @AppStorage("TerminalFileManager.folderTreeWidth") var folderTreeWidth = TerminalFileManagerLayout.defaultFolderTreeWidth
     @AppStorage("TerminalFileManager.previewWidth") var previewWidth = TerminalFileManagerLayout.defaultPreviewPaneWidth
     @AppStorage("TerminalFileManager.fileNameColumnWidth") var fileNameColumnWidth = TerminalFileManagerLayout.defaultFileNameColumnWidth
     @AppStorage("TerminalFileManager.fileColumnConfiguration") var fileColumnConfigurationRaw = FileListColumnConfiguration.defaultRawValue
