@@ -117,6 +117,13 @@ struct MainPaneSplitView: NSViewRepresentable {
         var folderHost: NSHostingView<AnyView>!
         var fileAreaHost: NSHostingView<AnyView>!
         var previewHost: NSHostingView<AnyView>!
+        /// True while we're calling `adjustSubviews()` /
+        /// `setPosition(_:ofDividerAt:)` ourselves, so the
+        /// `splitViewDidResizeSubviews` callback that fires
+        /// synchronously during those calls doesn't write our own
+        /// programmatic positions back to `AppStorage` and clobber
+        /// the user's stored preference.
+        private var isApplyingProgrammaticLayout = false
 
         init(parent: MainPaneSplitView) {
             self.parent = parent
@@ -145,6 +152,11 @@ struct MainPaneSplitView: NSViewRepresentable {
                   let preview = previewHost else { return }
             let folderShouldHide = !parent.isFolderVisible
             let previewShouldHide = !parent.isPreviewVisible
+            let needsChange = folder.isHidden != folderShouldHide
+                || preview.isHidden != previewShouldHide
+            guard needsChange else { return }
+            isApplyingProgrammaticLayout = true
+            defer { isApplyingProgrammaticLayout = false }
             if folder.isHidden != folderShouldHide {
                 folder.isHidden = folderShouldHide
             }
@@ -164,6 +176,9 @@ struct MainPaneSplitView: NSViewRepresentable {
                   let preview = previewHost else { return }
             let totalWidth = split.bounds.width
             guard totalWidth > 0 else { return }
+
+            isApplyingProgrammaticLayout = true
+            defer { isApplyingProgrammaticLayout = false }
 
             // Divider 0 sits between subview 0 (folder) and subview
             // 1 (file area). Its position is measured from the
@@ -228,24 +243,31 @@ struct MainPaneSplitView: NSViewRepresentable {
             }
         }
 
-        /// Persist user-drag results back to AppStorage.
+        /// Persist user-drag results back to AppStorage. Skipped:
+        /// - during `inLiveResize` (window itself being resized),
+        ///   because window resize legitimately changes file area
+        ///   width but pane widths shouldn't be touched (and we
+        ///   don't write them back regardless);
+        /// - during `isApplyingProgrammaticLayout`, because the
+        ///   `setPosition` / `adjustSubviews` we just called
+        ///   synchronously fires this delegate method — writing
+        ///   those programmatic positions back to AppStorage would
+        ///   defeat the whole point of having a stored preference.
         func splitViewDidResizeSubviews(_ notification: Notification) {
             guard let split = splitView,
                   let folder = folderHost,
                   let preview = previewHost else { return }
-            guard !split.inLiveResize else {
-                // Skip while window itself is being resized — only
-                // persist when the user has actually moved a divider.
+            guard !split.inLiveResize, !isApplyingProgrammaticLayout else {
                 return
             }
 
-            if parent.isFolderVisible {
+            if parent.isFolderVisible, !folder.isHidden {
                 let newFolderWidth = Double(folder.frame.width)
                 if abs(newFolderWidth - parent.folderWidth) > 0.5 {
                     parent.folderWidth = newFolderWidth
                 }
             }
-            if parent.isPreviewVisible {
+            if parent.isPreviewVisible, !preview.isHidden {
                 let newPreviewWidth = Double(preview.frame.width)
                 if abs(newPreviewWidth - parent.previewWidth) > 0.5 {
                     parent.previewWidth = newPreviewWidth
