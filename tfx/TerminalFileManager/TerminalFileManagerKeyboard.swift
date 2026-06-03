@@ -194,6 +194,11 @@ extension TerminalFileManagerView {
             return true
         }
 
+        if shortcutStore.info(.toggleFolderTree).matches(event) {
+            isFolderTreeVisible.toggle()
+            return true
+        }
+
         // Keep this path even though the View menu also has a binding:
         // the menu can miss dynamically configured shortcuts, especially
         // non-command combinations such as Control+T.

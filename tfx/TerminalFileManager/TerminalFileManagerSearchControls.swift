@@ -4,10 +4,10 @@ import SwiftUI
 extension TerminalFileManagerView {
     var pathAndSearchControls: some View {
         Group {
-            PathBreadcrumbBar(directory: model.currentDirectory) { directory in
-                model.navigate(to: directory)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // Path breadcrumb removed from the toolbar — each file
+            // pane shows its own path in `FilePaneTitleBar`. The
+            // empty space pushes the search field to the right.
+            Spacer(minLength: 0)
 
             TextField("Search", text: Binding(
                 get: { model.searchText },

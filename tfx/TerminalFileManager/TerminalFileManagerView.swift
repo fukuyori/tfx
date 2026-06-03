@@ -9,13 +9,13 @@ struct TerminalFileManagerView: View {
     @StateObject var terminalModel: BuiltInTerminalModel
     @AppStorage("TerminalFileManager.isPreviewVisible") var isPreviewVisible = true
     @AppStorage("TerminalFileManager.isSplitViewVisible") var isSplitViewVisible = false
+    @AppStorage("TerminalFileManager.isFolderTreeVisible") var isFolderTreeVisible = true
     @AppStorage("TerminalFileManager.isTerminalPaneVisible") var isTerminalPaneVisible = false
     @AppStorage("TerminalFileManager.terminalPaneHeight") var terminalPaneHeight = TerminalFileManagerLayout.defaultTerminalPaneHeight
     @AppStorage("TerminalFileManager.activePane") var activePaneRawValue = BrowserPaneID.left.rawValue
     @AppStorage("TerminalFileManager.activeArea") var activeAreaRawValue = ActiveArea.files.rawValue
     @AppStorage("TerminalFileManager.folderTreeWidth") private var folderTreeWidth = TerminalFileManagerLayout.defaultFolderTreeWidth
     @AppStorage("TerminalFileManager.previewWidth") var previewWidth = TerminalFileManagerLayout.defaultPreviewPaneWidth
-    @AppStorage("TerminalFileManager.fileSplitRatio") var fileSplitRatio = TerminalFileManagerLayout.defaultFileSplitRatio
     @AppStorage("TerminalFileManager.fileNameColumnWidth") var fileNameColumnWidth = TerminalFileManagerLayout.defaultFileNameColumnWidth
     @AppStorage("TerminalFileManager.fileColumnConfiguration") var fileColumnConfigurationRaw = FileListColumnConfiguration.defaultRawValue
     @StateObject private var openDirectoryRouter = AppOpenDirectoryRouter.shared
@@ -25,7 +25,6 @@ struct TerminalFileManagerView: View {
     @State var rightActiveTabID: FilePaneTab.ID
     @State private var folderDragStartWidth: Double?
     @State private var previewDragStartWidth: Double?
-    @State var fileSplitDragStartRatio: Double?
     @State private var terminalDragStartHeight: Double?
     @State var previewAutoResizeDelta: CGFloat = 0
     @State var isFileListSettingsPresented = false
@@ -135,6 +134,16 @@ struct TerminalFileManagerView: View {
                 name: "TerminalFileManagerWindow",
                 allowsTransparency: design.opacity.background < 1
             ))
+            .background(WindowMinSizeBinder(
+                minSize: NSSize(
+                    width: TerminalFileManagerLayout.minimumWindowWidth(
+                        isFolderTreeVisible: isFolderTreeVisible,
+                        isSplitViewVisible: isSplitViewVisible,
+                        isPreviewVisible: isPreviewVisible
+                    ),
+                    height: TerminalFileManagerLayout.minimumWindowHeight
+                )
+            ))
             .background(KeyboardEventHandler(isEnabled: !isSearchFocused && activeArea != .terminal) { event in
                 handleKeyEvent(event)
             })
@@ -173,6 +182,9 @@ struct TerminalFileManagerView: View {
             }
             .onChange(of: isPreviewVisible) { oldValue, newValue in
                 onPreviewVisibilityChange(from: oldValue, to: newValue)
+            }
+            .onChange(of: isFolderTreeVisible) { oldValue, newValue in
+                onFolderTreeVisibilityChange(from: oldValue, to: newValue)
             }
         )
     }
@@ -264,10 +276,18 @@ struct TerminalFileManagerView: View {
         //     and preview keep their per-pane minimums (via their
         //     clamp helpers), the file area absorbs whatever is left
         //     (down to zero, clamped non-negative).
+        // Snap pane widths to integer points so every pane boundary
+        // lands on a whole pixel (sub-pixel divider positions blur
+        // their 1pt strokes and accumulate visible rounding errors
+        // across the layout). The file area absorbs whatever residue
+        // remains so the `Σ = geometry.size.width` invariant still
+        // holds exactly.
         let totalWidth = geometry.size.width
-        let folderWidth = clampedFolderWidth(totalWidth: totalWidth)
-        let previewPaneWidth = isPreviewVisible ? clampedPreviewWidth(totalWidth: totalWidth, folderWidth: folderWidth) : 0
-        let dividers: CGFloat = isPreviewVisible ? 2 : 1
+        let folderWidthRaw = isFolderTreeVisible ? clampedFolderWidth(totalWidth: totalWidth) : 0
+        let previewPaneWidthRaw = isPreviewVisible ? clampedPreviewWidth(totalWidth: totalWidth, folderWidth: folderWidthRaw) : 0
+        let folderWidth = folderWidthRaw.rounded()
+        let previewPaneWidth = previewPaneWidthRaw.rounded()
+        let dividers: CGFloat = (isFolderTreeVisible ? 1 : 0) + (isPreviewVisible ? 1 : 0)
         let mainWidth = max(0, totalWidth - folderWidth - previewPaneWidth - dividers)
         let terminalHeight = isTerminalPaneVisible ? clampedTerminalHeight(totalHeight: geometry.size.height) : 0
         let mainHeight = max(TerminalFileManagerLayout.minimumMainAreaHeight, geometry.size.height - terminalHeight - (isTerminalPaneVisible ? 1 : 0))
@@ -301,31 +321,33 @@ struct TerminalFileManagerView: View {
         previewPaneWidth: CGFloat
     ) -> some View {
         HStack(spacing: 0) {
-            FolderTreePane(
-                model: activeModel,
-                isActive: activeArea == .folderTree,
-                activate: { activeArea = .folderTree }
-            )
-            .frame(width: folderWidth, height: mainHeight)
+            if isFolderTreeVisible {
+                FolderTreePane(
+                    model: activeModel,
+                    isActive: activeArea == .folderTree,
+                    activate: { activeArea = .folderTree }
+                )
+                .frame(width: folderWidth, height: mainHeight)
 
-            SplitDragHandle {
-                folderDragStartWidth = folderTreeWidth
-            } onChanged: { translation in
-                let baseWidth = folderDragStartWidth ?? folderTreeWidth
-                let reserved = TerminalFileManagerLayout.minimumWidthReservedAfterFolderTree(
-                    isSplitViewVisible: isSplitViewVisible,
-                    isPreviewVisible: isPreviewVisible
-                )
-                folderTreeWidth = clamp(
-                    baseWidth + translation,
-                    min: Double(TerminalFileManagerLayout.minimumFolderTreeWidth),
-                    max: max(
-                        Double(TerminalFileManagerLayout.minimumFolderTreeWidth),
-                        Double(totalWidth - reserved)
+                SplitDragHandle {
+                    folderDragStartWidth = folderTreeWidth
+                } onChanged: { translation in
+                    let baseWidth = folderDragStartWidth ?? folderTreeWidth
+                    let reserved = TerminalFileManagerLayout.widthReservedRightOfFolderTree(
+                        isSplitViewVisible: isSplitViewVisible,
+                        isPreviewVisible: isPreviewVisible
                     )
-                )
-            } onEnded: {
-                folderDragStartWidth = nil
+                    folderTreeWidth = clamp(
+                        baseWidth + translation,
+                        min: Double(TerminalFileManagerLayout.minimumFolderTreeWidth),
+                        max: max(
+                            Double(TerminalFileManagerLayout.minimumFolderTreeWidth),
+                            Double(totalWidth - reserved)
+                        )
+                    )
+                } onEnded: {
+                    folderDragStartWidth = nil
+                }
             }
 
             fileArea
@@ -337,7 +359,9 @@ struct TerminalFileManagerView: View {
                     previewDragStartWidth = previewWidth
                 } onChanged: { translation in
                     let baseWidth = previewDragStartWidth ?? previewWidth
-                    let fileAreaMin = TerminalFileManagerLayout.minimumFileAreaWidth(
+                    let reserved = TerminalFileManagerLayout.widthReservedLeftOfPreview(
+                        currentFolderWidth: folderWidth,
+                        isFolderTreeVisible: isFolderTreeVisible,
                         isSplitViewVisible: isSplitViewVisible
                     )
                     previewWidth = clamp(
@@ -345,7 +369,7 @@ struct TerminalFileManagerView: View {
                         min: Double(TerminalFileManagerLayout.minimumPreviewPaneWidth),
                         max: max(
                             Double(TerminalFileManagerLayout.minimumPreviewPaneWidth),
-                            Double(totalWidth - folderWidth - fileAreaMin)
+                            Double(totalWidth - reserved)
                         )
                     )
                 } onEnded: {
@@ -446,6 +470,7 @@ struct TerminalFileManagerView: View {
             totalWidth: totalWidth,
             folderWidth: folderWidth,
             storedPreviewWidth: previewWidth,
+            isFolderTreeVisible: isFolderTreeVisible,
             isSplitViewVisible: isSplitViewVisible
         )
     }
@@ -467,7 +492,7 @@ struct TerminalFileManagerView: View {
         isSplitViewVisible: Bool,
         isPreviewVisible: Bool
     ) -> CGFloat {
-        let reserved = TerminalFileManagerLayout.minimumWidthReservedAfterFolderTree(
+        let reserved = TerminalFileManagerLayout.widthReservedRightOfFolderTree(
             isSplitViewVisible: isSplitViewVisible,
             isPreviewVisible: isPreviewVisible
         )
@@ -485,9 +510,12 @@ struct TerminalFileManagerView: View {
         totalWidth: CGFloat,
         folderWidth: CGFloat,
         storedPreviewWidth: Double,
+        isFolderTreeVisible: Bool,
         isSplitViewVisible: Bool
     ) -> CGFloat {
-        let fileAreaMin = TerminalFileManagerLayout.minimumFileAreaWidth(
+        let reserved = TerminalFileManagerLayout.widthReservedLeftOfPreview(
+            currentFolderWidth: folderWidth,
+            isFolderTreeVisible: isFolderTreeVisible,
             isSplitViewVisible: isSplitViewVisible
         )
         return CGFloat(clampedDouble(
@@ -495,19 +523,9 @@ struct TerminalFileManagerView: View {
             min: Double(TerminalFileManagerLayout.minimumPreviewPaneWidth),
             max: max(
                 Double(TerminalFileManagerLayout.minimumPreviewPaneWidth),
-                Double(totalWidth - folderWidth - fileAreaMin)
+                Double(totalWidth - reserved)
             )
         ))
-    }
-
-    static func clampedLeftFileWidth(availableWidth: CGFloat, fileSplitRatio: Double) -> CGFloat {
-        guard availableWidth > 0 else { return 0 }
-        let minPaneWidth = min(
-            Double(TerminalFileManagerLayout.minimumFilePaneWidth),
-            Double(availableWidth) / 2
-        )
-        let maxPaneWidth = max(minPaneWidth, Double(availableWidth) - minPaneWidth)
-        return CGFloat(clampedDouble(Double(availableWidth) * fileSplitRatio, min: minPaneWidth, max: maxPaneWidth))
     }
 
 }

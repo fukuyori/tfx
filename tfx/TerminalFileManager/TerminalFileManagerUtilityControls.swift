@@ -32,13 +32,13 @@ extension TerminalFileManagerView {
                 text: $hoverHelpText
             )
 
-            Toggle(isOn: $isPreviewVisible) {
-                Image(systemName: "sidebar.right")
+            Toggle(isOn: $isFolderTreeVisible) {
+                Image(systemName: "sidebar.left")
             }
             .toggleStyle(.button)
             .quickHelp(
-                isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"),
-                shortcut: shortcutStore.info(.togglePreview),
+                isFolderTreeVisible ? LocalizedStringResource("Hide folder tree") : LocalizedStringResource("Show folder tree"),
+                shortcut: shortcutStore.info(.toggleFolderTree),
                 text: $hoverHelpText
             )
 
@@ -49,6 +49,16 @@ extension TerminalFileManagerView {
             .quickHelp(
                 isSplitViewVisible ? LocalizedStringResource("Use single pane") : LocalizedStringResource("Use split panes"),
                 shortcut: shortcutStore.info(.toggleSplit),
+                text: $hoverHelpText
+            )
+
+            Toggle(isOn: $isPreviewVisible) {
+                Image(systemName: "sidebar.right")
+            }
+            .toggleStyle(.button)
+            .quickHelp(
+                isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"),
+                shortcut: shortcutStore.info(.togglePreview),
                 text: $hoverHelpText
             )
 

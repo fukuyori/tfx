@@ -12,10 +12,14 @@ struct ViewMenuCommands: Commands {
     @AppStorage("TerminalFileManager.isPreviewVisible") private var isPreviewVisible = true
     @AppStorage("TerminalFileManager.isSplitViewVisible") private var isSplitViewVisible = false
     @AppStorage("TerminalFileManager.isTerminalPaneVisible") private var isTerminalPaneVisible = false
+    @AppStorage("TerminalFileManager.isFolderTreeVisible") private var isFolderTreeVisible = true
     @ObservedObject var shortcutStore: ShortcutStore
 
     var body: some Commands {
         CommandMenu("View") {
+            Toggle("Show Folder Tree", isOn: $isFolderTreeVisible)
+                .keyboardShortcut(shortcutStore.info(.toggleFolderTree))
+
             Toggle("Show Preview Pane", isOn: $isPreviewVisible)
                 .keyboardShortcut(shortcutStore.info(.togglePreview))
 

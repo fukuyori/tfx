@@ -4,6 +4,38 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.3] - 2026-06-03
+
+Layout overhaul: dynamic window minimum, folder-tree toggle, equal split, and the long-running pane-overlap fix.
+
+### Added
+
+- Added a folder-tree visibility toggle alongside the existing split / preview toggles (toolbar button, View menu entry, and `cmd+option+f` keyboard shortcut). Hiding the tree drops the corresponding minimum from the window content min.
+- Added `WindowMinSizeBinder` so `NSWindow.contentMinSize` tracks the live combination of folder-tree, split, and preview visibility — the window can now be dragged narrow when nothing but the file pane is shown, and refuses to shrink past the configuration's true minimum.
+- Added `WindowFrameAutosaver.Coordinator` `NSWindowDelegate` conformance with `windowWillResize(_:to:)` clamping, as a second layer of enforcement that survives SwiftUI's automatic `contentMinSize` propagation.
+- Added `TerminalFileManagerLayout` as the single source of truth for window / pane / divider minimums (folder, file pane, preview, terminal) — every magic pixel value used to be scattered across `ContentView`, `TerminalFileManagerView`, and `TerminalFileManagerFileArea`.
+
+### Changed
+
+- Split view now keeps the left and right file panes at equal width at all times; the inner drag handle is gone and a non-interactive `SplitDivider` sits between them. Width adjustments happen through the folder / preview dividers or the window edge.
+- Reworked `mainLayout` so the file area is the single squeeze target: `folderWidth + dividers + mainWidth + previewWidth ≡ geometry.size.width` is now a hard invariant, eliminating the long-standing symptom where the file pane drew over adjacent panes when the configured minimum exceeded the geometry width.
+- Pane widths are snapped to integer points; the file area absorbs the half-point residue so every divider lands on a whole pixel.
+- File rows and the column header are now left-aligned in the file pane (they were centered when the pane was wider than the rows).
+- Replaced the file pane title bar's always-on `TextField` with a `Text` display that swaps to `TextField` only while editing — SwiftUI's plain `TextField` ignores `.lineLimit(1)` for sizing and was claiming the path string's natural width as the pane's intrinsic minimum.
+- Removed `.fixedSize(horizontal: true)` from the file pane status line texts so the row truncates instead of forcing the entire pane wider than its allotted frame.
+- Removed the path breadcrumb from the toolbar (each file pane already shows its own path) and swapped the split / preview toolbar buttons so the order matches `folder | split | preview`.
+- Lowered the window vertical minimum to 300pt so a narrow short window stays usable.
+- Updated the version to `0.7.3` and the build number to `46`.
+
+### Removed
+
+- Removed the per-side file split ratio (`fileSplitRatio`) — split view is always 50:50 now.
+
+### Fixed
+
+- Fixed the file pane drawing on top of adjacent panes (folder tree, preview, or sibling split pane) so each active pane's left and right borders are always visible.
+- Fixed the preview pane's minimum width not being enforced when the window was at the configuration's minimum (an off-by-divider in the clamp helpers).
+
 ## [0.7.2] - 2026-06-03
 
 Markdown preview fixes.

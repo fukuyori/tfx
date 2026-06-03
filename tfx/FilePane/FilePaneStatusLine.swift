@@ -14,23 +14,40 @@ struct FilePaneStatusLine: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack {
+        // EVERY child of FilePane (including this status line) must
+        // be shrinkable, because SwiftUI's `.frame(width: paneWidth)`
+        // is only a *proposal*: if any descendant's intrinsic minimum
+        // is larger than the proposed width, the pane overflows the
+        // proposal and draws on top of adjacent panes (erasing their
+        // active borders). The previous `.fixedSize(horizontal: true)`
+        // on the middle status texts made this status line claim a
+        // ~200pt minimum, which forced the whole file pane wider than
+        // the layout allowed at the window's minimum width.
+        //
+        // Now every Text uses `.lineLimit(1).truncationMode(.tail)`
+        // and the side texts keep their flexible `maxWidth: .infinity`
+        // wrappers, so the row gracefully truncates from the right
+        // when the pane is narrow.
+        HStack(spacing: 6) {
             statusText
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             Text("| Free \(model.availableCapacityText)")
-                .fixedSize(horizontal: true, vertical: false)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .layoutPriority(1)
             if let gitStatus = model.gitRepositoryStatus {
-                // The branch indicator only renders for directories
-                // inside a Git work tree. Detached HEAD falls back to a
-                // short SHA via `GitRepositoryStatus.branchDisplayText`.
                 Text("| \(gitStatus.branchDisplayText)")
-                    .fixedSize(horizontal: true, vertical: false)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(1)
             }
             if model.selectionCount > 0 {
                 Text("| \(model.selectionCount) selected")
-                    .fixedSize(horizontal: true, vertical: false)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(1)
             }
             primarySelectionText
                 .lineLimit(1)

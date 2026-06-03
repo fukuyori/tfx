@@ -13,16 +13,13 @@ struct ContentView: View {
         TerminalFileManagerView()
             .environment(\.theme, designStore.activeTheme)
             .environment(\.design, designStore.activeDesign)
-            // The actual window minimum is enforced through AppKit's
-            // `NSWindow.contentMinSize` in
-            // `TerminalFileManagerView.applyWindowContentMinSize`,
-            // which recomputes the value when `isSplitViewVisible` /
-            // `isPreviewVisible` change. Setting a SwiftUI
-            // `.frame(minWidth:)` here would override that AppKit
-            // value on every re-render (the SwiftUI propagation wins
-            // over our manual `contentMinSize`), so we leave the
-            // SwiftUI floor unconstrained and let AppKit clamp the
-            // user's resize.
+            // The dynamic per-configuration window minimum is
+            // enforced by `WindowMinSizeEnforcer` (an
+            // `NSWindowDelegate` installed via `WindowFrameAutosaver`)
+            // — putting a `.frame(minWidth: dynamicValue)` here
+            // re-renders the view tree every time the value would
+            // change, which races with SwiftUI's automatic
+            // contentMinSize propagation and pegs the CPU at 100%.
             .alert("Configuration Error", isPresented: Binding(
                 get: { configurationError != nil },
                 set: { isPresented in

@@ -173,6 +173,25 @@ extension TerminalFileManagerView {
         )
     }
 
+    /// Side-effect handler for `isFolderTreeVisible` changes. Refresh
+    /// the window's content-min so it now reflects whether the folder
+    /// tree contributes its `minimumFolderTreeWidth + divider` to the
+    /// floor. No window-resize side effect: hiding the folder tree
+    /// frees space the file area happily absorbs without a window
+    /// width change, and showing it again works the same way.
+    func onFolderTreeVisibilityChange(from oldValue: Bool, to newValue: Bool) {
+        guard oldValue != newValue else { return }
+        applyWindowContentMinSize()
+
+        // If keyboard focus was sitting on the folder tree when the
+        // pane was hidden, send focus back to the file area — leaving
+        // `activeArea == .folderTree` would route arrow keys, Return,
+        // etc. to a pane the user can no longer see.
+        if !newValue, activeArea == .folderTree {
+            activeArea = .files
+        }
+    }
+
     /// Keep the file area from shrinking when the preview pane is shown by
     /// expanding the window width only. The origin is intentionally preserved
     /// so toggling preview never moves the window.
@@ -198,6 +217,7 @@ extension TerminalFileManagerView {
     /// AppKit's layout pipeline and trips
     /// `_NSDetectedLayoutRecursion`.
     func applyWindowContentMinSize() {
+        let isFolderTree = isFolderTreeVisible
         let isSplit = isSplitViewVisible
         let isPreview = isPreviewVisible
 
@@ -205,6 +225,7 @@ extension TerminalFileManagerView {
             guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
 
             let minWidth = TerminalFileManagerLayout.minimumWindowWidth(
+                isFolderTreeVisible: isFolderTree,
                 isSplitViewVisible: isSplit,
                 isPreviewVisible: isPreview
             )

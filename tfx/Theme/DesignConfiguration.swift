@@ -305,6 +305,7 @@ enum DesignConfigurationLoader {
     nextTab = "cmd+shift+]"
     toggleTerminalPane = "cmd+option+t"
     focusTerminalPane = "cmd+option+shift+t"
+    toggleFolderTree = "cmd+option+f"
 
     # Optional application launch overrides.
     #

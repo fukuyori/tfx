@@ -210,6 +210,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case nextTab
     case toggleTerminalPane
     case focusTerminalPane
+    case toggleFolderTree
 
     var id: String { rawValue }
 }
@@ -247,7 +248,8 @@ enum Shortcuts {
         .previousTab: ShortcutInfo(key: "[", modifiers: [.command, .shift]),
         .nextTab: ShortcutInfo(key: "]", modifiers: [.command, .shift]),
         .toggleTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option]),
-        .focusTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option, .shift])
+        .focusTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option, .shift]),
+        .toggleFolderTree: ShortcutInfo(key: "f", modifiers: [.command, .option])
     ]
 
     static func info(_ action: ShortcutAction) -> ShortcutInfo {

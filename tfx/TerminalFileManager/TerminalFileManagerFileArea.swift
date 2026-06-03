@@ -9,23 +9,21 @@ extension TerminalFileManagerView {
                 let totalWidth = max(geometry.size.width, 0)
                 let dividerWidth: CGFloat = 1
                 let availableWidth = max(0, totalWidth - dividerWidth)
-                let leftWidth = clampedLeftFileWidth(availableWidth: availableWidth)
+                // Split view always shows both panes at equal width.
+                // The user adjusts the file-area total via the
+                // folder / preview dividers — there's no left/right
+                // adjustment inside the split. The left pane is
+                // rounded so the divider lands on a whole pixel; the
+                // right pane absorbs the half-point residue.
+                let leftWidth = (availableWidth / 2).rounded()
                 let rightWidth = max(0, availableWidth - leftWidth)
 
                 HStack(spacing: 0) {
                     filePane(.left)
                         .frame(width: leftWidth, height: geometry.size.height)
 
-                    SplitDragHandle {
-                        fileSplitDragStartRatio = fileSplitRatio
-                    } onChanged: { translation in
-                        let baseRatio = fileSplitDragStartRatio ?? fileSplitRatio
-                        let availableWidthValue = Double(availableWidth)
-                        let baseWidth = availableWidthValue * baseRatio
-                        fileSplitRatio = clamp((baseWidth + translation) / availableWidthValue, min: 0.2, max: 0.8)
-                    } onEnded: {
-                        fileSplitDragStartRatio = nil
-                    }
+                    SplitDivider()
+                        .frame(width: dividerWidth, height: geometry.size.height)
 
                     filePane(.right)
                         .frame(width: rightWidth, height: geometry.size.height)
@@ -37,13 +35,6 @@ extension TerminalFileManagerView {
             filePane(activePane)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-
-    func clampedLeftFileWidth(availableWidth: CGFloat) -> CGFloat {
-        Self.clampedLeftFileWidth(
-            availableWidth: availableWidth,
-            fileSplitRatio: fileSplitRatio
-        )
     }
 
     func filePane(_ paneID: BrowserPaneID) -> some View {

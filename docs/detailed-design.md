@@ -139,11 +139,11 @@ the preview configuration flow.
 | `rightModel` | `@StateObject` | Right file pane model. |
 | `isPreviewVisible` | `@AppStorage` | Preview pane visibility. |
 | `isSplitViewVisible` | `@AppStorage` | Split-pane visibility during the current session. Startup behavior is controlled by `[startup].layout` in `config.toml`. |
+| `isFolderTreeVisible` | `@AppStorage` | Folder tree pane visibility. |
 | `activePaneRawValue` | `@AppStorage` | Active file pane. |
 | `activeAreaRawValue` | `@AppStorage` | Active keyboard target. |
 | `folderTreeWidth` | `@AppStorage` | Folder tree width. |
 | `previewWidth` | `@AppStorage` | Preview pane width. |
-| `fileSplitRatio` | `@AppStorage` | Left/right file pane ratio. |
 | `fileNameColumnWidth` | `@AppStorage` | File name column width. |
 | `fileColumnConfigurationRaw` | `@AppStorage` | File list column configuration. |
 
@@ -435,13 +435,13 @@ The persisted flag `Preview.showsRawSource` applies to all eligible files in bot
 | `TerminalFileManager.rightTabs` | JSON-encoded right-pane tab paths and active index. Saved during the session; restored when `[startup].layout = "restore"` or when `[startup].layout = "split"` has no valid `rightFolder` / `rightFolders`. |
 | `TerminalFileManager.isPreviewVisible` | Preview pane visibility. |
 | `TerminalFileManager.isSplitViewVisible` | Split-pane visibility during the current session. Restored on launch only when `[startup].layout = "restore"`. |
+| `TerminalFileManager.isFolderTreeVisible` | Folder tree visibility. Hiding it lowers the window's content min so the user can shrink the window further. |
 | `TerminalFileManager.isTerminalPaneVisible` | Built-in terminal pane visibility. |
 | `TerminalFileManager.terminalPaneHeight` | Built-in terminal pane height. |
 | `TerminalFileManager.activePane` | Active pane. |
 | `TerminalFileManager.activeArea` | Active keyboard target. |
 | `TerminalFileManager.folderTreeWidth` | Folder tree width. |
 | `TerminalFileManager.previewWidth` | Preview width. |
-| `TerminalFileManager.fileSplitRatio` | File pane split ratio. |
 | `TerminalFileManager.fileNameColumnWidth` | File name column width. |
 | `TerminalFileManager.fileColumnConfiguration` | Column visibility and order. |
 | `TerminalFileManager.pinnedFolders` | Pinned folder list. |

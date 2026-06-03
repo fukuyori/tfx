@@ -20,11 +20,15 @@ enum TerminalFileManagerLayout {
     // MARK: - Window
 
     /// SwiftUI-level floor on the window content width. Corresponds to
-    /// the narrowest valid configuration (single pane, no preview);
-    /// wider configurations enforce a larger floor through
-    /// `NSWindow.contentMinSize`.
+    /// the narrowest valid configuration (single file pane, no folder
+    /// tree, no preview); wider configurations enforce a larger floor
+    /// through `NSWindow.contentMinSize`.
     static var absoluteMinimumWindowWidth: CGFloat {
-        minimumWindowWidth(isSplitViewVisible: false, isPreviewVisible: false)
+        minimumWindowWidth(
+            isFolderTreeVisible: false,
+            isSplitViewVisible: false,
+            isPreviewVisible: false
+        )
     }
     /// Smallest window content height that still leaves room for the
     /// header, the file list, and the status line. Set to 300 so the
@@ -60,7 +64,6 @@ enum TerminalFileManagerLayout {
     /// Minimum width of one file pane. Applies both to the single-pane
     /// view and to each side of a split.
     static let minimumFilePaneWidth: CGFloat = 200
-    static let defaultFileSplitRatio: Double = 0.5
 
     // MARK: - Dividers
 
@@ -80,34 +83,54 @@ enum TerminalFileManagerLayout {
         return minimumFilePaneWidth
     }
 
-    /// Width that must remain to the right of the folder tree when
-    /// resizing or clamping the folder width. Equals file area plus
-    /// the preview pane and its divider when the preview is visible.
-    static func minimumWidthReservedAfterFolderTree(
+    /// Width consumed by everything to the right of the folder pane
+    /// itself — i.e. the folder/file divider, the file area at its
+    /// minimum, and (when shown) the file/preview divider plus the
+    /// preview pane at its minimum. Subtract this from the total
+    /// content width to get the folder pane's maximum allowed width.
+    /// IMPORTANT: counts the folder/file divider too — leaving it
+    /// out leaks 1pt of slack into the folder pane and squeezes the
+    /// file area below its declared minimum at the window-min
+    /// configuration.
+    static func widthReservedRightOfFolderTree(
         isSplitViewVisible: Bool,
         isPreviewVisible: Bool
     ) -> CGFloat {
-        var reserved = minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
+        var reserved = dividerWidth + minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
         if isPreviewVisible {
             reserved += dividerWidth + minimumPreviewPaneWidth
         }
         return reserved
     }
 
-    /// Width that must remain to the left of the preview pane when
-    /// resizing the preview. Equals folder min + divider + file area.
-    static func minimumWidthReservedAfterPreview(isSplitViewVisible: Bool) -> CGFloat {
-        minimumFolderTreeWidth + dividerWidth + minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
+    /// Width consumed by everything to the left of the preview pane
+    /// itself, given the *current* folder width. Includes the
+    /// file/preview divider (always present when this is called —
+    /// preview is visible) and, when the folder tree is shown, the
+    /// folder pane and its trailing divider.
+    static func widthReservedLeftOfPreview(
+        currentFolderWidth: CGFloat,
+        isFolderTreeVisible: Bool,
+        isSplitViewVisible: Bool
+    ) -> CGFloat {
+        var reserved = minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible) + dividerWidth
+        if isFolderTreeVisible {
+            reserved += currentFolderWidth + dividerWidth
+        }
+        return reserved
     }
 
     /// Total window content width required for the given pane
     /// configuration. The window may not shrink below this value.
     static func minimumWindowWidth(
+        isFolderTreeVisible: Bool,
         isSplitViewVisible: Bool,
         isPreviewVisible: Bool
     ) -> CGFloat {
-        var width = minimumFolderTreeWidth + dividerWidth
-        width += minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
+        var width = minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
+        if isFolderTreeVisible {
+            width += minimumFolderTreeWidth + dividerWidth
+        }
         if isPreviewVisible {
             width += dividerWidth + minimumPreviewPaneWidth
         }

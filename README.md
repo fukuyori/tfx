@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.7.2**
+Version: **0.7.3**
 
 English | [日本語](README.ja.md)
 
@@ -19,7 +19,8 @@ English | [日本語](README.ja.md)
 - Persistent pinned folders section
 - Home, Documents, and Downloads are pinned by default on first launch
 - Drag reordering for pinned folders
-- Single-pane and split-pane modes
+- Toggleable folder tree (toolbar, View menu, or `cmd+option+f`)
+- Single-pane and equal-width split-pane modes
 - Per-pane folder tabs
 - Drag and drop between left and right file panes
 - Option-drag copies files; normal drag moves files

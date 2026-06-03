@@ -14,33 +14,54 @@ struct FilePaneTitleBar: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
+        // CRITICAL: SwiftUI's `TextField` (plain style) ignores
+        // `.lineLimit(1)` for sizing — it claims an intrinsic width
+        // equal to the displayed text and refuses to be narrower than
+        // that, even with `.frame(minWidth: 0, maxWidth: .infinity)`.
+        // That intrinsic min bubbles up through every parent and
+        // makes the whole file pane refuse to honor its allotted
+        // `.frame(width: paneWidth)`, leading to the persistent
+        // overlap symptom. So show a (shrinkable) `Text` for display
+        // and only swap to `TextField` while the user is editing.
         HStack(spacing: 8) {
-            TextField("", text: $pathInput)
-                .textFieldStyle(.plain)
-                .font(design.fonts.swiftUIFont(for: .paneTitle))
-                .lineLimit(1)
-                .foregroundStyle(isActivePane ? theme.statusLineForegroundActive : theme.secondaryForeground)
-                .focused($isPathFieldFocused)
-                .onSubmit {
-                    commitPathInput()
-                }
-                .onExitCommand {
-                    pathInput = currentPathString
-                    isPathFieldFocused = false
-                }
-                .onChange(of: isPathFieldFocused) {
-                    if isPathFieldFocused {
-                        activate()
-                    } else {
-                        pathInput = currentPathString
+            if isPathFieldFocused {
+                TextField("", text: $pathInput)
+                    .textFieldStyle(.plain)
+                    .font(design.fonts.swiftUIFont(for: .paneTitle))
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(isActivePane ? theme.statusLineForegroundActive : theme.secondaryForeground)
+                    .focused($isPathFieldFocused)
+                    .onSubmit {
+                        commitPathInput()
                     }
-                }
-
-            Spacer()
+                    .onExitCommand {
+                        pathInput = currentPathString
+                        isPathFieldFocused = false
+                    }
+            } else {
+                Text(pathInput)
+                    .font(design.fonts.swiftUIFont(for: .paneTitle))
+                    .lineLimit(1)
+                    .truncationMode(.head)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(isActivePane ? theme.statusLineForegroundActive : theme.secondaryForeground)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        isPathFieldFocused = true
+                    }
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
         .background(titleBackground.opacity(design.opacity.background))
+        .onChange(of: isPathFieldFocused) {
+            if isPathFieldFocused {
+                activate()
+            } else {
+                pathInput = currentPathString
+            }
+        }
         .onAppear {
             pathInput = currentPathString
         }
