@@ -2,6 +2,12 @@
 import SwiftUI
 
 struct PreviewPane: View {
+    enum PreviewDisplay: Equatable {
+        case noPreview
+        case rawSource
+        case rendered
+    }
+
     let urls: [URL]
     @State private var selectedPreviewURLs: Set<URL> = []
     @State private var visibleMultiPreviewURLs: Set<URL> = []
@@ -126,14 +132,19 @@ struct PreviewPane: View {
 
     @ViewBuilder
     private func preview(for url: URL) -> some View {
-        switch previewMode(for: url) {
-        case .none:
+        let mode = previewMode(for: url)
+        let display = Self.previewDisplay(
+            mode: mode,
+            showsRawSource: showsRawSource,
+            supportsRawSourceToggle: Self.supportsRawSourceToggle(url, mode: mode)
+        )
+
+        switch display {
+        case .noPreview:
             noPreviewView
-        case .text:
+        case .rawSource:
             RawTextPreview(url: url)
-        case .auto, .rendered where shouldShowRawSource(for: url):
-            RawTextPreview(url: url)
-        case .auto, .rendered:
+        case .rendered:
             renderedPreview(for: url)
         }
     }
@@ -301,6 +312,21 @@ struct PreviewPane: View {
             return allowsExternalImages
         case .never:
             return false
+        }
+    }
+
+    static func previewDisplay(
+        mode: PreviewConfiguration.Mode,
+        showsRawSource: Bool,
+        supportsRawSourceToggle: Bool
+    ) -> PreviewDisplay {
+        switch mode {
+        case .text:
+            return .rawSource
+        case .auto, .rendered:
+            return showsRawSource && supportsRawSourceToggle ? .rawSource : .rendered
+        case .none:
+            return .noPreview
         }
     }
 

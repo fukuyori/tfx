@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.2] - 2026-06-03
+
+Markdown preview fixes.
+
+### Added
+
+- Added Markdown horizontal rule rendering for `---`.
+- Added Markdown ordered-list rendering and compact table delimiter handling, including compact alignment markers.
+
+### Fixed
+
+- Fixed Markdown files opening as raw source in the default rendered preview mode.
+
+### Changed
+
+- Cleaned up preview display-mode selection so rendered, raw source, and disabled preview states are explicit.
+- Updated the version to `0.7.2` and the build number to `45`.
+
 ## [0.7.1] - 2026-06-02
 
 Documentation and configuration cleanup.

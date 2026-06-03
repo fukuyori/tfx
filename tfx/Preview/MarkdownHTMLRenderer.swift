@@ -8,6 +8,11 @@ enum MarkdownHTMLRenderer {
         case trailing
     }
 
+    private enum ListKind {
+        case unordered
+        case ordered
+    }
+
     static func htmlDocument(
         for markdown: String,
         allowsExternalImages: Bool = false,
@@ -24,6 +29,7 @@ enum MarkdownHTMLRenderer {
         var html: [String] = []
         var paragraph: [String] = []
         var listItems: [String] = []
+        var listKind: ListKind?
         var codeBlock: [String] = []
         var isInCodeBlock = false
 
@@ -37,8 +43,22 @@ enum MarkdownHTMLRenderer {
         func flushList() {
             guard !cancellation.isCancelled else { return }
             guard !listItems.isEmpty else { return }
-            html.append("<ul>\(listItems.joined())</ul>")
+            switch listKind {
+            case .ordered:
+                html.append("<ol>\(listItems.joined())</ol>")
+            case .unordered, nil:
+                html.append("<ul>\(listItems.joined())</ul>")
+            }
             listItems.removeAll()
+            listKind = nil
+        }
+
+        func appendListItem(_ body: String, kind: ListKind) {
+            if let listKind, listKind != kind {
+                flushList()
+            }
+            listKind = kind
+            listItems.append("<li>\(MarkdownInlineHTML.inlineHTML(body))</li>")
         }
 
         func flushCodeBlock() {
@@ -81,6 +101,10 @@ enum MarkdownHTMLRenderer {
             if line.isEmpty {
                 flushParagraph()
                 flushList()
+            } else if horizontalRuleHTML(for: line) != nil {
+                flushParagraph()
+                flushList()
+                html.append("<hr>")
             } else if let table = tableHTML(startingAt: index, in: lines) {
                 flushParagraph()
                 flushList()
@@ -93,7 +117,10 @@ enum MarkdownHTMLRenderer {
                 html.append(heading)
             } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
                 flushParagraph()
-                listItems.append("<li>\(MarkdownInlineHTML.inlineHTML(String(line.dropFirst(2))))</li>")
+                appendListItem(String(line.dropFirst(2)), kind: .unordered)
+            } else if let orderedListBody = orderedListItemBody(for: line) {
+                flushParagraph()
+                appendListItem(orderedListBody, kind: .ordered)
             } else if line.hasPrefix("> ") {
                 flushParagraph()
                 flushList()
@@ -125,6 +152,32 @@ enum MarkdownHTMLRenderer {
         let level = markerCount
         let text = line.dropFirst(markerCount + 1)
         return "<h\(level)>\(MarkdownInlineHTML.inlineHTML(String(text)))</h\(level)>"
+    }
+
+    private static func horizontalRuleHTML(for line: String) -> String? {
+        let marker = line.replacingOccurrences(of: " ", with: "")
+        guard marker.count >= 3, marker.allSatisfy({ $0 == "-" }) else {
+            return nil
+        }
+        return "<hr>"
+    }
+
+    private static func orderedListItemBody(for line: String) -> String? {
+        let characters = Array(line)
+        var index = 0
+
+        while index < characters.count, characters[index].isNumber {
+            index += 1
+        }
+
+        guard index > 0,
+              index + 1 < characters.count,
+              characters[index] == ".",
+              characters[index + 1] == " " else {
+            return nil
+        }
+
+        return String(characters.dropFirst(index + 2))
     }
 
     private static func tableHTML(startingAt index: Int, in lines: [String]) -> (html: String, nextIndex: Int)? {
@@ -230,7 +283,7 @@ enum MarkdownHTMLRenderer {
                 marker.removeLast()
             }
 
-            guard marker.count >= 3, marker.allSatisfy({ $0 == "-" }) else {
+            guard marker.count >= 1, marker.allSatisfy({ $0 == "-" }) else {
                 return nil
             }
 

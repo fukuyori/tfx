@@ -71,6 +71,12 @@ enum MarkdownHTMLDocument {
           border-left: 3px solid color-mix(in srgb, CanvasText 35%, Canvas);
           color: color-mix(in srgb, CanvasText 75%, Canvas);
         }
+        hr {
+          height: 1px;
+          margin: 1.4em 0;
+          border: 0;
+          background: color-mix(in srgb, CanvasText 24%, Canvas);
+        }
         table {
           display: block;
           max-width: 100%;

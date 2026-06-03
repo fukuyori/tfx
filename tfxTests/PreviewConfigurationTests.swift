@@ -74,6 +74,15 @@ struct PreviewConfigurationTests {
     }
 
     @Test
+    func autoModeUsesRenderedPreviewUntilSourceToggleIsEnabled() {
+        #expect(PreviewPane.previewDisplay(mode: .auto, showsRawSource: false, supportsRawSourceToggle: true) == .rendered)
+        #expect(PreviewPane.previewDisplay(mode: .auto, showsRawSource: true, supportsRawSourceToggle: true) == .rawSource)
+        #expect(PreviewPane.previewDisplay(mode: .rendered, showsRawSource: false, supportsRawSourceToggle: true) == .rendered)
+        #expect(PreviewPane.previewDisplay(mode: .text, showsRawSource: false, supportsRawSourceToggle: false) == .rawSource)
+        #expect(PreviewPane.previewDisplay(mode: PreviewConfiguration.Mode.none, showsRawSource: true, supportsRawSourceToggle: true) == .noPreview)
+    }
+
+    @Test
     func invalidPreviewModeThrows() {
         #expect(throws: PreviewConfigurationError.self) {
             _ = try PreviewConfigurationLoader.parse("""
