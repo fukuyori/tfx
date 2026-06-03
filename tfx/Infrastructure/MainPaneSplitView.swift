@@ -172,6 +172,17 @@ struct MainPaneSplitView: NSViewRepresentable {
         func makeHost(for content: AnyView) -> NSHostingView<AnyView> {
             let host = NSHostingView(rootView: content)
             host.translatesAutoresizingMaskIntoConstraints = false
+            // CRUCIAL: NSHostingView does NOT clip its content to the
+            // host's frame by default. When SwiftUI lays out content
+            // with an intrinsic width wider than the frame
+            // NSSplitView gave us (e.g. folder tree natural width
+            // > stored 250pt forced into a 181pt frame during a
+            // narrow-window live resize), the SwiftUI content
+            // overflows and visually draws on top of the neighbor
+            // pane. Enable layer-backed clipping so the host
+            // physically cannot paint outside its frame.
+            host.wantsLayer = true
+            host.layer?.masksToBounds = true
             return host
         }
 
