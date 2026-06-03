@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.7.3**
+Version: **0.7.4**
 
 English | [日本語](README.ja.md)
 
@@ -61,7 +61,7 @@ English | [日本語](README.ja.md)
 - `Up / Down`: Move selection in the active file pane or folder tree
 - `Shift + Up / Down`: Extend the file-pane selection range
 - `Left / Right`: Scroll the file list horizontally
-- `Tab` / `Shift + Tab`: Cycle keyboard focus across folder tree → left file pane → right file pane
+- `Tab` / `Shift + Tab`: Cycle keyboard focus across left file pane → right file pane → built-in terminal (when visible). The folder tree is reachable by mouse click but does not participate in Tab cycling.
 - `Enter`: Open the selected file or enter the selected folder
 - `Command + O`: Open the selected item
 - `Command + [` / `Command + ]`: Back / Forward

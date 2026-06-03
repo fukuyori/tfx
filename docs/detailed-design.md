@@ -87,7 +87,9 @@ See `docs/code-organization.md` for file naming and placement rules, and `docs/c
 3. File display area
 4. Preview pane
 
-The header contains navigation, breadcrumb path navigation, search, sorting, file operations, pane visibility toggles, terminal app launch, and path copy actions. Folder tree width, preview width, and split-pane ratio can be changed by dragging.
+The header contains navigation, search, sorting, file operations, pane visibility toggles, terminal app launch, and path copy actions. The folder tree and preview pane widths can be changed by dragging their dividers; in split mode the left and right file panes are kept at equal width.
+
+The horizontal pane layout (folder tree | file area | preview) is hosted by `MainPaneSplitView`, an `NSSplitView`-backed `NSViewRepresentable` that owns the window's `contentMinSize` and the toggle-driven window resize. The folder tree and preview panes use `NSSplitView`'s holding priority to resist window-resize changes; the file area absorbs the window-resize delta. Each side pane has a `LayoutPane` enum case carrying its minimum / default widths and `UserDefaults` keys, and a unified `setVisible(_:_:)` / `setStoredWidth(_:_:)` read/write API on `TerminalFileManagerView` that every consumer (toolbar, menu, keyboard shortcut, drag handler) uses.
 
 The current directory path is displayed as a horizontally scrollable breadcrumb bar. Each path segment is clickable and calls the same directory navigation path as file-pane and folder-tree navigation. The bar scrolls to the trailing end when the current directory changes so the deepest folder remains visible.
 

@@ -237,8 +237,14 @@ extension TerminalFileManagerView {
 
     /// Cycle keyboard focus across the visible targets.
     ///
-    /// Forward order: folder tree → left file pane → right file pane (when
-    /// split is on) → folder tree. Reverse runs the same cycle backwards.
+    /// Forward order: left file pane → right file pane (when split is on)
+    /// → terminal (when visible) → back to left. Reverse runs the same
+    /// cycle backwards.
+    ///
+    /// The folder tree is deliberately excluded from Tab cycling — it
+    /// can still be focused by clicking, and arrow keys / shortcuts
+    /// continue to work once it has focus, but Tab moves only across
+    /// the working surfaces.
     private func cycleKeyboardFocus(reverse: Bool) {
         let stops = focusStops()
         guard !stops.isEmpty else { return }
@@ -254,7 +260,7 @@ extension TerminalFileManagerView {
     }
 
     private func focusStops() -> [FocusStop] {
-        var stops: [FocusStop] = isSplitViewVisible ? [.folderTree, .fileLeft, .fileRight] : [.folderTree, .fileLeft]
+        var stops: [FocusStop] = isSplitViewVisible ? [.fileLeft, .fileRight] : [.fileLeft]
         if isTerminalPaneVisible {
             stops.append(.terminal)
         }

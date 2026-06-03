@@ -4,6 +4,35 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.4] - 2026-06-03
+
+Layout refactor: pane state unification and migration to `NSSplitView` for the horizontal pane container.
+
+### Added
+
+- Added `LayoutPane` enum that centralizes per-pane metadata (which side, minimum/default widths, `UserDefaults` keys) so every consumer reads pane settings through one surface.
+- Added `TerminalFileManagerPanes.swift` extension with a unified read/write API: `isVisible(_:)`, `storedWidth(_:)`, `displayedWidth(_:)`, `setVisible(_:_:)`, `setStoredWidth(_:_:)`, `visibilityBinding(_:)`. Toolbar / menu / keyboard toggles and the drag handler now all route through this surface.
+- Added `MainPaneSplitView`, an `NSViewRepresentable` wrapping `NSSplitView` for the folder | file area | preview row. Each pane's SwiftUI content is hosted through `NSHostingView` with layer-backed clipping so SwiftUI content can never paint past its frame onto a neighbor pane.
+- Added opt-in pane-layout diagnostics gated on the `TFX_PANE_LAYOUT_LOGS=1` environment variable or `Developer.showsPaneLayoutLogs` in `UserDefaults`.
+
+### Changed
+
+- `Tab` / `Shift + Tab` cycle keyboard focus across the working surfaces only (left file pane → right file pane → built-in terminal when visible). The folder tree is no longer a Tab stop; it remains reachable with a mouse click.
+- The horizontal pane container is now `NSSplitView` instead of a SwiftUI `HStack` + per-divider drag handles. `NSSplitView`'s holding-priority model resists window-resize changes on the folder / preview panes (`.defaultHigh`) and concentrates absorption on the file area (`.defaultLow`).
+- All window-level layout state (`NSWindow.contentMinSize`, the toggle-driven window grow/shrink) is now owned by exactly one place: `MainPaneSplitView.Coordinator`. The previous WindowMinSizeBinder / `applyWindowContentMinSize` / `adjustWindowForPaneToggle` / `windowWillResize` writers are removed in favor of `applyContentMinSize()` and `resizeWindowForToggleIfNeeded()` on the Coordinator.
+- `splitViewDidResizeSubviews` only persists a new stored width when the frame change reflects an actual user drag — guards skip persistence during NSSplitView's mid-layout passes (frame width below the pane's hard minimum) and during forced shrinks (window too narrow to fit stored, so NSSplitView clamped down).
+- Updated the version to `0.7.4` and the build number to `47`.
+
+### Removed
+
+- Removed `WindowMinSizeBinder.swift` (Coordinator now owns `contentMinSize`).
+- Removed `NSWindowDelegate.windowWillResize` clamping from `WindowFrameAutosaver.Coordinator`; NSWindow's native `contentMinSize` enforcement is sufficient now that there is one consistent writer.
+
+### Fixed
+
+- Fixed folder / preview pane SwiftUI content overflowing past its allotted area when `NSSplitView` constrained the host narrower than the content's intrinsic width.
+- Fixed `splitViewDidResizeSubviews` persistence corrupting stored pane widths during NSSplitView's automatic mid-layout passes (e.g. writing `0` or the pane's hard minimum back to `AppStorage` over the user's stored value).
+
 ## [0.7.3] - 2026-06-03
 
 Layout overhaul: dynamic window minimum, folder-tree toggle, equal split, and the long-running pane-overlap fix.
