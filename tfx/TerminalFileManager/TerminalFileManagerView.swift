@@ -133,15 +133,13 @@ struct TerminalFileManagerView: View {
                 name: "TerminalFileManagerWindow",
                 allowsTransparency: design.opacity.background < 1
             ))
-            .background(WindowMinSizeBinder(
-                minSize: NSSize(
-                    width: TerminalFileManagerLayout.minimumWindowWidth(
-                        visiblePanes: currentVisiblePaneSnapshots(),
-                        isSplitViewVisible: isSplitViewVisible
-                    ),
-                    height: TerminalFileManagerLayout.minimumWindowHeight
-                )
-            ))
+            // `NSWindow.contentMinSize` and the toggle-driven
+            // window resize are owned by
+            // `MainPaneSplitView.Coordinator` — see
+            // `applyContentMinSize` / `resizeWindowForToggleIfNeeded`
+            // in that file. Adding another writer here would split
+            // ownership again, which is exactly what the previous
+            // round of layout bugs traced back to.
             .background(KeyboardEventHandler(isEnabled: !isSearchFocused && activeArea != .terminal) { event in
                 handleKeyEvent(event)
             })
@@ -442,7 +440,11 @@ struct TerminalFileManagerView: View {
     private func handleAppear() {
         openRequestedDirectoryIfNeeded()
         applyStartupFocusIfNeeded()
-        applyWindowContentMinSize()
+        // `NSWindow.contentMinSize` is set by
+        // `MainPaneSplitView.Coordinator.applyContentMinSize` on
+        // the first `updateNSView`, which fires right after
+        // `makeNSView` schedules its initial async pass — no
+        // additional appear-time setup needed here.
     }
 
     /// Set the initial keyboard focus to the left file pane with the `..`

@@ -156,15 +156,14 @@ extension TerminalFileManagerView {
         setTerminalPaneVisible(false, focus: false)
     }
 
-    /// Side-effect handler for `isSplitViewVisible` changes. Invoked from
-    /// `.onChange` in the view body so toolbar, menu, and shortcut paths all
-    /// converge here.
+    /// Side-effect handler for `isSplitViewVisible` changes.
+    /// `MainPaneSplitView.Coordinator` re-renders on this AppStorage
+    /// flip (via its bound input) and refreshes
+    /// `NSWindow.contentMinSize` itself; this handler only owns the
+    /// directory-sync side effect that pulls the other pane onto
+    /// the active directory when split first turns on.
     func onSplitViewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
-        guard oldValue != newValue else { return }
-        applyWindowContentMinSize()
-        guard newValue else { return }
-
-        // Activating split — bring the other pane onto the same directory.
+        guard oldValue != newValue, newValue else { return }
         let sourceModel = activeModel
         let targetModel = activePane == .left ? rightModel : leftModel
         targetModel.navigate(
@@ -173,99 +172,24 @@ extension TerminalFileManagerView {
         )
     }
 
-    /// Per-pane visibility-change side effects, shared by folder and
-    /// preview. Folder + preview behave identically:
-    ///   - ON: grow the window by `stored width + divider`, capped
-    ///     to the screen's visible right edge. File area is preserved.
-    ///   - OFF: shrink the window by the same amount, capped to the
-    ///     freshly-computed content-min so the file area never drops
-    ///     below its own minimum.
-    /// No stored "delta" is kept; everything recomputes from the
-    /// current state at the moment of toggle, so the behavior is
-    /// order-independent and identical for both panes.
+    /// Side-effect handler for `isFolderTreeVisible` changes.
+    /// `MainPaneSplitView.Coordinator` owns the window
+    /// `contentMinSize` and the toggle-driven resize; this handler
+    /// only owns the focus fallback (arrow keys / Return must not
+    /// route to an invisible pane).
     func onFolderTreeVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
-        // Focus fallback: arrow keys / Return must not route to an
-        // invisible pane.
         if !newValue, activeArea == .folderTree {
             activeArea = .files
         }
-        adjustWindowForPaneToggle(.folderTree, becomingVisible: newValue)
     }
 
+    /// Side-effect handler for `isPreviewVisible` changes.
+    /// `MainPaneSplitView.Coordinator` owns the window
+    /// `contentMinSize` and the toggle-driven resize; this handler
+    /// has nothing else to do.
     func onPreviewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
-        guard oldValue != newValue else { return }
-        adjustWindowForPaneToggle(.preview, becomingVisible: newValue)
-    }
-
-    private func adjustWindowForPaneToggle(_ pane: LayoutPane, becomingVisible: Bool) {
-        let storedPaneWidth = max(Double(pane.minimumWidth), storedWidth(pane))
-        let snapshots = currentVisiblePaneSnapshots()
-        let isSplit = isSplitViewVisible
-        DispatchQueue.main.async {
-            guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
-            let newContentMinWidth = TerminalFileManagerLayout.minimumWindowWidth(
-                visiblePanes: snapshots,
-                isSplitViewVisible: isSplit
-            )
-            window.contentMinSize = NSSize(
-                width: newContentMinWidth,
-                height: TerminalFileManagerLayout.minimumWindowHeight
-            )
-            let currentFrame = window.frame
-            let chromeWidth = currentFrame.width - window.contentLayoutRect.width
-            let paneDelta = CGFloat(storedPaneWidth) + TerminalFileManagerLayout.dividerWidth
-            let minFrameWidth = newContentMinWidth + chromeWidth
-            let proposedWidth: CGFloat
-            if becomingVisible {
-                let maxFrameWidth = window.screen.map { screen in
-                    max(currentFrame.width, screen.visibleFrame.maxX - currentFrame.minX)
-                } ?? currentFrame.width + paneDelta
-                proposedWidth = min(currentFrame.width + paneDelta, maxFrameWidth)
-            } else {
-                proposedWidth = currentFrame.width - paneDelta
-            }
-            let targetFrameWidth = max(proposedWidth, minFrameWidth)
-            guard targetFrameWidth != currentFrame.width else { return }
-            var frame = currentFrame
-            frame.size.width = targetFrameWidth
-            frame.origin = currentFrame.origin
-            window.setFrame(frame, display: true, animate: false)
-        }
-    }
-
-    /// Push the layout's dynamic minimum content width into AppKit so
-    /// the user cannot drag the window narrower than the current
-    /// `isSplitViewVisible` / `isPreviewVisible` configuration can
-    /// honor. Deferred to the next runloop tick because mutating
-    /// `NSWindow.contentMinSize` (or `setFrame` after growth) from
-    /// inside SwiftUI's body / `.onChange` reentrantly triggers
-    /// AppKit's layout pipeline and trips
-    /// `_NSDetectedLayoutRecursion`.
-    func applyWindowContentMinSize() {
-        let snapshots = currentVisiblePaneSnapshots()
-        let isSplit = isSplitViewVisible
-
-        DispatchQueue.main.async {
-            guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
-
-            let minWidth = TerminalFileManagerLayout.minimumWindowWidth(
-                visiblePanes: snapshots,
-                isSplitViewVisible: isSplit
-            )
-            let minHeight = TerminalFileManagerLayout.minimumWindowHeight
-            window.contentMinSize = NSSize(width: minWidth, height: minHeight)
-
-            // Grow the window if its current width is below the new
-            // minimum (e.g. the user toggled split on while the window
-            // was sitting at the single-pane minimum). Leave the
-            // origin alone so the window doesn't visually leap.
-            if window.frame.width < minWidth {
-                var frame = window.frame
-                frame.size.width = minWidth
-                window.setFrame(frame, display: true, animate: false)
-            }
-        }
+        _ = (oldValue, newValue)
     }
 
     /// Swap the left and right pane directories. No-op when split is off or
