@@ -282,25 +282,13 @@ struct TerminalFileManagerView: View {
         // remains so the `Σ = geometry.size.width` invariant still
         // holds exactly.
         let totalWidth = geometry.size.width
-        let folderWidthRaw = isFolderTreeVisible ? clampedFolderWidth(totalWidth: totalWidth) : 0
-        let previewPaneWidthRaw = isPreviewVisible ? clampedPreviewWidth(totalWidth: totalWidth, folderWidth: folderWidthRaw) : 0
-        let folderWidth = folderWidthRaw.rounded()
-        let previewPaneWidth = previewPaneWidthRaw.rounded()
-        let dividers: CGFloat = (isFolderTreeVisible ? 1 : 0) + (isPreviewVisible ? 1 : 0)
-        let mainWidth = max(0, totalWidth - folderWidth - previewPaneWidth - dividers)
         let terminalHeight = isTerminalPaneVisible ? clampedTerminalHeight(totalHeight: geometry.size.height) : 0
         let mainHeight = max(TerminalFileManagerLayout.minimumMainAreaHeight, geometry.size.height - terminalHeight - (isTerminalPaneVisible ? 1 : 0))
 
         return VStack(spacing: 0) {
-            mainHorizontalLayout(
-                totalWidth: totalWidth,
-                folderWidth: folderWidth,
-                mainWidth: mainWidth,
-                mainHeight: mainHeight,
-                previewPaneWidth: previewPaneWidth
-            )
-            .frame(width: totalWidth, height: mainHeight)
-            .clipped()
+            mainPaneSplit
+                .frame(width: totalWidth, height: mainHeight)
+                .clipped()
 
             if isTerminalPaneVisible {
                 terminalArea(totalHeight: geometry.size.height, terminalHeight: terminalHeight)
@@ -310,6 +298,37 @@ struct TerminalFileManagerView: View {
         }
         .frame(width: totalWidth, height: geometry.size.height, alignment: .top)
         .clipped()
+    }
+
+    /// Folder | file area | preview, backed by an `NSSplitView` so
+    /// each side pane's width is fully decoupled from window-size
+    /// changes and from the other pane's toggle state. See
+    /// `MainPaneSplitView` for the architectural reasoning.
+    private var mainPaneSplit: some View {
+        MainPaneSplitView(
+            folderContent: AnyView(
+                FolderTreePane(
+                    model: activeModel,
+                    isActive: activeArea == .folderTree,
+                    activate: { activeArea = .folderTree }
+                )
+            ),
+            fileAreaContent: AnyView(fileArea),
+            previewContent: AnyView(PreviewPane(urls: activeModel.previewURLs)),
+            isFolderVisible: isFolderTreeVisible,
+            isPreviewVisible: isPreviewVisible,
+            folderWidth: Binding(
+                get: { folderTreeWidth },
+                set: { setStoredWidth(.folderTree, $0) }
+            ),
+            previewWidth: Binding(
+                get: { previewWidth },
+                set: { setStoredWidth(.preview, $0) }
+            ),
+            fileAreaMinimumWidth: TerminalFileManagerLayout.minimumFileAreaWidth(
+                isSplitViewVisible: isSplitViewVisible
+            )
+        )
     }
 
     private func mainHorizontalLayout(
