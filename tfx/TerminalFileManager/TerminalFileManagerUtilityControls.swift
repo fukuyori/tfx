@@ -32,12 +32,12 @@ extension TerminalFileManagerView {
                 text: $hoverHelpText
             )
 
-            Toggle(isOn: $isFolderTreeVisible) {
+            Toggle(isOn: visibilityBinding(.folderTree)) {
                 Image(systemName: "sidebar.left")
             }
             .toggleStyle(.button)
             .quickHelp(
-                isFolderTreeVisible ? LocalizedStringResource("Hide folder tree") : LocalizedStringResource("Show folder tree"),
+                isVisible(.folderTree) ? LocalizedStringResource("Hide folder tree") : LocalizedStringResource("Show folder tree"),
                 shortcut: shortcutStore.info(.toggleFolderTree),
                 text: $hoverHelpText
             )
@@ -52,12 +52,12 @@ extension TerminalFileManagerView {
                 text: $hoverHelpText
             )
 
-            Toggle(isOn: $isPreviewVisible) {
+            Toggle(isOn: visibilityBinding(.preview)) {
                 Image(systemName: "sidebar.right")
             }
             .toggleStyle(.button)
             .quickHelp(
-                isPreviewVisible ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"),
+                isVisible(.preview) ? LocalizedStringResource("Hide preview") : LocalizedStringResource("Show preview"),
                 shortcut: shortcutStore.info(.togglePreview),
                 text: $hoverHelpText
             )

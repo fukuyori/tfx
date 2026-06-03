@@ -337,14 +337,14 @@ struct TerminalFileManagerView: View {
                         isSplitViewVisible: isSplitViewVisible,
                         isPreviewVisible: isPreviewVisible
                     )
-                    folderTreeWidth = clamp(
+                    setStoredWidth(.folderTree, clamp(
                         baseWidth + translation,
                         min: Double(TerminalFileManagerLayout.minimumFolderTreeWidth),
                         max: max(
                             Double(TerminalFileManagerLayout.minimumFolderTreeWidth),
                             Double(totalWidth - reserved)
                         )
-                    )
+                    ))
                 } onEnded: {
                     folderDragStartWidth = nil
                 }
@@ -364,14 +364,14 @@ struct TerminalFileManagerView: View {
                         isFolderTreeVisible: isFolderTreeVisible,
                         isSplitViewVisible: isSplitViewVisible
                     )
-                    previewWidth = clamp(
+                    setStoredWidth(.preview, clamp(
                         baseWidth - translation,
                         min: Double(TerminalFileManagerLayout.minimumPreviewPaneWidth),
                         max: max(
                             Double(TerminalFileManagerLayout.minimumPreviewPaneWidth),
                             Double(totalWidth - reserved)
                         )
-                    )
+                    ))
                 } onEnded: {
                     previewDragStartWidth = nil
                 }

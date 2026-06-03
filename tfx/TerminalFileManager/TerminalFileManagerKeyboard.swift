@@ -185,7 +185,7 @@ extension TerminalFileManagerView {
         }
 
         if shortcutStore.info(.togglePreview).matches(event) {
-            isPreviewVisible.toggle()
+            toggleVisibility(.preview)
             return true
         }
 
@@ -195,7 +195,7 @@ extension TerminalFileManagerView {
         }
 
         if shortcutStore.info(.toggleFolderTree).matches(event) {
-            isFolderTreeVisible.toggle()
+            toggleVisibility(.folderTree)
             return true
         }
 
