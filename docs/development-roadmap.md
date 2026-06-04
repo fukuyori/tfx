@@ -379,7 +379,16 @@ Done when:
 - Each step has its own "done when" gate; step 1 ships before step 2 begins.
 - Lua script errors never crash the app.
 
-### 2.12.5 Layout follow-up: pane content clipping at narrow widths
+### 2.12.5 Layout follow-up: pane content clipping at narrow widths — resolved in 0.7.5
+
+> **Resolved (0.7.5).** Took a fourth option not listed below: stop *fighting* the
+> `WindowGroup` propagation and *fold it in*. `MainPaneSplitView.Coordinator.applyContentMinSize`
+> now captures the header-driven minimum width SwiftUI writes into `NSWindow.contentMinSize`
+> (recognized by diffing the live value against what the Coordinator last wrote) and sets the
+> floor to `max(pane minimum, header minimum)`. The window can no longer be dragged below the
+> width the toolbar needs, so `NSSplitView` is never asked to lay out into less space than fits
+> and the left-edge clipping is gone. The shrinkable-toolbar and AppDelegate-window options below
+> remain valid future directions if the toolbar's natural width ever needs to drop.
 
 Context:
 

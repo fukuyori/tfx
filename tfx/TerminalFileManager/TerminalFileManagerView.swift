@@ -3,6 +3,10 @@ import AppKit
 import Foundation
 import SwiftUI
 
+private enum DebugPaneToggleObserver {
+    static var installed = false
+}
+
 struct TerminalFileManagerView: View {
     @StateObject var leftModel: FileBrowserModel
     @StateObject var rightModel: FileBrowserModel
@@ -314,9 +318,15 @@ struct TerminalFileManagerView: View {
             previewContent: AnyView(PreviewPane(urls: activeModel.previewURLs)),
             isFolderVisible: isFolderTreeVisible,
             isPreviewVisible: isPreviewVisible,
+            // Folder tree is intentionally width-locked: there are
+            // only two valid states, hidden (0) and shown
+            // (`defaultFolderTreeWidth`). Any "drag the folder
+            // divider" gesture would just snap back. The setter
+            // is a no-op so NSSplitView's transient frame widths
+            // during toggles can't corrupt the stored value.
             folderWidth: Binding(
-                get: { folderTreeWidth },
-                set: { setStoredWidth(.folderTree, $0) }
+                get: { TerminalFileManagerLayout.defaultFolderTreeWidth },
+                set: { _ in }
             ),
             previewWidth: Binding(
                 get: { previewWidth },
@@ -440,11 +450,42 @@ struct TerminalFileManagerView: View {
     private func handleAppear() {
         openRequestedDirectoryIfNeeded()
         applyStartupFocusIfNeeded()
+        installDebugPaneToggleObserverIfNeeded()
         // `NSWindow.contentMinSize` is set by
         // `MainPaneSplitView.Coordinator.applyContentMinSize` on
         // the first `updateNSView`, which fires right after
         // `makeNSView` schedules its initial async pass — no
         // additional appear-time setup needed here.
+    }
+
+    /// Listens (when `TFX_PANE_LAYOUT_LOGS=1`) for distributed
+    /// notifications driving pane visibility from the probe shell
+    /// script. Lets the probe trigger in-process toggles of preview/
+    /// folder without needing Accessibility permission for osascript
+    /// keystroke injection.
+    private func installDebugPaneToggleObserverIfNeeded() {
+        guard ProcessInfo.processInfo.environment["TFX_PANE_LAYOUT_LOGS"] == "1" else { return }
+        guard !DebugPaneToggleObserver.installed else { return }
+        DebugPaneToggleObserver.installed = true
+        let center = DistributedNotificationCenter.default()
+        center.addObserver(
+            forName: Notification.Name("org.spumoni.tfx.debug.togglePreview"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            let key = "TerminalFileManager.isPreviewVisible"
+            let current = UserDefaults.standard.object(forKey: key) as? Bool ?? true
+            UserDefaults.standard.set(!current, forKey: key)
+        }
+        center.addObserver(
+            forName: Notification.Name("org.spumoni.tfx.debug.toggleFolder"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            let key = "TerminalFileManager.isFolderTreeVisible"
+            let current = UserDefaults.standard.object(forKey: key) as? Bool ?? true
+            UserDefaults.standard.set(!current, forKey: key)
+        }
     }
 
     /// Set the initial keyboard focus to the left file pane with the `..`

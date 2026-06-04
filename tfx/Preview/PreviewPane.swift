@@ -14,6 +14,11 @@ struct PreviewPane: View {
     @State private var activeMultiPreviewURLs: Set<URL> = []
     @State private var isPrimaryPreviewReady = false
     @State private var allowsExternalImages = false
+    /// Standardized URLs of the markdown files that actually reference a
+    /// remote (`http`/`https`) image. Populated asynchronously by
+    /// `detectExternalImages`; the "load external images" button only
+    /// appears for files in this set.
+    @State private var markdownURLsWithExternalImages: Set<URL> = []
     @AppStorage("Preview.showsRawSource") private var showsRawSource = false
     private let maxActiveMultiPreviews = 3
     private let primaryPreviewDelayNanoseconds: UInt64 = 120_000_000
@@ -95,6 +100,49 @@ struct PreviewPane: View {
             isPrimaryPreviewReady = false
             allowsExternalImages = false
         }
+        .task(id: externalImageDetectionKey) {
+            await detectExternalImages()
+        }
+    }
+
+    /// Markdown files in the current selection, in display order.
+    private var markdownURLs: [URL] {
+        urls.filter { PreviewKindCache.shared.kind(for: $0) == .markdown }
+    }
+
+    /// Re-run external-image detection whenever the set of markdown
+    /// files being previewed changes.
+    private var externalImageDetectionKey: String {
+        markdownURLs.map { $0.standardizedFileURL.path }.joined(separator: "\n")
+    }
+
+    /// Read each previewed markdown file off the main thread and record
+    /// which ones reference a remote image, so `shouldShowExternalImageButton`
+    /// can hide the button for documents that have nothing to load.
+    private func detectExternalImages() async {
+        let targets = markdownURLs
+        guard !targets.isEmpty else {
+            markdownURLsWithExternalImages = []
+            return
+        }
+        var found: Set<URL> = []
+        for url in targets {
+            let hasExternalImage = await Task.detached(priority: .utility) { () -> Bool in
+                let markdown: String
+                if let utf8 = try? String(contentsOf: url, encoding: .utf8) {
+                    markdown = utf8
+                } else {
+                    markdown = String(decoding: (try? Data(contentsOf: url)) ?? Data(), as: UTF8.self)
+                }
+                return MarkdownInlineHTML.containsExternalImageReference(in: markdown)
+            }.value
+            if Task.isCancelled { return }
+            if hasExternalImage {
+                found.insert(url.standardizedFileURL)
+            }
+        }
+        if Task.isCancelled { return }
+        markdownURLsWithExternalImages = found
     }
 
     @ViewBuilder
@@ -244,7 +292,8 @@ struct PreviewPane: View {
         return urls.contains { url in
             !shouldShowRawSource(for: url) &&
                 !isForcedTextOrNoPreview(for: url) &&
-                PreviewKindCache.shared.kind(for: url) == .markdown
+                PreviewKindCache.shared.kind(for: url) == .markdown &&
+                markdownURLsWithExternalImages.contains(url.standardizedFileURL)
         }
     }
 

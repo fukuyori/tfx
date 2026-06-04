@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.5] - 2026-06-04
+
+Layout minimum-width fix, reliable address-bar editing, and Markdown preview image handling.
+
+### Added
+
+- Markdown previews now render local images (relative or absolute paths) by reading the file and embedding it inline as a `data:` URL. This keeps the hardened content-security policy (`img-src data:`, nil `baseURL`) intact — the `WKWebView` is never granted local-file access. Non-image references are never read, files above 25 MB are skipped, and an unresolvable reference degrades to its alt text.
+
+### Changed
+
+- The "load external images" button in the Markdown preview now appears only when the document actually references a remote (`http` / `https`) image, instead of for every Markdown file. Detection reads the file off the main thread and is keyed on the previewed URLs.
+- Clicking the file pane's address bar now reliably enters edit mode. The editable `TextField` is mounted (via a dedicated `isEditing` state) before focus is requested on the next runloop tick, fixing the case where the click appeared to do nothing because the focus request was dropped in the same render pass.
+- Updated the version to `0.7.5` and the build number to `48`.
+
+### Fixed
+
+- Fixed the window being draggable narrower than the toolbar/header needs, which clipped the content and pushed the width-locked folder tree off the left edge. `MainPaneSplitView.Coordinator.applyContentMinSize` now folds in the header-driven minimum width that SwiftUI's `WindowGroup` propagates into `NSWindow.contentMinSize`, so the window floor is `max(pane minimum, header minimum)` and every pane always fits its frame. This closes the §2.12.5 follow-up from the 0.7.4 `NSSplitView` migration.
+
 ## [0.7.4] - 2026-06-03
 
 Layout refactor: pane state unification and migration to `NSSplitView` for the horizontal pane container.

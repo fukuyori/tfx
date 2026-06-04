@@ -34,7 +34,7 @@ enum TerminalFileManagerLayout {
 
     // MARK: - Folder tree
 
-    static let defaultFolderTreeWidth: Double = 250
+    static let defaultFolderTreeWidth: Double = 200
     /// Hard floor on folder-tree width when resized or restored.
     static let minimumFolderTreeWidth: CGFloat = 180
 

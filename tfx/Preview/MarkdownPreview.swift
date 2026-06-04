@@ -58,6 +58,7 @@ struct MarkdownPreview: NSViewRepresentable {
             guard let html = MarkdownHTMLRenderer.htmlDocument(
                 for: markdown,
                 allowsExternalImages: allowsExternalImages,
+                baseDirectory: targetURL.deletingLastPathComponent(),
                 cancellation: cancellation
             ) else { return }
 

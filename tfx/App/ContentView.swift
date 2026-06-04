@@ -14,12 +14,13 @@ struct ContentView: View {
             .environment(\.theme, designStore.activeTheme)
             .environment(\.design, designStore.activeDesign)
             // The dynamic per-configuration window minimum is
-            // enforced by `WindowMinSizeEnforcer` (an
-            // `NSWindowDelegate` installed via `WindowFrameAutosaver`)
-            // — putting a `.frame(minWidth: dynamicValue)` here
-            // re-renders the view tree every time the value would
-            // change, which races with SwiftUI's automatic
-            // contentMinSize propagation and pegs the CPU at 100%.
+            // enforced by `MainPaneSplitView.Coordinator`'s
+            // `applyContentMinSize`, which writes `NSWindow.contentMinSize`
+            // (AppKit honors that as the live-resize floor). Putting a
+            // `.frame(minWidth: dynamicValue)` here re-renders the view
+            // tree every time the value would change, which races with
+            // SwiftUI's automatic contentMinSize propagation and pegs
+            // the CPU at 100%.
             .alert("Configuration Error", isPresented: Binding(
                 get: { configurationError != nil },
                 set: { isPresented in

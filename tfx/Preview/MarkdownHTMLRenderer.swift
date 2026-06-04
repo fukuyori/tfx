@@ -16,16 +16,17 @@ enum MarkdownHTMLRenderer {
     static func htmlDocument(
         for markdown: String,
         allowsExternalImages: Bool = false,
+        baseDirectory: URL? = nil,
         cancellation: PreviewLoadCancellation
     ) -> String? {
         guard !cancellation.isCancelled else { return nil }
-        guard let body = markdownToHTML(markdown, cancellation: cancellation) else { return nil }
+        guard let body = markdownToHTML(markdown, baseDirectory: baseDirectory, cancellation: cancellation) else { return nil }
         guard !cancellation.isCancelled else { return nil }
 
         return MarkdownHTMLDocument.document(body: body, allowsExternalImages: allowsExternalImages)
     }
 
-    private static func markdownToHTML(_ markdown: String, cancellation: PreviewLoadCancellation) -> String? {
+    private static func markdownToHTML(_ markdown: String, baseDirectory: URL?, cancellation: PreviewLoadCancellation) -> String? {
         var html: [String] = []
         var paragraph: [String] = []
         var listItems: [String] = []
@@ -36,7 +37,7 @@ enum MarkdownHTMLRenderer {
         func flushParagraph() {
             guard !cancellation.isCancelled else { return }
             guard !paragraph.isEmpty else { return }
-            html.append("<p>\(MarkdownInlineHTML.inlineHTML(paragraph.joined(separator: " ")))</p>")
+            html.append("<p>\(MarkdownInlineHTML.inlineHTML(paragraph.joined(separator: " "), baseDirectory: baseDirectory))</p>")
             paragraph.removeAll()
         }
 
@@ -58,7 +59,7 @@ enum MarkdownHTMLRenderer {
                 flushList()
             }
             listKind = kind
-            listItems.append("<li>\(MarkdownInlineHTML.inlineHTML(body))</li>")
+            listItems.append("<li>\(MarkdownInlineHTML.inlineHTML(body, baseDirectory: baseDirectory))</li>")
         }
 
         func flushCodeBlock() {
@@ -105,13 +106,13 @@ enum MarkdownHTMLRenderer {
                 flushParagraph()
                 flushList()
                 html.append("<hr>")
-            } else if let table = tableHTML(startingAt: index, in: lines) {
+            } else if let table = tableHTML(startingAt: index, in: lines, baseDirectory: baseDirectory) {
                 flushParagraph()
                 flushList()
                 html.append(table.html)
                 index = table.nextIndex
                 continue
-            } else if let heading = headingHTML(for: line) {
+            } else if let heading = headingHTML(for: line, baseDirectory: baseDirectory) {
                 flushParagraph()
                 flushList()
                 html.append(heading)
@@ -124,7 +125,7 @@ enum MarkdownHTMLRenderer {
             } else if line.hasPrefix("> ") {
                 flushParagraph()
                 flushList()
-                html.append("<blockquote>\(MarkdownInlineHTML.inlineHTML(String(line.dropFirst(2))))</blockquote>")
+                html.append("<blockquote>\(MarkdownInlineHTML.inlineHTML(String(line.dropFirst(2)), baseDirectory: baseDirectory))</blockquote>")
             } else {
                 flushList()
                 paragraph.append(line)
@@ -143,7 +144,7 @@ enum MarkdownHTMLRenderer {
         return html.joined(separator: "\n")
     }
 
-    private static func headingHTML(for line: String) -> String? {
+    private static func headingHTML(for line: String, baseDirectory: URL?) -> String? {
         let markerCount = line.prefix(while: { $0 == "#" }).count
         guard (1...6).contains(markerCount), line.dropFirst(markerCount).hasPrefix(" ") else {
             return nil
@@ -151,7 +152,7 @@ enum MarkdownHTMLRenderer {
 
         let level = markerCount
         let text = line.dropFirst(markerCount + 1)
-        return "<h\(level)>\(MarkdownInlineHTML.inlineHTML(String(text)))</h\(level)>"
+        return "<h\(level)>\(MarkdownInlineHTML.inlineHTML(String(text), baseDirectory: baseDirectory))</h\(level)>"
     }
 
     private static func horizontalRuleHTML(for line: String) -> String? {
@@ -180,7 +181,7 @@ enum MarkdownHTMLRenderer {
         return String(characters.dropFirst(index + 2))
     }
 
-    private static func tableHTML(startingAt index: Int, in lines: [String]) -> (html: String, nextIndex: Int)? {
+    private static func tableHTML(startingAt index: Int, in lines: [String], baseDirectory: URL?) -> (html: String, nextIndex: Int)? {
         guard index + 1 < lines.count else { return nil }
 
         let headerLine = lines[index].trimmingCharacters(in: .whitespaces)
@@ -205,14 +206,14 @@ enum MarkdownHTMLRenderer {
 
         let headerHTML = zip(headers, alignments)
             .map { header, alignment in
-                "<th\(tableStyleAttribute(for: alignment))>\(MarkdownInlineHTML.inlineHTML(header))</th>"
+                "<th\(tableStyleAttribute(for: alignment))>\(MarkdownInlineHTML.inlineHTML(header, baseDirectory: baseDirectory))</th>"
             }
             .joined()
         let bodyHTML = rows
             .map { row in
                 let cells = zip(row, alignments)
                     .map { cell, alignment in
-                        "<td\(tableStyleAttribute(for: alignment))>\(MarkdownInlineHTML.inlineHTML(cell))</td>"
+                        "<td\(tableStyleAttribute(for: alignment))>\(MarkdownInlineHTML.inlineHTML(cell, baseDirectory: baseDirectory))</td>"
                     }
                     .joined()
                 return "<tr>\(cells)</tr>"
