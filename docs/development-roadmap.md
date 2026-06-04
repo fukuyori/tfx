@@ -379,6 +379,29 @@ Done when:
 - Each step has its own "done when" gate; step 1 ships before step 2 begins.
 - Lua script errors never crash the app.
 
+### 2.12.5 Layout follow-up: pane content clipping at narrow widths
+
+Context:
+
+- 0.7.4 migrated the horizontal pane container to `NSSplitView` (`MainPaneSplitView`), which resolved the long-standing pane-overlap symptom: each pane is now physically confined to its frame via layer-backed clipping on the host (`NSHostingView`).
+- A follow-on visual issue surfaced from that fix: when `NSSplitView` constrains a pane narrower than its SwiftUI content's natural width (e.g. folder tree forced below stored width during a live window resize), the clipping cuts the left edge of the content instead of letting it reflow. Folder rows visibly truncate from the left rather than from the right.
+- The root cause is **SwiftUI WindowGroup propagates the view tree's natural intrinsic width** (≈ toolbar's natural width, currently ~657pt) to `NSWindow.contentMinSize` on every render. That competes with `MainPaneSplitView.Coordinator.applyContentMinSize` and effectively pins the window minimum to the toolbar's natural width, regardless of stored pane preferences. Below that pin, NSSplitView is asked to lay out into less space than fits, and pane content gets clipped.
+
+Goal:
+
+- Either eliminate the clipping (so panes always fit their content), or eliminate the source of the constraint (so the window never gets narrow enough to clip).
+
+Options:
+
+- Make the header / toolbar shrinkable so its SwiftUI intrinsic width is small (remove fixed `frame(width:)` on the search field, collapse icon clusters into overflow menus when narrow). Then `WindowGroup` propagates a small contentMinSize and `MainPaneSplitView.Coordinator` is the only effective constraint. Lowest-risk path that keeps `WindowGroup`.
+- Move off `WindowGroup` to an AppDelegate-owned `NSWindow`. Avoids the auto-propagation entirely. Higher cost — touches app entry, restoration, scene lifecycle.
+- Reflow pane content with horizontal scrolling inside the pane when its frame is narrower than the natural width. Keeps every pixel visible but adds horizontal scroll bars to side panes.
+
+Notes for whoever picks this up:
+
+- Diagnostic logging exists: set `Developer.showsPaneLayoutLogs = true` in `UserDefaults` (or `TFX_PANE_LAYOUT_LOGS=1` in the environment) to print `[tfx pane]` lines from `MainPaneSplitView.Coordinator` covering `applyContentMinSize`, `resizeWindowForToggleIfNeeded`, and `splitViewDidResizeSubviews` decisions.
+- The persistence guards in `splitViewDidResizeSubviews` (Phase G-3.2c) already prevent NSSplitView's mid-layout passes from corrupting stored widths, so widening the window restores pane widths cleanly. The only remaining symptom is visual clipping while the window is below the pin.
+
 ### 2.13 Markdown Preview Extensions
 
 Goal:
