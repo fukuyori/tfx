@@ -174,6 +174,11 @@ extension TerminalFileManagerView {
             return true
         }
 
+        if shortcutStore.info(.focusFilePane).matches(event) {
+            focusFilePane()
+            return true
+        }
+
         if shortcutStore.info(.reload).matches(event) {
             model.reload()
             return true
@@ -260,11 +265,12 @@ extension TerminalFileManagerView {
     }
 
     private func focusStops() -> [FocusStop] {
-        var stops: [FocusStop] = isSplitViewVisible ? [.fileLeft, .fileRight] : [.fileLeft]
-        if isTerminalPaneVisible {
-            stops.append(.terminal)
-        }
-        return stops
+        // Tab cycles only across the file panes. Terminal is
+        // intentionally excluded — it is a text-input surface
+        // where Tab has its own meaning (shell completion). The
+        // dedicated `focusTerminalPane` shortcut or a mouse
+        // click is still available for moving focus there.
+        return isSplitViewVisible ? [.fileLeft, .fileRight] : [.fileLeft]
     }
 
     private func currentFocusStop() -> FocusStop {

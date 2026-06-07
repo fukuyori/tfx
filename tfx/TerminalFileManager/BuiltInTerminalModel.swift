@@ -251,6 +251,17 @@ final class BuiltInTerminalModel: ObservableObject {
         session?.resize(columns: columns, rows: rows)
     }
 
+    /// Snapshot the actual working directory of the shell (or
+    /// whatever foreground process is currently attached to the
+    /// PTY). Read directly from the kernel via `tcgetpgrp` +
+    /// `proc_pidinfo` — does not write anything to the shell, so
+    /// the terminal output stays clean. Returns `nil` if there
+    /// is no active session or the lookup fails (e.g. the
+    /// foreground process exited between query and lookup).
+    func foregroundWorkingDirectory() -> URL? {
+        session?.foregroundWorkingDirectory()
+    }
+
     private func updateCurrentDirectoryIfSimpleCD(_ command: String) {
         guard command == "cd" || command.hasPrefix("cd ") else { return }
         let rawPath = command == "cd" ? NSHomeDirectory() : Self.normalizedPathArgument(String(command.dropFirst(3)))
@@ -586,9 +597,47 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         startReading()
     }
 
+    /// Walk the PTY's foreground process group (or fall back to
+    /// the shell itself) and ask the kernel for its current
+    /// working directory via `proc_pidinfo`. Returns `nil` if
+    /// the FD is gone or the process exited.
+    func foregroundWorkingDirectory() -> URL? {
+        lock.lock()
+        let fd = masterFD
+        let shellPID = childPID
+        lock.unlock()
+        guard fd >= 0 else { return nil }
+
+        // Prefer the foreground process group leader so commands
+        // like `(cd /tmp && bash)` reflect the inner shell's cwd
+        // rather than the outer login shell's.
+        let pgid = tcgetpgrp(fd)
+        let targetPID = pgid > 0 ? pid_t(pgid) : shellPID
+        guard targetPID > 0 else { return nil }
+
+        var info = proc_vnodepathinfo()
+        let infoSize = MemoryLayout<proc_vnodepathinfo>.size
+        let result = withUnsafeMutablePointer(to: &info) { ptr -> Int32 in
+            proc_pidinfo(targetPID, PROC_PIDVNODEPATHINFO, 0, ptr, Int32(infoSize))
+        }
+        guard result == Int32(infoSize) else { return nil }
+
+        let path = withUnsafePointer(to: &info.pvi_cdir.vip_path) { tuplePtr -> String in
+            tuplePtr.withMemoryRebound(to: CChar.self, capacity: Int(MAXPATHLEN)) { cstr in
+                String(cString: cstr)
+            }
+        }
+        guard !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path).standardizedFileURL
+    }
+
     private func childExecuteShell(shellPath: String, shellName: String, directoryPath: String) -> Never {
         _ = chdir(directoryPath)
         setenv("TERM", "xterm-256color", 1)
+        // Advertise truecolor support so CLI tools (delta, bat,
+        // fzf, etc.) emit 24-bit RGB escapes instead of falling
+        // back to the 256-color palette.
+        setenv("COLORTERM", "truecolor", 1)
         setenv("PWD", directoryPath, 1)
 
         shellPath.withCString { shellCString in

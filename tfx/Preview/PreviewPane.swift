@@ -25,6 +25,8 @@ struct PreviewPane: View {
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
     @EnvironmentObject private var previewConfigurationStore: PreviewConfigurationStore
+    @EnvironmentObject private var shortcutStore: ShortcutStore
+    @State private var hoverHelpText: String = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -262,7 +264,12 @@ struct PreviewPane: View {
                 }
         }
         .buttonStyle(.plain)
-        .quickHelp(toggleHelpTextResource)
+        .keyboardShortcut(shortcutStore.info(.toggleRendered))
+        .quickHelp(
+            toggleHelpTextResource,
+            shortcut: shortcutStore.info(.toggleRendered),
+            text: $hoverHelpText
+        )
         .accessibilityLabel(toggleHelpText)
     }
 
@@ -281,7 +288,12 @@ struct PreviewPane: View {
                 }
         }
         .buttonStyle(.plain)
-        .quickHelp("Load external images")
+        .keyboardShortcut(shortcutStore.info(.loadExternalImages))
+        .quickHelp(
+            "Load external images",
+            shortcut: shortcutStore.info(.loadExternalImages),
+            text: $hoverHelpText
+        )
         .accessibilityLabel(Text("Load external images"))
         .padding(.trailing, 8)
     }

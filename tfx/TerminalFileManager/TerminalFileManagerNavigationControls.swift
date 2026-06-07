@@ -32,22 +32,6 @@ extension TerminalFileManagerView {
             .buttonStyle(.borderless)
             .keyboardShortcut(shortcutStore.info(.goUp))
             .quickHelp("Parent folder", shortcut: shortcutStore.info(.goUp), text: $hoverHelpText)
-
-            Button {
-                model.pickFolder()
-            } label: {
-                Image(systemName: "folder")
-            }
-            .buttonStyle(.borderless)
-            .quickHelp("Open folder", text: $hoverHelpText)
-
-            Button {
-                model.togglePinnedFolder(model.currentDirectory)
-            } label: {
-                Image(systemName: model.isFolderPinned(model.currentDirectory) ? "pin.fill" : "pin")
-            }
-            .buttonStyle(.borderless)
-            .quickHelp(model.isFolderPinned(model.currentDirectory) ? LocalizedStringResource("Unpin current folder") : LocalizedStringResource("Pin current folder"), text: $hoverHelpText)
         }
     }
 }

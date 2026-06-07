@@ -6,6 +6,20 @@ struct AppLaunchConfiguration: Equatable {
     var startupLayout: StartupLayoutMode = .single
     var startupRightFolder: URL?
     var startupRightFolders: [URL] = []
+    /// Initial visibility of side / bottom panes. `nil` =
+    /// inherit the value from the previous session (saved in
+    /// `UserDefaults`). Non-nil overrides that saved value at
+    /// launch. The command-line flags `-p/-P` / `-t/-T` /
+    /// (none for folder tree) take precedence over these
+    /// config-file values.
+    var startupTerminalVisible: Bool?
+    var startupPreviewVisible: Bool?
+    var startupFolderTreeVisible: Bool?
+    /// X11-style window geometry spec applied at launch (e.g.
+    /// `1200x800+100+50`, or `-10-10` to anchor 10pt from the
+    /// right/bottom edges). The command-line `-g` / `--geometry`
+    /// flag overrides this value.
+    var startupGeometry: AppLaunchArguments.Geometry?
     var terminalApplication: ApplicationReference?
     var openWithApplications: [String: ApplicationReference] = [:]
 
@@ -141,6 +155,18 @@ enum AppLaunchConfigurationLoader {
                     configuration.startupRightFolders = try parseStringArray(value, line: lineNumber).map {
                         URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath).standardizedFileURL
                     }
+                case "terminal":
+                    configuration.startupTerminalVisible = try parseBool(value, line: lineNumber)
+                case "preview":
+                    configuration.startupPreviewVisible = try parseBool(value, line: lineNumber)
+                case "folderTree":
+                    configuration.startupFolderTreeVisible = try parseBool(value, line: lineNumber)
+                case "geometry":
+                    let spec = try parseString(value, line: lineNumber)
+                    guard let geometry = AppLaunchArguments.parseGeometry(spec) else {
+                        throw AppLaunchConfigurationError.invalidGeometry(line: lineNumber)
+                    }
+                    configuration.startupGeometry = geometry
                 default:
                     continue
                 }
@@ -217,6 +243,24 @@ enum AppLaunchConfigurationLoader {
         }
         return parsed
     }
+
+    /// Accept `true` / `false` literals (TOML style). Strings
+    /// like `"true"` also resolve, matching how the existing
+    /// `parseString` helper unwraps quoted values.
+    private static func parseBool(_ value: String, line: Int) throws -> Bool {
+        let lowered = value.lowercased()
+        if lowered == "true" { return true }
+        if lowered == "false" { return false }
+        // Allow `"true"` / `"false"` so the loader doesn't choke
+        // when users borrow the quoting style they used for
+        // string values.
+        if value.hasPrefix("\"") {
+            let unquoted = try parseString(value, line: line).lowercased()
+            if unquoted == "true" { return true }
+            if unquoted == "false" { return false }
+        }
+        throw AppLaunchConfigurationError.invalidBool(line: line)
+    }
 }
 
 enum AppLaunchConfigurationError: LocalizedError {
@@ -226,6 +270,8 @@ enum AppLaunchConfigurationError: LocalizedError {
     case invalidNumber(line: Int)
     case invalidExtension(line: Int)
     case invalidStartupLayout(line: Int)
+    case invalidBool(line: Int)
+    case invalidGeometry(line: Int)
     case unsupportedVersion(Int)
     case applicationUnavailable(String)
 
@@ -243,6 +289,10 @@ enum AppLaunchConfigurationError: LocalizedError {
             return "Invalid extension key at line \(line)."
         case let .invalidStartupLayout(line):
             return "Invalid startup layout at line \(line). Use \"single\", \"split\", or \"restore\"."
+        case let .invalidBool(line):
+            return "Invalid boolean at line \(line). Use true or false."
+        case let .invalidGeometry(line):
+            return "Invalid geometry at line \(line). Use X11 style like \"1200x800+100+50\"."
         case let .unsupportedVersion(version):
             return "Unsupported config version \(version)."
         case let .applicationUnavailable(reference):

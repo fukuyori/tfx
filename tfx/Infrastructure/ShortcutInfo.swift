@@ -211,6 +211,9 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case toggleTerminalPane
     case focusTerminalPane
     case toggleFolderTree
+    case toggleRendered
+    case loadExternalImages
+    case focusFilePane
 
     var id: String { rawValue }
 }
@@ -249,7 +252,13 @@ enum Shortcuts {
         .nextTab: ShortcutInfo(key: "]", modifiers: [.command, .shift]),
         .toggleTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option]),
         .focusTerminalPane: ShortcutInfo(key: "t", modifiers: [.command, .option, .shift]),
-        .toggleFolderTree: ShortcutInfo(key: "f", modifiers: [.command, .option])
+        .toggleFolderTree: ShortcutInfo(key: "f", modifiers: [.command, .option]),
+        // Preview pane source / rendered toggle (Markdown, HTML).
+        .toggleRendered: ShortcutInfo(key: "r", modifiers: [.command, .shift]),
+        // Allow external image loading in the rendered preview.
+        .loadExternalImages: ShortcutInfo(key: "i", modifiers: [.command, .shift]),
+        // Move keyboard focus to the active file pane.
+        .focusFilePane: ShortcutInfo(key: "j", modifiers: [.command, .option, .shift])
     ]
 
     static func info(_ action: ShortcutAction) -> ShortcutInfo {
@@ -540,6 +549,9 @@ enum ShortcutConfigurationLoader {
     nextTab = "cmd+shift+]"
     toggleTerminalPane = "cmd+option+t"
     focusTerminalPane = "cmd+option+shift+t"
+    toggleRendered = "cmd+shift+r"
+    loadExternalImages = "cmd+shift+i"
+    focusFilePane = "cmd+option+shift+j"
     """
 }
 

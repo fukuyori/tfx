@@ -100,8 +100,17 @@ struct FilePane: View {
         }
         .background(theme.fileListBackground.opacity(design.opacity.background))
         .overlay(
+            // `strokeBorder` draws the stroke fully INSIDE the
+            // frame; plain `stroke` straddles the edge (half
+            // inside, half outside). With the NSHostingView's
+            // `masksToBounds = true` and the file area starting
+            // at window x=0 when the folder tree is hidden, the
+            // outside-half clips to the window edge and the
+            // inside-half is too thin to see — the left border
+            // disappears entirely. `strokeBorder` keeps the line
+            // fully painted regardless of where the pane sits.
             RoundedRectangle(cornerRadius: 0)
-                .stroke(
+                .strokeBorder(
                     isKeyboardTarget
                         ? theme.paneBorderKeyboardTarget
                         : (isActivePane ? theme.paneBorderActive : theme.paneBorderInactive),

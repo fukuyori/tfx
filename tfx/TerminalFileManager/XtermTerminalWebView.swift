@@ -194,7 +194,13 @@ struct XtermTerminalWebView: NSViewRepresentable {
           new ResizeObserver(fitAndReport).observe(document.body);
           requestAnimationFrame(() => {
             fitAndReport();
-            term.focus();
+            // No `term.focus()` here on purpose: that call fires
+            // the `focusin` listener below (which posts
+            // `terminalFocus` to Swift) and would steal focus
+            // from the file pane at launch. Focus is requested
+            // explicitly by Swift via `window.tfxFocus()` when
+            // the user toggles the terminal on or hits the
+            // focus-terminal shortcut.
             window.webkit.messageHandlers.terminalReady.postMessage({ cols: term.cols, rows: term.rows });
           });
         } catch (error) {
@@ -260,7 +266,16 @@ struct XtermTerminalWebView: NSViewRepresentable {
                 resize(from: message.body)
                 model.open()
                 syncCurrentOutput()
-                focusTerminal()
+                // Only auto-focus the terminal on ready if focus
+                // was already requested (user toggled the pane on,
+                // or pressed the focus-terminal shortcut). At
+                // launch the WKWebView completes its async init
+                // long after `applyStartupFocusIfNeeded` has put
+                // focus in the file pane; calling `focusTerminal`
+                // unconditionally here would steal that focus.
+                if isInputFocused.wrappedValue {
+                    focusTerminal()
+                }
             case "terminalError":
                 if let error = message.body as? String {
                     model.reportStartupError(error)
@@ -271,7 +286,16 @@ struct XtermTerminalWebView: NSViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            focusTerminal()
+            // Same guard as the `terminalReady` case: only grab
+            // focus if the SwiftUI focus state already wants the
+            // terminal focused (user toggled the pane on or hit
+            // the focus shortcut). Without this, the WKWebView
+            // load completion steals focus from the file pane at
+            // launch whenever the terminal pane is restored
+            // visible.
+            if isInputFocused.wrappedValue {
+                focusTerminal()
+            }
         }
 
         func applyTheme(theme: Theme, design: DesignTokens) {

@@ -8,6 +8,13 @@ struct BuiltInTerminalPane: View {
     let isActive: Bool
     @FocusState.Binding var isInputFocused: Bool
     let activate: () -> Void
+    /// Sync the file pane to the terminal's CURRENT working
+    /// directory. Resolved at click time via the kernel
+    /// (`tcgetpgrp` + `proc_pidinfo`) — does NOT use the model's
+    /// cached `currentDirectory`, which only tracks `cd`
+    /// commands typed at the BuiltInTerminalModel layer and is
+    /// not authoritative once the shell is running freely.
+    var syncFilePaneToTerminal: ((URL) -> Void)? = nil
 
     @State private var isPathDropTarget = false
     @Environment(\.design) private var design
@@ -38,6 +45,14 @@ struct BuiltInTerminalPane: View {
                     controlButton(label: "⌃Z", help: "Send Ctrl+Z") {
                         model.sendSuspend()
                     }
+                }
+
+                if let syncFilePaneToTerminal {
+                    syncDirectoryButton(action: {
+                        if let url = model.foregroundWorkingDirectory() {
+                            syncFilePaneToTerminal(url)
+                        }
+                    })
                 }
 
                 Text(model.currentDirectory.path)
@@ -127,6 +142,28 @@ struct BuiltInTerminalPane: View {
             RoundedRectangle(cornerRadius: 4)
                 .stroke(model.activeTab == tab ? theme.paneBorderActive : theme.paneBorderInactive, lineWidth: 1)
         )
+    }
+
+    /// Folder icon button: navigates the active file pane to the
+    /// terminal's current working directory.
+    private func syncDirectoryButton(action: @escaping () -> Void) -> some View {
+        Button {
+            activate()
+            action()
+        } label: {
+            Image(systemName: "arrow.left.arrow.right")
+                .font(design.fonts.swiftUIFont(for: .caption))
+                .foregroundStyle(theme.headerForeground)
+                .frame(minWidth: 30, minHeight: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(theme.fileListRowSelected.opacity(0.45), in: RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(theme.paneBorderInactive, lineWidth: 1)
+        )
+        .help("Sync file pane to terminal directory")
     }
 
     private func controlButton(

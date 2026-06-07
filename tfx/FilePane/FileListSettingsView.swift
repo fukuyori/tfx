@@ -1,10 +1,13 @@
 #if os(macOS)
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct FileListSettingsView: View {
     @Binding var configurationRaw: String
     @Environment(\.design) private var design
     @Environment(\.dismiss) private var dismiss
+
+    @State private var draggingColumn: FileListColumn?
 
     private var configuration: FileListColumnConfiguration {
         get {
@@ -13,6 +16,16 @@ struct FileListSettingsView: View {
         nonmutating set {
             configurationRaw = newValue.rawValue
         }
+    }
+
+    /// Two-way binding into `configuration` that the drop
+    /// delegate can mutate without going through the View's
+    /// computed property.
+    private var configurationBinding: Binding<FileListColumnConfiguration> {
+        Binding(
+            get: { self.configuration },
+            set: { self.configuration = $0 }
+        )
     }
 
     var body: some View {
@@ -32,9 +45,31 @@ struct FileListSettingsView: View {
                     .font(design.fonts.swiftUIFont(for: .header, weight: .semibold))
                     .foregroundStyle(.secondary)
 
-                ForEach(configuration.orderedColumns) { column in
+                ForEach(Array(configuration.orderedColumns.enumerated()), id: \.element) { index, column in
                     columnSettingRow(for: column)
+                        .opacity(draggingColumn == column ? 0.4 : 1)
+                        .onDrag {
+                            draggingColumn = column
+                            return NSItemProvider(object: column.rawValue as NSString)
+                        }
+                        .onDrop(of: [UTType.text],
+                                delegate: ColumnDropDelegate(
+                                    targetIndex: index,
+                                    draggingColumn: $draggingColumn,
+                                    configuration: configurationBinding
+                                ))
                 }
+                // Drop zone at the end of the list so the user can
+                // drop a column past the last row (target index =
+                // orderedColumns.count).
+                Color.clear
+                    .frame(height: 4)
+                    .onDrop(of: [UTType.text],
+                            delegate: ColumnDropDelegate(
+                                targetIndex: configuration.orderedColumns.count,
+                                draggingColumn: $draggingColumn,
+                                configuration: configurationBinding
+                            ))
             }
 
             HStack {
@@ -92,6 +127,38 @@ struct FileListSettingsView: View {
         }
         .font(design.fonts.swiftUIFont(for: .fileList))
         .padding(.vertical, 3)
+    }
+}
+
+/// Receives a row drop and reorders the column configuration.
+/// Hovering a row highlights nothing on its own — the dragged
+/// row's reduced opacity is the visual cue — but drop processing
+/// updates the configuration immediately on release.
+private struct ColumnDropDelegate: DropDelegate {
+    let targetIndex: Int
+    @Binding var draggingColumn: FileListColumn?
+    @Binding var configuration: FileListColumnConfiguration
+
+    func validateDrop(info: DropInfo) -> Bool {
+        info.hasItemsConforming(to: [UTType.text.identifier])
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        validateDrop(info: info) ? DropProposal(operation: .move) : nil
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer { draggingColumn = nil }
+        guard let column = draggingColumn else { return false }
+        var updated = configuration
+        updated.move(column, to: targetIndex)
+        configuration = updated
+        return true
+    }
+
+    func dropExited(info: DropInfo) {
+        // Keep `draggingColumn` set — entering a different row's
+        // drop area should not clear the drag-source highlight.
     }
 }
 #endif

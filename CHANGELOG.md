@@ -4,6 +4,31 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.6] - 2026-06-07
+
+Ports of `tfx-for-windows` 0.7.6 / 0.7.7 plus a round of pane / focus / toolbar polish and matching `config.toml` keys.
+
+### Added
+
+- **Terminal**: advertises `COLORTERM=truecolor` so CLI tools (delta, bat, fzf, etc.) emit 24-bit RGB escapes instead of falling back to the 256-color palette.
+- **Preview pane**: keyboard shortcut + tooltip for the source / rendered toggle (default `⌘⇧R`) and the "load external images" button (default `⌘⇧I`).
+- **Launch**: `-g` / `--geometry` flag accepts an X11-style geometry string (`1200x800+100+50`, `-10-10` to anchor 10pt from the right/bottom edges, individual parts are optional). The same value can be set via `[startup] geometry = "..."` in `config.toml`; the command-line flag wins when both are present.
+- **Terminal header**: a folder-sync button reads the foreground process group's working directory via `tcgetpgrp` + `proc_pidinfo` and navigates the active file pane there — no shell round-trip and no pollution of the terminal output.
+- **Focus**: new `focusFilePane` shortcut (default `⌘⌥⇧J`), symmetric with the existing `focusTerminalPane` shortcut.
+- **Configuration**: `[startup]` section in `config.toml` gains `terminal` / `preview` / `folderTree` boolean keys for initial pane visibility. Precedence remains command-line flag > config.toml > previously saved state.
+- **File-list settings**: column reorder is now also possible by dragging rows with the mouse; the up/down chevrons keep working for keyboard / single-click reordering.
+
+### Changed
+
+- **Tab key**: cycles only between the file panes. The terminal pane is intentionally excluded — Tab in the terminal should mean shell completion. `⌘⌥⇧T` (or a click) still moves focus to the terminal explicitly.
+- **Startup focus**: the file pane is the keyboard-focus target on launch. The hosted xterm webview no longer auto-focuses on init (the JS `term.focus()` call inside `requestAnimationFrame` and the `webView(_:didFinish:)` / `terminalReady` handlers now defer to the SwiftUI focus state), so the previously-saved terminal-visible layout doesn't pull focus away from the file list.
+- **Toolbar**: removed the "open folder" and "pin / unpin current folder" buttons. Pinning is still available from the file-pane and folder-tree context menus.
+- Updated the version to `0.7.6` and the build number to `49`.
+
+### Fixed
+
+- File pane's left border is now visible when the folder tree is hidden. The `RoundedRectangle` overlay was using `.stroke` (which paints half-inside, half-outside the frame); switched to `.strokeBorder` so the line stays fully inside the bounds even when the pane's leading edge sits at window x=0.
+
 ## [0.7.5] - 2026-06-04
 
 Layout minimum-width fix, reliable address-bar editing, and Markdown preview image handling.

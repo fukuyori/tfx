@@ -117,11 +117,16 @@ struct TerminalFileManagerView: View {
         _rightActiveTabID = State(initialValue: initialRightActiveTabID)
 
         defaults.set(initialSplitViewVisible, forKey: "TerminalFileManager.isSplitViewVisible")
-        if let previewVisible = launchArguments.previewVisible {
+        // Precedence: command-line flag > config.toml >
+        // previously saved @AppStorage value (unchanged).
+        if let previewVisible = launchArguments.previewVisible ?? launchConfiguration.startupPreviewVisible {
             defaults.set(previewVisible, forKey: "TerminalFileManager.isPreviewVisible")
         }
-        if let terminalVisible = launchArguments.terminalVisible {
+        if let terminalVisible = launchArguments.terminalVisible ?? launchConfiguration.startupTerminalVisible {
             defaults.set(terminalVisible, forKey: "TerminalFileManager.isTerminalPaneVisible")
+        }
+        if let folderTreeVisible = launchConfiguration.startupFolderTreeVisible {
+            defaults.set(folderTreeVisible, forKey: "TerminalFileManager.isFolderTreeVisible")
         }
         defaults.set(BrowserPaneID.left.rawValue, forKey: "TerminalFileManager.activePane")
         defaults.set(ActiveArea.files.rawValue, forKey: "TerminalFileManager.activeArea")
@@ -211,6 +216,9 @@ struct TerminalFileManagerView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerFocusTerminalPane)) { _ in
                 focusTerminalPane()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .terminalFileManagerFocusFilePane)) { _ in
+                focusFilePane()
             }
         )
     }
@@ -434,7 +442,10 @@ struct TerminalFileManagerView: View {
                 model: terminalModel,
                 isActive: activeArea == .terminal,
                 isInputFocused: $isTerminalInputFocused,
-                activate: focusTerminalPane
+                activate: focusTerminalPane,
+                syncFilePaneToTerminal: { url in
+                    activeModel.navigate(to: url)
+                }
             )
             .frame(height: terminalHeight)
         }
@@ -501,10 +512,19 @@ struct TerminalFileManagerView: View {
         guard openDirectoryRouter.request == nil else { return }
 
         activePane = .left
-        activeArea = .files
         if leftModel.canGoUp {
             leftModel.isParentDirectorySelected = true
         }
+        // Use `focusFilePane()` so the keyboard focus actually
+        // lands on the file pane's key-handler view at startup.
+        // Just setting `activeArea = .files` isn't enough: the
+        // search field's hosted `NSTextView` may already be
+        // first responder (SwiftUI default), which
+        // `KeyHandlingNSView` won't pre-empt unless we
+        // explicitly clear `isSearchFocused` /
+        // `isTerminalInputFocused`. Without this, arrow keys
+        // don't work until the user clicks into the file list.
+        focusFilePane()
     }
 
     private func openRequestedDirectoryIfNeeded() {

@@ -100,6 +100,18 @@ extension TerminalFileManagerView {
         setTerminalPaneVisible(true, focus: true)
     }
 
+    /// Move keyboard focus to the active file pane (left or
+    /// right). Restores `.files` as the active area so arrow
+    /// keys, return, and the configured shortcuts operate on
+    /// the file list — useful after focus drifted into the
+    /// search field, folder tree, or terminal.
+    func focusFilePane() {
+        activeArea = .files
+        activeModel.ensureFileSelection()
+        isSearchFocused = false
+        isTerminalInputFocused = false
+    }
+
     func executeUserCommand(_ command: UserCommand, selection: [FileItem], in model: FileBrowserModel) {
         if command.terminal {
             terminalModel.showOutput()
@@ -215,5 +227,6 @@ extension Notification.Name {
     static let terminalFileManagerNextTab = Notification.Name("TerminalFileManager.nextTab")
     static let terminalFileManagerToggleTerminalPane = Notification.Name("TerminalFileManager.toggleTerminalPane")
     static let terminalFileManagerFocusTerminalPane = Notification.Name("TerminalFileManager.focusTerminalPane")
+    static let terminalFileManagerFocusFilePane = Notification.Name("TerminalFileManager.focusFilePane")
 }
 #endif

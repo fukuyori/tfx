@@ -79,6 +79,22 @@ struct FileListColumnConfiguration {
         orderedColumns.insert(column, at: nextIndex)
     }
 
+    /// Move `column` to position `targetIndex`, where
+    /// `targetIndex` is the insertion index in the BEFORE-removal
+    /// list (matches SwiftUI / drag-and-drop semantics: drop at
+    /// the index immediately above the highlighted row). If
+    /// `column` is currently at or before `targetIndex`, the
+    /// final position becomes `targetIndex - 1` after the remove
+    /// step, which is the standard list-reorder behavior.
+    mutating func move(_ column: FileListColumn, to targetIndex: Int) {
+        guard let currentIndex = orderedColumns.firstIndex(of: column) else { return }
+        var insertionIndex = max(0, min(targetIndex, orderedColumns.count))
+        if currentIndex == insertionIndex || currentIndex + 1 == insertionIndex { return }
+        orderedColumns.remove(at: currentIndex)
+        if currentIndex < insertionIndex { insertionIndex -= 1 }
+        orderedColumns.insert(column, at: insertionIndex)
+    }
+
     mutating func reset() {
         orderedColumns = Self.defaultColumns
         visibleColumns = Set(Self.defaultColumns)

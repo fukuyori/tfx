@@ -34,6 +34,11 @@ struct ViewMenuCommands: Commands {
             }
             .keyboardShortcut(shortcutStore.info(.focusTerminalPane))
 
+            Button("Focus File Pane") {
+                NotificationCenter.default.post(name: .terminalFileManagerFocusFilePane, object: nil)
+            }
+            .keyboardShortcut(shortcutStore.info(.focusFilePane))
+
             Divider()
 
             Button("Swap Left and Right Panes") {
