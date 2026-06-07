@@ -19,6 +19,7 @@ struct FilePaneFileList: View {
         // the row itself.
         VStack(alignment: .leading, spacing: 0) {
             FilePaneHeaderRow(
+                model: model,
                 visibleColumns: visibleColumns,
                 fileNameColumnWidth: $fileNameColumnWidth
             )

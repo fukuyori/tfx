@@ -111,6 +111,22 @@ enum FileListColumn: String, CaseIterable, Identifiable {
     var canHide: Bool {
         self != .name
     }
+
+    /// Which `FileSortKey` this column drives when its header is
+    /// clicked. Returns `nil` for columns that don't map to a
+    /// sortable file attribute (icon, tags, git status, mode,
+    /// permissions) — their headers stay non-interactive.
+    var sortKey: FileSortKey? {
+        switch self {
+        case .name: return .fastName
+        case .size: return .size
+        case .kind: return .kind
+        case .modified: return .modified
+        case .created: return .created
+        case .icon, .mode, .tags, .gitStatus, .permissions:
+            return nil
+        }
+    }
 }
 
 #endif

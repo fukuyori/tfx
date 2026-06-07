@@ -247,6 +247,8 @@ Rules:
 - Directories are sorted before files.
 - Ties fall back to name comparison.
 
+Sorting can be driven from the toolbar's sort dropdown or by clicking a file-list column header. `FilePaneHeaderRow` toggles `sortKey` / `sortAscending` on the active `FileBrowserModel` and shows a `↑` / `↓` chevron next to the active column. Columns whose `FileListColumn.sortKey` is `nil` (Icon, Mode, Tags, Git, Permissions) are non-interactive. The Name header keeps its drag-to-resize gesture and additionally responds to tap (a release within the drag gesture's 1pt minimum-distance threshold is treated as a click).
+
 ### 8.4 Navigation
 
 `navigate(to:recordsHistory:updatesFolderTreeSelection:)` is the central directory navigation operation. Folder-tree clicks, file-pane activation, parent navigation, and breadcrumb path clicks all use this path. Finder aliases and directory symlinks are resolved before navigation when they point to directories. When history recording is enabled, the current directory is pushed to `backStack` and `forwardStack` is cleared. Navigation stops subfolder search, clears search text, clears selection, expands ancestors in the folder tree, and reloads the target directory.

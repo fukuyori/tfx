@@ -4,6 +4,19 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.7] - 2026-06-07
+
+Click-to-sort for the file-list column headers.
+
+### Added
+
+- File-list column headers are now click-to-sort. Clicking a column whose `FileListColumn.sortKey` is non-nil (Name, Size, Kind, Modified, Created) sets that key as the active sort and resets to ascending; clicking the active column toggles ascending ↔ descending. The active column shows a `↑` / `↓` chevron next to its label. Icon, Mode, Tags, Git, and Permissions stay non-interactive because they don't map to a sortable file attribute.
+- The Name header keeps its existing drag-to-resize gesture; resize and click-to-sort coexist on the same cell because the drag has a 1pt minimum-distance threshold (release without movement registers as a tap).
+
+### Changed
+
+- Updated the version to `0.7.7` and the build number to `50`.
+
 ## [0.7.6] - 2026-06-07
 
 Ports of `tfx-for-windows` 0.7.6 / 0.7.7 plus a round of pane / focus / toolbar polish and matching `config.toml` keys.
