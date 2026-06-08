@@ -116,9 +116,34 @@ struct TerminalFileManagerView: View {
         _leftActiveTabID = State(initialValue: initialLeftActiveTabID)
         _rightActiveTabID = State(initialValue: initialRightActiveTabID)
 
-        defaults.set(initialSplitViewVisible, forKey: "TerminalFileManager.isSplitViewVisible")
+        // Startup-only settings: applied EXACTLY ONCE per process,
+        // not on every re-init of the SwiftUI struct. SwiftUI
+        // re-creates `TerminalFileManagerView` whenever a parent
+        // re-renders (e.g. after `didBecomeActive` reloads any
+        // EnvironmentObject store), so unguarded writes here used
+        // to clobber the user's in-session pane toggles every
+        // time they switched away from and back to the app.
         // Precedence: command-line flag > config.toml >
         // previously saved @AppStorage value (unchanged).
+        Self.applyStartupOverridesIfNeeded(
+            defaults: defaults,
+            initialSplitViewVisible: initialSplitViewVisible,
+            launchArguments: launchArguments,
+            launchConfiguration: launchConfiguration
+        )
+    }
+
+    private static var hasAppliedStartupOverrides = false
+    private static func applyStartupOverridesIfNeeded(
+        defaults: UserDefaults,
+        initialSplitViewVisible: Bool,
+        launchArguments: AppLaunchArguments.Parsed,
+        launchConfiguration: AppLaunchConfiguration
+    ) {
+        guard !hasAppliedStartupOverrides else { return }
+        hasAppliedStartupOverrides = true
+
+        defaults.set(initialSplitViewVisible, forKey: "TerminalFileManager.isSplitViewVisible")
         if let previewVisible = launchArguments.previewVisible ?? launchConfiguration.startupPreviewVisible {
             defaults.set(previewVisible, forKey: "TerminalFileManager.isPreviewVisible")
         }

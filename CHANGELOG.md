@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.8] - 2026-06-07
+
+Pane visibility no longer resets when the app reactivates.
+
+### Fixed
+
+- Terminal pane (and the other startup-controlled pane toggles — split, preview, folder tree) no longer get reset to their `config.toml` `[startup]` values every time the app receives `didBecomeActive`. SwiftUI re-creates `TerminalFileManagerView` whenever a parent re-renders, and the previous `init()` unconditionally wrote startup values to `UserDefaults` on every reinstantiation — so any pane the user toggled during the session was reverted as soon as they switched away from and back to tfx. Startup overrides now run once per process via a static `hasAppliedStartupOverrides` guard.
+
+### Changed
+
+- Updated the version to `0.7.8` and the build number to `51`.
+
 ## [0.7.7] - 2026-06-07
 
 Click-to-sort for the file-list column headers.
