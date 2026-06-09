@@ -8,6 +8,12 @@ struct FolderTreePane: View {
 
     @State private var pinnedContentHeight: CGFloat = 0
     private let pinnedSectionMaxHeight: CGFloat = 240
+    /// Bumped when the user taps the "collapse all folders"
+    /// button. `folderTreeSection`'s `.onChange` listens and
+    /// scrolls the tree back to the root row — without this the
+    /// root row can end up off-screen above the viewport if the
+    /// user was scrolled down inside a deep subtree.
+    @State private var collapseAllRequestID = 0
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
@@ -64,6 +70,7 @@ struct FolderTreePane: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button {
                 model.collapseAllFolders()
+                collapseAllRequestID &+= 1
             } label: {
                 Image(systemName: "rectangle.compress.vertical")
             }
@@ -156,6 +163,16 @@ struct FolderTreePane: View {
                     }
                 }
             }
+            // Force SwiftUI to remount the ScrollView when the
+            // user taps "collapse all". Bumping the `.id()` is
+            // the only reliable way to reset the ScrollView's
+            // scroll offset back to the top: `proxy.scrollTo`
+            // can't find the root row in a `LazyVStack` when the
+            // root has been lazy-evicted (off-screen), and even
+            // when it can, the ScrollView often keeps the old
+            // out-of-bounds offset after content shrinks from
+            // hundreds of rows to one.
+            .id(collapseAllRequestID)
             .onChange(of: model.folderTreeSelection) {
                 if model.folderTreeSelectionSection == .tree {
                     scrollToSelection(with: proxy)

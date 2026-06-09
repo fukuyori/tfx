@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.9] - 2026-06-09
+
+Folder-tree usability and file-list scroll performance.
+
+### Added
+
+- Folder-tree "FOLDERS" section header gains a `rectangle.compress.vertical` button that collapses every expanded folder in the tree in one click. The reload button on the outer pane header is unchanged.
+
+### Performance
+
+- `FolderTreePane.folderTreeSection` now uses `LazyVStack` so deeply-expanded trees (hundreds of rows) materialize rows lazily instead of all at once. Cuts initial-paint cost and memory pressure on big trees like `/`.
+- `FilePermissionCache.permissions(for:)` and `FileKindCache.kind(for:isDirectory:)` no longer block the calling thread on cache miss. The disk read (`attributesOfItem` / `resourceValues`) is dispatched to a `.utility` background queue; the call returns the cached value if present, otherwise `nil` (permissions) or the cheap fallback like `PDF` or `Folder` (kind) for this frame. The next render after the background fill picks up the accurate value. The prefetch path still does its work inline because it already runs on the background metadata-prefetch queue.
+- `paneLog` is now `@inlinable` with an `@autoclosure` message and a one-time `isPaneLogEnabled` cache. When logging is off (the production default) the message's string interpolation is skipped entirely — important for layout / persist hot paths where the format cost (frames, doubles) was non-trivial even though nobody was reading the output.
+
+### Changed
+
+- Updated the version to `0.7.9` and the build number to `52`.
+
 ## [0.7.8] - 2026-06-07
 
 Pane visibility no longer resets when the app reactivates.
