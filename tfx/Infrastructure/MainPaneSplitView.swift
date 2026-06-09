@@ -7,12 +7,23 @@ import SwiftUI
 /// `Developer.showsPaneLayoutLogs` in `UserDefaults`. Off by default
 /// so production logs aren't noisy; turn on while debugging
 /// pane / window-size behavior.
-func paneLog(_ message: String) {
-    if ProcessInfo.processInfo.environment["TFX_PANE_LAYOUT_LOGS"] == "1"
-        || UserDefaults.standard.bool(forKey: "Developer.showsPaneLayoutLogs") {
-        print("[tfx pane] \(message)")
-    }
+///
+/// The `@autoclosure` wrapper skips the message's string
+/// interpolation entirely when the log is disabled — important
+/// because this is called from layout / persist hot paths where
+/// the interpolation cost (formatting frames, doubles, etc.) is
+/// non-trivial even when nobody is watching.
+@inlinable
+func paneLog(_ message: @autoclosure () -> String) {
+    guard isPaneLogEnabled else { return }
+    print("[tfx pane] \(message())")
 }
+
+@usableFromInline
+let isPaneLogEnabled: Bool = {
+    ProcessInfo.processInfo.environment["TFX_PANE_LAYOUT_LOGS"] == "1"
+        || UserDefaults.standard.bool(forKey: "Developer.showsPaneLayoutLogs")
+}()
 
 /// Three-pane horizontal layout (folder tree | file area | preview)
 /// backed by `NSSplitView`.

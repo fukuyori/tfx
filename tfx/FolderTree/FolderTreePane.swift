@@ -22,7 +22,7 @@ struct FolderTreePane: View {
             if !model.pinnedFolders.isEmpty {
                 pinnedSection
                 Divider()
-                FolderTreeSectionHeader(title: "FOLDERS")
+                foldersSectionHeader
             }
 
             folderTreeSection
@@ -52,6 +52,29 @@ struct FolderTreePane: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background((isActive ? theme.titleBarBackgroundActive : theme.folderTreeBackground).opacity(design.opacity.background))
+    }
+
+    /// Folders section header with a trailing "collapse all"
+    /// button. Renders the same `FolderTreeSectionHeader`-style
+    /// label inline so styling matches the PINNED header above
+    /// it.
+    private var foldersSectionHeader: some View {
+        HStack(spacing: 6) {
+            Text("FOLDERS")
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                model.collapseAllFolders()
+            } label: {
+                Image(systemName: "rectangle.compress.vertical")
+            }
+            .buttonStyle(.borderless)
+            .help("Collapse all folders")
+        }
+        .font(design.fonts.swiftUIFont(for: .caption, weight: .semibold))
+        .foregroundStyle(theme.folderTreeSectionHeader)
+        .padding(.horizontal, 10)
+        .padding(.top, 9)
+        .padding(.bottom, 4)
     }
 
     private var pinnedSection: some View {
@@ -115,7 +138,12 @@ struct FolderTreePane: View {
     private var folderTreeSection: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 0) {
+                // `LazyVStack` so deeply-expanded folder trees
+                // (hundreds of rows) don't materialize every
+                // `FolderTreeRow` up front. Rows are built only
+                // as they scroll into view, cutting initial-paint
+                // cost and memory pressure on big trees like / .
+                LazyVStack(spacing: 0) {
                     ForEach(roots, id: \.self) { root in
                         FolderTreeRow(
                             model: model,

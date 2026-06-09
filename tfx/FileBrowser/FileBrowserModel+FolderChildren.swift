@@ -18,6 +18,14 @@ extension FileBrowserModel {
         refreshFolderChildren(url)
     }
 
+    /// Collapse every expanded folder in the tree. The root row
+    /// stays visible because the tree renders roots independently
+    /// of the `expandedFolders` set.
+    func collapseAllFolders() {
+        guard !expandedFolders.isEmpty else { return }
+        expandedFolders.removeAll()
+    }
+
     func childrenForFolder(_ url: URL) -> [URL] {
         folderChildrenCache[url.standardizedFileURL] ?? []
     }

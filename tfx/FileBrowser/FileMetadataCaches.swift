@@ -11,25 +11,49 @@ final class FilePermissionCache {
         if let cachedPermissions = cache.object(forKey: key) {
             return cachedPermissions.intValue
         }
-
-        guard
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-            let permissions = (attributes[.posixPermissions] as? NSNumber)?.intValue
-        else {
-            return nil
-        }
-
-        cache.setObject(NSNumber(value: permissions), forKey: key)
-        return permissions
+        // Cache miss: schedule a background fill instead of doing
+        // synchronous `attributesOfItem` on the caller (usually
+        // the main thread, mid-scroll). The cell renders `-` for
+        // this frame; the next render after the fill picks up the
+        // cached value. This eliminates the scroll stutter that
+        // hit large directories before the prefetch pass caught
+        // up.
+        fill(for: url)
+        return nil
     }
 
     nonisolated func prefetch(for urls: [URL], cancellation: MetadataPrefetchCancellation) {
+        // `prefetch` itself is invoked from the background
+        // metadata-prefetch work item, so do the disk read
+        // inline (`fillNow`) — going through `fill` would
+        // re-dispatch each item to another global queue for no
+        // benefit, just 1000 extra GCD enqueues per directory
+        // load.
         for (index, url) in urls.enumerated() {
             if index.isMultiple(of: 64), cancellation.isCancelled {
                 return
             }
+            fillNow(for: url)
+        }
+    }
 
-            _ = permissions(for: url)
+    /// Synchronously read POSIX permissions from disk and cache
+    /// the result. Called only from a background context — either
+    /// the prefetch pass or the on-miss background dispatch from
+    /// `permissions(for:)`.
+    nonisolated private func fillNow(for url: URL) {
+        let key = NSString(string: url.path)
+        guard cache.object(forKey: key) == nil else { return }
+        guard
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+            let permissions = (attributes[.posixPermissions] as? NSNumber)?.intValue
+        else { return }
+        cache.setObject(NSNumber(value: permissions), forKey: key)
+    }
+
+    nonisolated private func fill(for url: URL) {
+        DispatchQueue.global(qos: .utility).async {
+            self.fillNow(for: url)
         }
     }
 }
@@ -44,20 +68,40 @@ final class FileKindCache {
         if let cachedKind = cache.object(forKey: key) {
             return cachedKind as String
         }
-
-        let values = try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey])
-        let kind = values?.localizedTypeDescription ?? (isDirectory ? String(localized: "Folder") : url.pathExtension.uppercased())
-        cache.setObject(NSString(string: kind), forKey: key)
-        return kind
+        // Cache miss: return the cheap fallback now, fill the
+        // accurate localized-type-description in the background.
+        // The next render after the fill picks up the real
+        // value. Avoids `url.resourceValues(...)` (a possibly
+        // slow LaunchServices lookup) on the caller's thread.
+        let fallback = isDirectory ? String(localized: "Folder") : url.pathExtension.uppercased()
+        fill(url: url, isDirectory: isDirectory)
+        return fallback
     }
 
     nonisolated func prefetch(for items: [FileItem], cancellation: MetadataPrefetchCancellation) {
+        // Already runs on the background metadata-prefetch
+        // queue — do the lookup inline (`fillNow`) instead of
+        // re-dispatching each item.
         for (index, item) in items.enumerated() {
             if index.isMultiple(of: 64), cancellation.isCancelled {
                 return
             }
+            fillNow(url: item.url, isDirectory: item.isDirectory)
+        }
+    }
 
-            _ = kind(for: item.url, isDirectory: item.isDirectory)
+    nonisolated private func fillNow(url: URL, isDirectory: Bool) {
+        let key = NSString(string: url.path)
+        guard cache.object(forKey: key) == nil else { return }
+        let values = try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey])
+        let kind = values?.localizedTypeDescription
+            ?? (isDirectory ? String(localized: "Folder") : url.pathExtension.uppercased())
+        cache.setObject(NSString(string: kind), forKey: key)
+    }
+
+    nonisolated private func fill(url: URL, isDirectory: Bool) {
+        DispatchQueue.global(qos: .utility).async {
+            self.fillNow(url: url, isDirectory: isDirectory)
         }
     }
 }
