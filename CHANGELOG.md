@@ -4,6 +4,22 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.95] - 2026-06-10
+
+Header toolbar icon legibility under system light mode + new tint override.
+
+### Fixed
+
+- Toolbar SF Symbol icons (reload, terminal, split, preview, gear, …) were nearly invisible when macOS was in light mode. The header's background is driven by the app's own theme (independent of the system light/dark setting), but each `Image(systemName:)` was inheriting the SYSTEM label color — black in light mode — which sank into the dark theme header. The header HStack now applies `theme.headerIcon` as both `.tint(...)` and `.foregroundStyle(...)`, so every borderless button / toggle in the toolbar picks up a theme-controlled color regardless of system appearance.
+
+### Added
+
+- New `headerIconForeground` theme color (`[colors]` section of `config.toml`) for an explicit toolbar-icon tint independent of the header text color (`headerForeground`). When the override is not set, `theme.headerIcon` falls back to `headerForeground` so existing setups keep the legible default introduced above. Example: `headerIconForeground = "#5EF0EA"` paints the toolbar icons in cyan while header text stays green.
+
+### Changed
+
+- Updated the version to `0.7.95` and the build number to `58`.
+
 ## [0.7.94] - 2026-06-10
 
 Drag-and-drop polish, inline-edit dismissal, and pane drop-target indication.

@@ -144,6 +144,7 @@ enum DesignConfigurationLoader {
         case "secondaryForeground": overrides.secondaryForeground = color
         case "headerForeground": overrides.headerForeground = color
         case "headerBackground": overrides.headerBackground = color
+        case "headerIconForeground": overrides.headerIconForeground = color
         case "titleBarBackgroundActive": overrides.titleBarBackgroundActive = color
         case "titleBarBackgroundInactive": overrides.titleBarBackgroundInactive = color
         case "statusLineForegroundActive": overrides.statusLineForegroundActive = color

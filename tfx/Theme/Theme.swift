@@ -20,6 +20,13 @@ struct Theme: Equatable {
 
     let headerForeground: Color
     let headerBackground: Color
+    /// Optional explicit tint for the toolbar icons (the SF
+    /// Symbol buttons in the header row). When nil, `headerIcon`
+    /// falls back to `headerForeground` so the icons stay
+    /// legible against the dark header regardless of the
+    /// system's light/dark mode.
+    var headerIconForeground: Color? = nil
+    var headerIcon: Color { headerIconForeground ?? headerForeground }
     let titleBarBackgroundActive: Color
     let titleBarBackgroundInactive: Color
     let statusLineForegroundActive: Color
@@ -84,6 +91,7 @@ extension Theme {
             secondaryForeground: overrides.secondaryForeground ?? secondaryForeground,
             headerForeground: overrides.headerForeground ?? headerForeground,
             headerBackground: overrides.headerBackground ?? headerBackground,
+            headerIconForeground: overrides.headerIconForeground ?? headerIconForeground,
             titleBarBackgroundActive: overrides.titleBarBackgroundActive ?? titleBarBackgroundActive,
             titleBarBackgroundInactive: overrides.titleBarBackgroundInactive ?? titleBarBackgroundInactive,
             statusLineForegroundActive: overrides.statusLineForegroundActive ?? statusLineForegroundActive,
@@ -121,6 +129,13 @@ struct ThemeColorOverrides: Equatable {
     var secondaryForeground: Color?
     var headerForeground: Color?
     var headerBackground: Color?
+    /// Toolbar icon tint. When nil, the toolbar falls back to
+    /// `headerForeground` so the buttons stay legible against
+    /// the dark header regardless of the system light/dark
+    /// setting (the app's theme is independent of system
+    /// appearance). Set this in `config.toml` to give the
+    /// toolbar icons a different color from header text.
+    var headerIconForeground: Color?
     var titleBarBackgroundActive: Color?
     var titleBarBackgroundInactive: Color?
     var statusLineForegroundActive: Color?
