@@ -133,23 +133,15 @@ extension FileBrowserModel {
     }
 
     func cancelInlineNameEdit() {
-        guard let edit = inlineNameEdit else { return }
+        // Dismiss the inline-edit overlay without altering the
+        // file on disk. This matches Finder: pressing Escape
+        // during a "New File" / "New Folder" inline edit keeps
+        // the just-created item with its default name; only an
+        // explicit Delete (or trashing the file) removes it.
+        // For `.rename` the file simply keeps its original name
+        // because we never issued the rename.
+        guard inlineNameEdit != nil else { return }
         inlineNameEdit = nil
-
-        guard edit.mode == .newItem else { return }
-
-        do {
-            try FileManager.default.removeItem(at: edit.url)
-            let affectedDirectory = edit.url.deletingLastPathComponent().standardizedFileURL
-            refreshFolderChildren(affectedDirectory)
-            updateCurrentDirectoryItems(
-                removing: [edit.url],
-                selecting: []
-            )
-            notifyDirectoriesChanged([affectedDirectory])
-        } catch {
-            show(error)
-        }
     }
 
     func moveSelectedItemsToTrash() {

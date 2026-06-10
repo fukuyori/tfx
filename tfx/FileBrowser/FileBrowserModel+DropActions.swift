@@ -28,7 +28,16 @@ extension FileBrowserModel {
                 removing: result.removedSourceURL.map { [$0] } ?? [],
                 selecting: [result.destinationURL]
             )
-            notifyDirectoriesChanged(Array(result.affectedDirectories))
+            // Pass `removedSourceURL` along so another pane
+            // pointed at the source directory can drop the row
+            // immediately on receiving the notification instead
+            // of waiting for its directory-watcher reload —
+            // gives the cross-pane drag the instant
+            // disappear-from-source feel.
+            notifyDirectoriesChanged(
+                Array(result.affectedDirectories),
+                removedURLs: result.removedSourceURL.map { [$0] } ?? []
+            )
             completion?()
         } catch {
             show(error)

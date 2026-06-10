@@ -4,16 +4,32 @@ import Foundation
 struct FileOperationChange {
     let originModelID: UUID
     let affectedDirectories: Set<URL>
+    /// URLs that were removed from their parent directory by
+    /// this operation (the source side of a move / a trashed
+    /// file, etc.). Other panes pointed at the same parent use
+    /// this to drop those rows from their item list immediately
+    /// instead of waiting ~250 ms for the directory watcher to
+    /// fire a full reload.
+    let removedURLs: Set<URL>
 }
 
 enum FileOperationNotifier {
-    static func notifyDirectoriesChanged(_ directories: [URL], originModelID: UUID) {
+    static func notifyDirectoriesChanged(
+        _ directories: [URL],
+        removedURLs: [URL] = [],
+        originModelID: UUID
+    ) {
         let affectedDirectories = Set(directories.map(\.standardizedFileURL))
         guard !affectedDirectories.isEmpty else { return }
+        let removed = Set(removedURLs.map(\.standardizedFileURL))
 
         NotificationCenter.default.post(
             name: .fileManagerDirectoriesDidChange,
-            object: FileOperationChange(originModelID: originModelID, affectedDirectories: affectedDirectories)
+            object: FileOperationChange(
+                originModelID: originModelID,
+                affectedDirectories: affectedDirectories,
+                removedURLs: removed
+            )
         )
     }
 }

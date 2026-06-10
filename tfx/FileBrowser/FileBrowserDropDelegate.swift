@@ -9,13 +9,23 @@ struct FileBrowserDropDelegate: DropDelegate {
     var isEnabled = true
     var reloadRelatedPanes: (() -> Void)?
 
+    /// When `highlightedDirectory` is nil the drop targets the
+    /// pane's current directory rather than a specific folder
+    /// row, and we flip the pane-level highlight (`FilePane`'s
+    /// border overlay) instead of a row background.
+    private var isPaneLevelDrop: Bool { highlightedDirectory == nil }
+
     func validateDrop(info: DropInfo) -> Bool {
         isEnabled && info.hasItemsConforming(to: [UTType.fileURL.identifier])
     }
 
     func dropEntered(info: DropInfo) {
         guard isEnabled, info.hasItemsConforming(to: [UTType.fileURL.identifier]) else { return }
-        model.setDropTargetDirectory(highlightedDirectory)
+        if isPaneLevelDrop {
+            model.setPaneDropTarget(true)
+        } else {
+            model.setDropTargetDirectory(highlightedDirectory)
+        }
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
@@ -23,17 +33,29 @@ struct FileBrowserDropDelegate: DropDelegate {
             return DropProposal(operation: .forbidden)
         }
 
-        model.setDropTargetDirectory(highlightedDirectory)
+        if isPaneLevelDrop {
+            model.setPaneDropTarget(true)
+        } else {
+            model.setDropTargetDirectory(highlightedDirectory)
+        }
         return DropProposal(operation: dropOperation == .copy ? .copy : .move)
     }
 
     func dropExited(info: DropInfo) {
-        model.clearDropTargetDirectory(highlightedDirectory)
+        if isPaneLevelDrop {
+            model.setPaneDropTarget(false)
+        } else {
+            model.clearDropTargetDirectory(highlightedDirectory)
+        }
     }
 
     func performDrop(info: DropInfo) -> Bool {
         defer {
-            model.clearDropTargetDirectory(highlightedDirectory)
+            if isPaneLevelDrop {
+                model.setPaneDropTarget(false)
+            } else {
+                model.clearDropTargetDirectory(highlightedDirectory)
+            }
         }
 
         guard isEnabled else { return false }

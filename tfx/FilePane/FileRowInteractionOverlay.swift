@@ -100,5 +100,51 @@ final class FileRowInteractionView: NSView, NSDraggingSource {
     func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
         [.copy, .move]
     }
+
+    func draggingSession(_ session: NSDraggingSession, movedTo screenPoint: NSPoint) {
+        // SwiftUI `.onDrop` destinations never update the
+        // dragging-item frames, so when the drop completes
+        // AppKit's success animation slides each image to the
+        // last frame WE set — which by default is the source
+        // row's position in source view coordinates. That looks
+        // exactly like a snap-back even though `operation` came
+        // back as `.move`. Continuously rewriting each
+        // dragging-item frame to the current cursor's screen
+        // position means the eventual "animate to stored frame"
+        // step is from cursor-to-cursor — i.e. invisible.
+        session.enumerateDraggingItems(
+            options: [],
+            for: nil,
+            classes: [NSURL.self],
+            searchOptions: [:]
+        ) { draggingItem, _, _ in
+            draggingItem.draggingFrame = NSRect(
+                x: screenPoint.x - 16,
+                y: screenPoint.y - 16,
+                width: 32,
+                height: 32
+            )
+        }
+    }
+
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        // `animatesToStartingPositionsOnCancelOrFail = false`
+        // alone does not always suppress the snap-back when the
+        // drop is consumed by a SwiftUI `.onDrop` in a different
+        // pane (cross-pane drag in split view) — AppKit still
+        // thinks the drop "failed" because SwiftUI never calls
+        // the AppKit-side `performDragOperation:` that would
+        // mark success. Clearing the drag images at session end
+        // makes there be nothing left to animate, which is what
+        // Finder visually does on cross-pane move.
+        session.enumerateDraggingItems(
+            options: [],
+            for: nil,
+            classes: [NSURL.self],
+            searchOptions: [:]
+        ) { draggingItem, _, _ in
+            draggingItem.imageComponentsProvider = { [] }
+        }
+    }
 }
 #endif

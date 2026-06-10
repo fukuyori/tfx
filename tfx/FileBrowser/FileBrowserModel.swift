@@ -66,6 +66,12 @@ final class FileBrowserModel: ObservableObject {
     @Published var pinnedFolders: [URL] = []
     @Published var pinnedFolderInsertionIndex: Int?
     @Published private(set) var highlightedDropDirectory: URL?
+    /// True while a drag is hovering over the pane's empty area
+    /// (rather than over a specific folder row). `FilePane` reads
+    /// this to draw an extra drop-target border around the whole
+    /// pane, giving the user the same kind of visual feedback
+    /// that hovering a folder row already provides.
+    @Published private(set) var isPaneDropTarget: Bool = false
     @Published var previewURLs: [URL] = []
     /// Latest Git status snapshot for `currentDirectory`. Nil when the
     /// directory is outside any Git work tree, when `git` is missing,
@@ -175,6 +181,21 @@ final class FileBrowserModel: ObservableObject {
                     return
                 }
 
+                // Apply any URLs the originating pane reported
+                // as removed (the source side of a cross-pane
+                // move, a trash, etc.) immediately, so the row
+                // disappears the moment the drop completes
+                // rather than ~250 ms later when the directory
+                // watcher fires a full reload. The subsequent
+                // `reload()` still runs to catch any other
+                // changes (renames, files added externally).
+                let currentDir = self.currentDirectory.standardizedFileURL
+                let removedInThisDir = change.removedURLs.filter {
+                    $0.deletingLastPathComponent().standardizedFileURL == currentDir
+                }
+                if !removedInThisDir.isEmpty {
+                    self.updateCurrentDirectoryItems(removing: Array(removedInThisDir))
+                }
                 self.reload()
             }
         currentDirectoryObserver = $currentDirectory
@@ -204,6 +225,11 @@ final class FileBrowserModel: ObservableObject {
         let nextTarget = FileBrowserDropTargetState.clearing(url, current: highlightedDropDirectory)
         guard highlightedDropDirectory != nextTarget else { return }
         highlightedDropDirectory = nextTarget
+    }
+
+    func setPaneDropTarget(_ active: Bool) {
+        guard isPaneDropTarget != active else { return }
+        isPaneDropTarget = active
     }
 
     func show(_ error: Error) {

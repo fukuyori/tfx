@@ -72,6 +72,18 @@ struct FilePane: View {
             .frame(minWidth: 0, maxWidth: .infinity)
             .onTapGesture {
                 activate()
+                // Tapping the empty area outside any row also
+                // dismisses an in-flight inline name edit by
+                // committing whatever text is currently in the
+                // field. Without this, the SwiftUI tap doesn't
+                // move first responder away from the text field
+                // (the empty area is not focusable), so the
+                // commit-on-end-editing hook never fires and a
+                // freshly-created file is left stuck in the
+                // inline-edit state.
+                if model.inlineNameEdit != nil {
+                    model.commitInlineNameEdit()
+                }
             }
             .onDrop(
                 of: [UTType.fileURL.identifier],
@@ -115,6 +127,21 @@ struct FilePane: View {
                         ? theme.paneBorderKeyboardTarget
                         : (isActivePane ? theme.paneBorderActive : theme.paneBorderInactive),
                     lineWidth: isKeyboardTarget ? 2 : 1
+                )
+        )
+        // Extra drop-target border drawn ON TOP of the regular
+        // pane border when a drag is hovering anywhere inside
+        // the pane (but not over a specific folder row). Mirrors
+        // the row-background highlight that signals "drop here"
+        // for folder rows, but for the pane's own current
+        // directory. Uses `fileListRowDropTarget` so the color
+        // matches the row highlight, and 3pt so it reads even on
+        // top of the 2pt keyboard-target border.
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .strokeBorder(
+                    theme.fileListRowDropTarget,
+                    lineWidth: model.isPaneDropTarget ? 3 : 0
                 )
         )
         .onAppear {

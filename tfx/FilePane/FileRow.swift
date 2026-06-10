@@ -232,6 +232,25 @@ private struct InlineNameTextField: NSViewRepresentable {
             }
         }
 
+        func controlTextDidEndEditing(_ notification: Notification) {
+            // Fires when the field editor relinquishes first
+            // responder for any reason other than Enter/Escape
+            // (which the `doCommandBy` path handles above). The
+            // common trigger is the user clicking outside the
+            // text field — treat that as an implicit commit so
+            // a freshly-created inline-edited file does not get
+            // stuck in the in-progress state. `commitInlineNameEdit`
+            // is no-op safe when there is nothing to do.
+            guard let textField = notification.object as? NSTextField else { return }
+            if let reason = notification.userInfo?["NSTextMovement"] as? Int,
+               reason == NSTextMovement.return.rawValue || reason == NSTextMovement.cancel.rawValue {
+                // Enter / Escape already went through doCommandBy.
+                return
+            }
+            text = textField.stringValue
+            onCommit?()
+        }
+
         func control(
             _ control: NSControl,
             textView: NSTextView,

@@ -77,8 +77,8 @@ extension FileBrowserModel {
         }
     }
 
-    func notifyDirectoriesChanged(_ directories: [URL]) {
-        FileOperationNotifier.notifyDirectoriesChanged(directories, originModelID: modelID)
+    func notifyDirectoriesChanged(_ directories: [URL], removedURLs: [URL] = []) {
+        FileOperationNotifier.notifyDirectoriesChanged(directories, removedURLs: removedURLs, originModelID: modelID)
     }
 
     func updateAvailableCapacity() {

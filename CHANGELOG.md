@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.94] - 2026-06-10
+
+Drag-and-drop polish, inline-edit dismissal, and pane drop-target indication.
+
+### Added
+
+- File pane now draws a 3pt `fileListRowDropTarget`-colored border around its full frame while a drag is hovering its empty area (instead of over a specific folder row), matching the existing per-row highlight for folder drops. Implemented via a new `FileBrowserModel.isPaneDropTarget` flag that `FileBrowserDropDelegate` flips when the delegate was constructed for the pane (no `highlightedDirectory`) rather than a row.
+
+### Fixed
+
+- Cross-pane drag-and-drop in split view now removes the moved row from the source pane immediately on drop instead of waiting for the directory-watcher's ~250ms debounced reload. `FileOperationChange` carries the new `removedURLs` payload and the model's notification listener applies it before kicking off `reload()`.
+- Cross-pane drag-and-drop no longer plays the snap-back-to-source animation. The animation was running even though AppKit recorded the drop as `.move`-successful, because SwiftUI's `.onDrop` never updates the dragging-item frames and AppKit's default success animation slides each image to its last-set frame — which was the source row's position in source view coordinates. `FileRowInteractionView.draggingSession(_:movedTo:)` now rewrites every dragging-item frame to follow the cursor's current screen position, so the eventual animation step is cursor-to-cursor and visually invisible.
+- Inline name edit no longer deletes a freshly-created file when dismissed. Escape now simply closes the editor and leaves the file with its current (possibly default) name, matching Finder. Clicking another row or the file pane's empty area now COMMITS the edit (treats the focus loss as a confirm), so a freshly-created file is never left stuck in the inline-edit state. The text field's `controlTextDidEndEditing` delegate hook ties this together for any focus loss that did not go through Enter/Escape.
+
+### Changed
+
+- Updated the version to `0.7.94` and the build number to `57`.
+
 ## [0.7.93] - 2026-06-10
 
 Restore the modal name-input dialog for new folder creation.

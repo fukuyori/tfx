@@ -106,7 +106,15 @@ extension FileBrowserModel {
 
     func applySelection(_ selection: FileSelectionStateResult) {
         if let edit = inlineNameEdit, !selection.selectedItemIDs.contains(edit.url) {
-            cancelInlineNameEdit()
+            // Selection moved off the inline-edit row (the user
+            // clicked another row, right-clicked elsewhere,
+            // etc.). Treat that as a focus-loss commit so any
+            // typed text is applied — matching the Finder
+            // behavior the user requested. For `.newItem` with
+            // no typed change `commitInlineNameEdit` falls
+            // through to a no-op dismiss; either way the file
+            // stays on disk.
+            commitInlineNameEdit(text: edit.text)
         }
 
         setSelectionState(
