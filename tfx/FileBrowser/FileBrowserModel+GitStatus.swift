@@ -115,7 +115,32 @@ extension FileBrowserModel {
         if gitRepositoryStatus != nil {
             return true
         }
-        return GitStatusReader.workTreeRoot(near: currentDirectory.standardizedFileURL) != nil
+        // Fallback was previously a synchronous
+        // `GitStatusReader.workTreeRoot(near:)` call, which spawns
+        // `/usr/bin/git rev-parse` and blocks the main thread with
+        // `Process.waitUntilExit()`. SwiftUI calls this getter
+        // from menu / view body evaluation, so the blocking call
+        // would spin a nested `CFRunLoop` that drained pending
+        // `DispatchQueue.main.async` blocks DURING the current
+        // view-update transaction — every `@Published` write in
+        // those blocks (`items`, `availableCapacityText`,
+        // `selectedItemIDs`, ...) then surfaced as the
+        // "Publishing changes from within view updates" warning
+        // / AttributeGraph cycle burst that hit on `⌘N` and
+        // other reload-bearing actions.
+        //
+        // Use the already-populated `gitRootCache` so the getter
+        // stays non-blocking. The background Git status path
+        // populates the cache; until it has run for this
+        // directory we conservatively return `false`. That can
+        // briefly hide Git-only menu items on the very first
+        // visit to a repo, which is acceptable — they reappear
+        // as soon as the asynchronous status read lands.
+        let key = currentDirectory.standardizedFileURL
+        if let cached = gitRootCache[key] {
+            return cached != nil
+        }
+        return false
     }
 }
 

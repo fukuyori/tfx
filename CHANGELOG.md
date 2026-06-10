@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.92] - 2026-06-10
+
+Eliminate the remaining "Publishing changes from within view updates" / AttributeGraph cycle burst.
+
+### Fixed
+
+- `FileBrowserModel.isCurrentDirectoryGitRepository` used to fall through to a synchronous `GitStatusReader.workTreeRoot(near:)` when the asynchronous status fetch had not populated `gitRepositoryStatus` yet. `workTreeRoot` shells out to `/usr/bin/git` and blocks the main thread with `Process.waitUntilExit()`, which spins a nested `CFRunLoop`. SwiftUI calls this getter from menu / view-body evaluation, so the nested runloop ran during a view-update transaction and drained every queued `DispatchQueue.main.async` block — the `@Published` writes inside those blocks (`items` from `applyFiltersAndSortAsync`, `availableCapacityText` from `publishDirectoryHeader` / `fetchVolumeCapacity`, `selectedItemIDs` / `primarySelectedItemID` from `pruneSelection`, …) were then reported as publishing during view updates and fed an AttributeGraph cycle. On `⌘N` this surfaced as 100+ runtime-issue logs per action. Switched the getter to a non-blocking lookup against the existing `gitRootCache`; if the cache has not been populated yet the getter returns `false` and the asynchronous status read fills it in. Git-only menu items may briefly hide on the very first visit to a repo, which is acceptable for the win.
+
+### Changed
+
+- Updated the version to `0.7.92` and the build number to `55`.
+
 ## [0.7.91] - 2026-06-10
 
 SwiftUI runtime-issue cleanup around new-folder creation.
