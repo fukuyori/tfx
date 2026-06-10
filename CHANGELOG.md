@@ -4,6 +4,16 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.93] - 2026-06-10
+
+Restore the modal name-input dialog for new folder creation.
+
+### Changed
+
+- `⌘N` (New Folder) now opens an `NSAlert`-hosted name-input dialog (the same UX that existed before the inline-edit experiment), rather than creating "Untitled Folder" and trying to drop into an inline rename. The inline approach had a structural problem — any selection change (clicking another row, right-clicking, etc.) ran through `applySelection` → `cancelInlineNameEdit`, which for `.newItem` mode deletes the just-created folder from disk. Reverting to the modal dialog avoids that whole class of "the folder I just made disappeared" failures.
+- `FileOperationPrompt.text(...)` (used by the new-folder, new-file, rename, and "add tag" dialogs) now pre-selects the default value when the alert opens, matching Finder's behavior: the user can start typing a replacement name immediately without first clearing the default.
+- Updated the version to `0.7.93` and the build number to `56`.
+
 ## [0.7.92] - 2026-06-10
 
 Eliminate the remaining "Publishing changes from within view updates" / AttributeGraph cycle burst.

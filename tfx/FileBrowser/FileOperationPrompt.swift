@@ -36,6 +36,18 @@ enum FileOperationPrompt {
         let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
         textField.stringValue = defaultValue
         alert.accessoryView = textField
+        // Make the text field the first responder once the alert
+        // panel is up, and pre-select the entire default value
+        // (matching Finder's "New Folder" sheet) so the user can
+        // start typing a replacement name immediately. `selectText`
+        // installs the field editor and selects all text; we dispatch
+        // to the next runloop tick because `runModal` spins its own
+        // nested loop and the async block fires after the window is
+        // on screen.
+        alert.window.initialFirstResponder = textField
+        DispatchQueue.main.async {
+            textField.selectText(nil)
+        }
 
         let response = alert.runModal()
         guard response == .alertFirstButtonReturn else { return nil }

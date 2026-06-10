@@ -11,17 +11,17 @@ extension FileBrowserModel {
 
         let targetDirectory = currentDirectory.standardizedFileURL
         do {
-            guard let result = try FileBrowserFileOperations.createFolder(named: String(localized: "Untitled Folder"), in: targetDirectory) else { return }
+            // Use the modal name-input dialog (matches the
+            // pre-inline-edit behavior): the user types a name
+            // into an `NSAlert`-hosted text field and presses OK,
+            // then we create the folder with that name.
+            guard let result = try FileBrowserFileOperations.createFolder(in: targetDirectory) else { return }
             let folderURL = result.folderURL
-
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.refreshFolderChildren(targetDirectory)
-                if self.currentDirectory.standardizedFileURL == targetDirectory {
-                    self.updateCurrentDirectoryItems(adding: [folderURL], selecting: [folderURL])
-                }
-                self.notifyDirectoriesChanged([result.affectedDirectory])
+            refreshFolderChildren(targetDirectory)
+            if self.currentDirectory.standardizedFileURL == targetDirectory {
+                updateCurrentDirectoryItems(adding: [folderURL], selecting: [folderURL])
             }
+            notifyDirectoriesChanged([result.affectedDirectory])
         } catch {
             show(error)
         }
