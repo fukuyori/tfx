@@ -78,11 +78,11 @@ struct FilePaneTitleBar: View {
             }
         }
         .onAppear {
-            pathInput = currentPathString
+            updateDisplayedPath()
         }
         .onChange(of: model.currentDirectory) {
             if !isEditing {
-                pathInput = currentPathString
+                updateDisplayedPath()
             }
         }
     }
@@ -99,6 +99,15 @@ struct FilePaneTitleBar: View {
         pathInput = currentPathString
         isEditing = false
         isPathFieldFocused = false
+    }
+
+    private func updateDisplayedPath() {
+        let path = currentPathString
+        Task { @MainActor in
+            await Task.yield()
+            guard !isEditing, pathInput != path else { return }
+            pathInput = path
+        }
     }
 
     private var currentPathString: String {

@@ -6,7 +6,6 @@ extension FileBrowserModel {
     func selectForMouseDown(_ item: FileItem, modifiers: NSEvent.ModifierFlags) {
         mouseRangeSelectionState = nil
         mouseBlankSelectionState = nil
-        isParentDirectorySelected = false
 
         if modifiers.contains(.shift) {
             selectRange(to: item)
@@ -15,7 +14,12 @@ extension FileBrowserModel {
         } else if !selectedItemIDs.contains(item.id) {
             select(item)
         } else {
-            primarySelectedItemID = item.id
+            setSelectionState(
+                selectedItemIDs: selectedItemIDs,
+                primarySelectedItemID: item.id,
+                selectionAnchorItemID: selectionAnchorItemID,
+                isParentDirectorySelected: false
+            )
         }
     }
 
@@ -41,7 +45,6 @@ extension FileBrowserModel {
     }
 
     func beginMouseRangeSelection(from item: FileItem, modifiers: NSEvent.ModifierFlags) {
-        isParentDirectorySelected = false
         mouseBlankSelectionState = nil
         let addsToExistingSelection = modifiers.contains(.command)
         mouseRangeSelectionState = FileMouseRangeSelectionState(
@@ -67,10 +70,12 @@ extension FileBrowserModel {
             selectedIDs.formUnion(state.originalSelectedItemIDs)
         }
 
-        selectedItemIDs = selectedIDs
-        primarySelectedItemID = item.id
-        selectionAnchorItemID = state.anchorItemID
-        isParentDirectorySelected = false
+        setSelectionState(
+            selectedItemIDs: selectedIDs,
+            primarySelectedItemID: item.id,
+            selectionAnchorItemID: state.anchorItemID,
+            isParentDirectorySelected: false
+        )
     }
 
     func beginMouseRangeSelection(atItemIndex itemIndex: Int, modifiers: NSEvent.ModifierFlags) {
@@ -96,7 +101,6 @@ extension FileBrowserModel {
     }
 
     func beginMouseBlankSelection(modifiers: NSEvent.ModifierFlags) {
-        isParentDirectorySelected = false
         mouseRangeSelectionState = nil
         mouseBlankSelectionState = FileMouseBlankSelectionState(
             originalSelectedItemIDs: selectedItemIDs,
@@ -107,21 +111,26 @@ extension FileBrowserModel {
     func updateMouseBlankSelection(itemIndexes: ClosedRange<Int>?) {
         guard let state = mouseBlankSelectionState else { return }
 
-        var selectedIDs: Set<FileItem.ID>
+        let selectedIDs: Set<FileItem.ID>
+        let primaryID: FileItem.ID?
         if let itemIndexes {
-            selectedIDs = Set(items[itemIndexes].map(\.id))
+            var rangeSelectedIDs = Set(items[itemIndexes].map(\.id))
             if state.addsToExistingSelection {
-                selectedIDs.formUnion(state.originalSelectedItemIDs)
+                rangeSelectedIDs.formUnion(state.originalSelectedItemIDs)
             }
-            primarySelectedItemID = itemIndexes.upperBound < items.count ? items[itemIndexes.upperBound].id : nil
+            selectedIDs = rangeSelectedIDs
+            primaryID = itemIndexes.upperBound < items.count ? items[itemIndexes.upperBound].id : nil
         } else {
             selectedIDs = state.addsToExistingSelection ? state.originalSelectedItemIDs : []
-            primarySelectedItemID = selectedIDs.first
+            primaryID = selectedIDs.first
         }
 
-        selectedItemIDs = selectedIDs
-        selectionAnchorItemID = nil
-        isParentDirectorySelected = false
+        setSelectionState(
+            selectedItemIDs: selectedIDs,
+            primarySelectedItemID: primaryID,
+            selectionAnchorItemID: nil,
+            isParentDirectorySelected: false
+        )
     }
 
     func finishMouseBlankSelection() {
@@ -188,10 +197,12 @@ extension FileBrowserModel {
             parentOffset: canGoUp ? 1 : 0
         ) else { return }
 
-        selectionAnchorItemID = result.anchorItemID
-        selectedItemIDs = result.selectedItemIDs
-        primarySelectedItemID = result.primarySelectedItemID
-        isParentDirectorySelected = false
+        setSelectionState(
+            selectedItemIDs: result.selectedItemIDs,
+            primarySelectedItemID: result.primarySelectedItemID,
+            selectionAnchorItemID: result.anchorItemID,
+            isParentDirectorySelected: false
+        )
     }
 }
 

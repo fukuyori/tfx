@@ -87,20 +87,13 @@ struct PreviewPane: View {
             }
         }
         .onChange(of: urls) {
-            isPrimaryPreviewReady = false
-            allowsExternalImages = false
-            let availableURLs = Set(urls.map(\.standardizedFileURL))
-            selectedPreviewURLs = selectedPreviewURLs.intersection(availableURLs)
-            visibleMultiPreviewURLs = visibleMultiPreviewURLs.intersection(availableURLs)
-            updateActiveMultiPreviews()
+            resetPreviewStateAfterViewUpdate()
         }
         .onChange(of: showsRawSource) {
-            isPrimaryPreviewReady = false
-            allowsExternalImages = false
+            resetPrimaryPreviewAfterViewUpdate()
         }
         .onChange(of: previewConfigurationStore.configuration) {
-            isPrimaryPreviewReady = false
-            allowsExternalImages = false
+            resetPrimaryPreviewAfterViewUpdate()
         }
         .task(id: externalImageDetectionKey) {
             await detectExternalImages()
@@ -162,13 +155,20 @@ struct PreviewPane: View {
     }
 
     private func requestMultiPreview(for url: URL) {
-        visibleMultiPreviewURLs.insert(url.standardizedFileURL)
-        updateActiveMultiPreviews()
+        Task { @MainActor in
+            await Task.yield()
+            guard urls.contains(url) else { return }
+            visibleMultiPreviewURLs.insert(url.standardizedFileURL)
+            updateActiveMultiPreviews()
+        }
     }
 
     private func releaseMultiPreview(for url: URL) {
-        visibleMultiPreviewURLs.remove(url.standardizedFileURL)
-        updateActiveMultiPreviews()
+        Task { @MainActor in
+            await Task.yield()
+            visibleMultiPreviewURLs.remove(url.standardizedFileURL)
+            updateActiveMultiPreviews()
+        }
     }
 
     private func updateActiveMultiPreviews() {
@@ -178,6 +178,26 @@ struct PreviewPane: View {
                 .filter { visibleMultiPreviewURLs.contains($0) }
                 .prefix(maxActiveMultiPreviews)
         )
+    }
+
+    private func resetPreviewStateAfterViewUpdate() {
+        let availableURLs = Set(urls.map(\.standardizedFileURL))
+        Task { @MainActor in
+            await Task.yield()
+            isPrimaryPreviewReady = false
+            allowsExternalImages = false
+            selectedPreviewURLs = selectedPreviewURLs.intersection(availableURLs)
+            visibleMultiPreviewURLs = visibleMultiPreviewURLs.intersection(availableURLs)
+            updateActiveMultiPreviews()
+        }
+    }
+
+    private func resetPrimaryPreviewAfterViewUpdate() {
+        Task { @MainActor in
+            await Task.yield()
+            isPrimaryPreviewReady = false
+            allowsExternalImages = false
+        }
     }
 
     @ViewBuilder

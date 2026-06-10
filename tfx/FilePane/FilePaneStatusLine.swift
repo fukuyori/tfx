@@ -64,18 +64,7 @@ struct FilePaneStatusLine: View {
             activate()
         }
         .onChange(of: model.isLoadingDirectory, initial: true) { _, isLoading in
-            loadingHintTask?.cancel()
-            if isLoading {
-                let task = Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(500))
-                    if !Task.isCancelled {
-                        showsLoadingHint = true
-                    }
-                }
-                loadingHintTask = task
-            } else {
-                showsLoadingHint = false
-            }
+            updateLoadingHint(isLoading: isLoading)
         }
     }
 
@@ -94,6 +83,24 @@ struct FilePaneStatusLine: View {
             Text(path)
         } else {
             Text("No selection")
+        }
+    }
+
+    private func updateLoadingHint(isLoading: Bool) {
+        Task { @MainActor in
+            await Task.yield()
+            loadingHintTask?.cancel()
+            if isLoading {
+                let task = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(500))
+                    if !Task.isCancelled, !showsLoadingHint {
+                        showsLoadingHint = true
+                    }
+                }
+                loadingHintTask = task
+            } else if showsLoadingHint {
+                showsLoadingHint = false
+            }
         }
     }
 }

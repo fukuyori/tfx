@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.91] - 2026-06-10
+
+SwiftUI runtime-issue cleanup around new-folder creation.
+
+### Fixed
+
+- New-folder creation (and any other action that changed the file-pane or folder-tree selection) was producing a burst of `Publishing changes from within view updates is not allowed` warnings and `AttributeGraph: cycle detected` log entries, occasionally accompanied by `Fatal error: ScrollViewProxy may not be accessed during view updates`. The trigger was `ScrollViewProxy.scrollTo(_:)` being invoked from inside SwiftUI's current view-update transaction. The three scroll deferrers (`FilePaneFileList.scrollToSelection`, `FolderTreePane.scrollToSelection`, `TerminalFileManagerSearchControls.scrollToEnd`) used `Task { @MainActor in await Task.yield(); ... }`, which can still resume inside the same update phase. Switched to `DispatchQueue.main.async`, which reliably lands on the next runloop tick after SwiftUI's update completes.
+- `FileBrowserModel.init(initialDirectory:)` ran as part of `StateObject.Box.update`, so every `@Published` write it performed (`currentDirectory`, `folderTreeSelection`, plus the chain triggered by `reload()` / `expandAncestors(of:)`) was reported as a publish during view updates. Initialized the two `@Published` storages through the `_property = Published(initialValue:)` back door so the writes bypass the publishing setter, and deferred `reload()` and `expandAncestors(of:)` to the next runloop tick.
+- Centralized selection-state mutation (`FileBrowserModel.setSelectionState`) so each individual `@Published` write is no-op-guarded; this eliminates the redundant `selectedItemIDs` / `isParentDirectorySelected` republishes that previously chained into `refreshPreviewURLs` and contributed extra noise during rapid selection updates (drop, new folder, etc.).
+
+### Changed
+
+- Updated the version to `0.7.91` and the build number to `54`.
+
 ## [0.7.9] - 2026-06-09
 
 Folder-tree usability and file-list scroll performance.

@@ -134,11 +134,7 @@ struct FilePaneFileList: View {
                 fileNameColumnWidth: fileNameColumnWidth,
                 gitStatus: model.gitStatus(for: item),
                 isEditingName: isEditingName,
-                editingName: Binding(
-                    get: { model.inlineNameEdit?.text ?? item.name },
-                    set: { model.setInlineNameEditText($0) }
-                ),
-                commitNameEdit: model.commitInlineNameEdit,
+                commitNameEdit: { model.commitInlineNameEdit(text: $0) },
                 cancelNameEdit: model.cancelInlineNameEdit
             )
             .id(FileListRowID.item(item.id))
@@ -183,7 +179,14 @@ struct FilePaneFileList: View {
 
     private func scrollToSelection(with proxy: ScrollViewProxy) {
         guard let rowID = model.selectedFileListRowID else { return }
-
+        // `DispatchQueue.main.async` (not `Task { ... Task.yield() }`)
+        // because `ScrollViewProxy.scrollTo` rejects calls made
+        // during a view update with `Fatal error: ScrollViewProxy
+        // may not be accessed during view updates`. Only the
+        // GCD-style next-runloop-tick deferral reliably lands
+        // outside SwiftUI's current update transaction; an
+        // `await Task.yield()` resume can still surface inside
+        // the same update phase.
         DispatchQueue.main.async {
             withAnimation(.easeOut(duration: 0.08)) {
                 proxy.scrollTo(rowID)

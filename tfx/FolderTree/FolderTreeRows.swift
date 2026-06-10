@@ -55,13 +55,10 @@ struct FolderTreeRow: View {
                 }
             }
         }
-        .onChange(of: model.items) {
-            if allowsExpansion && isExpanded && !model.isSubfolderSearchRunning {
-                model.refreshFolderChildren(url)
-            }
-        }
         .onAppear {
-            if allowsExpansion {
+            guard allowsExpansion else { return }
+
+            DispatchQueue.main.async {
                 model.refreshFolderChildrenIfNeeded(url)
             }
         }

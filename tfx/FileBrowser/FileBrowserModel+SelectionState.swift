@@ -65,10 +65,12 @@ extension FileBrowserModel {
 
     func clearSelection() {
         inlineNameEdit = nil
-        isParentDirectorySelected = false
-        selectedItemIDs.removeAll()
-        primarySelectedItemID = nil
-        selectionAnchorItemID = nil
+        setSelectionState(
+            selectedItemIDs: [],
+            primarySelectedItemID: nil,
+            selectionAnchorItemID: nil,
+            isParentDirectorySelected: false
+        )
     }
 
     func applyPendingFileSelectionIfVisible() {
@@ -76,10 +78,12 @@ extension FileBrowserModel {
         let key = pendingFileSelectionURL.standardizedFileURL
         guard visibleItemIndexLookup[key] != nil else { return }
 
-        selectedItemIDs = [key]
-        primarySelectedItemID = key
-        selectionAnchorItemID = key
-        isParentDirectorySelected = false
+        setSelectionState(
+            selectedItemIDs: [key],
+            primarySelectedItemID: key,
+            selectionAnchorItemID: key,
+            isParentDirectorySelected: false
+        )
         self.pendingFileSelectionURL = nil
     }
 
@@ -92,10 +96,12 @@ extension FileBrowserModel {
             canGoUp: canGoUp,
             visibleItemIndexLookup: visibleItemIndexLookup
         )
-        selectedItemIDs = result.selectedItemIDs
-        primarySelectedItemID = result.primarySelectedItemID
-        selectionAnchorItemID = result.selectionAnchorItemID
-        isParentDirectorySelected = result.isParentDirectorySelected
+        setSelectionState(
+            selectedItemIDs: result.selectedItemIDs,
+            primarySelectedItemID: result.primarySelectedItemID,
+            selectionAnchorItemID: result.selectionAnchorItemID,
+            isParentDirectorySelected: result.isParentDirectorySelected
+        )
     }
 
     func applySelection(_ selection: FileSelectionStateResult) {
@@ -103,10 +109,40 @@ extension FileBrowserModel {
             cancelInlineNameEdit()
         }
 
-        isParentDirectorySelected = selection.isParentDirectorySelected
-        selectedItemIDs = selection.selectedItemIDs
-        primarySelectedItemID = selection.primarySelectedItemID
-        selectionAnchorItemID = selection.selectionAnchorItemID
+        setSelectionState(
+            selectedItemIDs: selection.selectedItemIDs,
+            primarySelectedItemID: selection.primarySelectedItemID,
+            selectionAnchorItemID: selection.selectionAnchorItemID,
+            isParentDirectorySelected: selection.isParentDirectorySelected
+        )
+    }
+
+    /// Centralized selection-state mutator. Each setter is
+    /// guarded so identical writes don't republish; this
+    /// matters because `selectedItemIDs.didSet` used to chain
+    /// into `refreshPreviewURLs` and the duplicate work was
+    /// triggering "Publishing changes from within view updates"
+    /// runtime warnings on rapid selection updates (drop,
+    /// new-folder, etc.).
+    func setSelectionState(
+        selectedItemIDs nextSelectedItemIDs: Set<FileItem.ID>,
+        primarySelectedItemID nextPrimarySelectedItemID: FileItem.ID?,
+        selectionAnchorItemID nextSelectionAnchorItemID: FileItem.ID?,
+        isParentDirectorySelected nextIsParentDirectorySelected: Bool
+    ) {
+        if isParentDirectorySelected != nextIsParentDirectorySelected {
+            isParentDirectorySelected = nextIsParentDirectorySelected
+        }
+        if selectedItemIDs != nextSelectedItemIDs {
+            selectedItemIDs = nextSelectedItemIDs
+        }
+        if primarySelectedItemID != nextPrimarySelectedItemID {
+            primarySelectedItemID = nextPrimarySelectedItemID
+        }
+        if selectionAnchorItemID != nextSelectionAnchorItemID {
+            selectionAnchorItemID = nextSelectionAnchorItemID
+        }
+        refreshPreviewURLs()
     }
 }
 

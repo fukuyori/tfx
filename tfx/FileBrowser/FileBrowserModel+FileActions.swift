@@ -9,13 +9,19 @@ extension FileBrowserModel {
             return
         }
 
+        let targetDirectory = currentDirectory.standardizedFileURL
         do {
-            guard let result = try FileBrowserFileOperations.createFolder(named: String(localized: "Untitled Folder"), in: currentDirectory) else { return }
+            guard let result = try FileBrowserFileOperations.createFolder(named: String(localized: "Untitled Folder"), in: targetDirectory) else { return }
             let folderURL = result.folderURL
-            refreshFolderChildren(currentDirectory)
-            updateCurrentDirectoryItems(adding: [folderURL], selecting: [folderURL])
-            notifyDirectoriesChanged([result.affectedDirectory])
-            beginInlineNameEdit(url: folderURL, mode: .newItem)
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.refreshFolderChildren(targetDirectory)
+                if self.currentDirectory.standardizedFileURL == targetDirectory {
+                    self.updateCurrentDirectoryItems(adding: [folderURL], selecting: [folderURL])
+                }
+                self.notifyDirectoriesChanged([result.affectedDirectory])
+            }
         } catch {
             show(error)
         }
@@ -55,32 +61,56 @@ extension FileBrowserModel {
             text: standardizedURL.lastPathComponent,
             mode: mode
         )
-        selectedItemIDs = [standardizedURL]
-        primarySelectedItemID = standardizedURL
-        selectionAnchorItemID = standardizedURL
-        isParentDirectorySelected = false
+        setSelectionState(
+            selectedItemIDs: [standardizedURL],
+            primarySelectedItemID: standardizedURL,
+            selectionAnchorItemID: standardizedURL,
+            isParentDirectorySelected: false
+        )
     }
 
     func setInlineNameEditText(_ text: String) {
         guard var edit = inlineNameEdit else { return }
+        // Suppress no-op writes. SwiftUI's TextField fires its
+        // binding setter once on mount with the SAME text it
+        // just read via the getter; without this guard the
+        // model would publish a change, SwiftUI would re-render
+        // the row, the TextField would re-mount, fire its
+        // setter again — an infinite loop that manifests as
+        // continuous "Publishing changes from within view
+        // updates" warnings + AttributeGraph cycle, and causes
+        // the inline-name edit to appear to auto-commit on
+        // creation.
+        guard edit.text != text else { return }
         edit.text = text
         inlineNameEdit = edit
     }
 
     func commitInlineNameEdit() {
+        commitInlineNameEdit(text: inlineNameEdit?.text)
+    }
+
+    func commitInlineNameEdit(text: String?) {
         guard let edit = inlineNameEdit else { return }
         guard let item = allItemLookup[edit.url.standardizedFileURL] else {
             inlineNameEdit = nil
             return
         }
 
-        let trimmed = edit.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = (text ?? edit.text).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             cancelInlineNameEdit()
             return
         }
         guard trimmed != edit.originalName else {
             inlineNameEdit = nil
+            if edit.mode == .newItem {
+                let affectedDirectory = edit.url.deletingLastPathComponent().standardizedFileURL
+                if FileBrowserExternalActions.isDirectory(edit.url) {
+                    refreshFolderChildren(affectedDirectory)
+                }
+                notifyDirectoriesChanged([affectedDirectory])
+            }
             return
         }
 

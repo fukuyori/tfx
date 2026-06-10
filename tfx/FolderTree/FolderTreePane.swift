@@ -113,8 +113,12 @@ struct FolderTreePane: View {
                     .background(
                         GeometryReader { geo in
                             Color.clear
-                                .onAppear { pinnedContentHeight = geo.size.height }
-                                .onChange(of: geo.size.height) { pinnedContentHeight = geo.size.height }
+                                .onAppear {
+                                    updatePinnedContentHeight(geo.size.height)
+                                }
+                                .onChange(of: geo.size.height) { _, newHeight in
+                                    updatePinnedContentHeight(newHeight)
+                                }
                         }
                     )
                     // Make the whole rows-VStack hit-testable so the
@@ -197,10 +201,24 @@ struct FolderTreePane: View {
     }
 
     private func scrollToSelection(with proxy: ScrollViewProxy) {
+        let rowID = model.selectedFolderTreeRowID
+        // See `FilePaneFileList.scrollToSelection` — `ScrollViewProxy`
+        // rejects access during view updates, and `Task.yield()`
+        // can still resume inside the same update transaction.
+        // `DispatchQueue.main.async` always lands on the next
+        // runloop tick, safely after the current update completes.
         DispatchQueue.main.async {
             withAnimation(.easeOut(duration: 0.08)) {
-                proxy.scrollTo(model.selectedFolderTreeRowID)
+                proxy.scrollTo(rowID)
             }
+        }
+    }
+
+    private func updatePinnedContentHeight(_ height: CGFloat) {
+        Task { @MainActor in
+            await Task.yield()
+            guard abs(pinnedContentHeight - height) > 0.5 else { return }
+            pinnedContentHeight = height
         }
     }
 }

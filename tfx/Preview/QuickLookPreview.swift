@@ -18,12 +18,20 @@ struct QuickLookPreview: NSViewRepresentable {
     func updateNSView(_ nsView: QLPreviewView, context: Context) {
         guard context.coordinator.currentURL != url else { return }
         context.coordinator.currentURL = url
-        nsView.previewItem = url as NSURL
+        let previewURL = url
+        Task { @MainActor in
+            await Task.yield()
+            guard context.coordinator.currentURL == previewURL else { return }
+            nsView.previewItem = previewURL as NSURL
+        }
     }
 
     static func dismantleNSView(_ nsView: QLPreviewView, coordinator: Coordinator) {
         coordinator.currentURL = nil
-        nsView.previewItem = nil
+        Task { @MainActor in
+            await Task.yield()
+            nsView.previewItem = nil
+        }
     }
 
     final class Coordinator {

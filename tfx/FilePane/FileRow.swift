@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import SwiftUI
 
 struct FileRow: View {
@@ -13,13 +14,12 @@ struct FileRow: View {
     /// after navigating into a repo is still in flight.
     let gitStatus: GitFileStatus?
     let isEditingName: Bool
-    @Binding var editingName: String
-    let commitNameEdit: () -> Void
+    let commitNameEdit: (String) -> Void
     let cancelNameEdit: () -> Void
 
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
-    @FocusState private var isNameFieldFocused: Bool
+    @State private var draftName = ""
 
     var body: some View {
         HStack(spacing: 12) {
@@ -84,19 +84,28 @@ struct FileRow: View {
     @ViewBuilder
     private var nameCell: some View {
         if isEditingName {
-            TextField("", text: $editingName)
-                .textFieldStyle(.plain)
-                .focused($isNameFieldFocused)
-                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
-                .onSubmit {
-                    commitNameEdit()
-                }
-                .onExitCommand {
+            InlineNameTextField(
+                text: $draftName,
+                textColor: NSColor(item.isDirectory ? theme.directoryForeground : theme.fileForeground),
+                onCommit: {
+                    commitNameEdit(draftName)
+                },
+                onCancel: {
                     cancelNameEdit()
                 }
+            )
+            .frame(height: 18)
                 .onAppear {
-                    DispatchQueue.main.async {
-                        isNameFieldFocused = true
+                    draftName = item.name
+                }
+                .onChange(of: isEditingName) {
+                    if isEditingName {
+                        draftName = item.name
+                    }
+                }
+                .onChange(of: item.id) {
+                    if isEditingName {
+                        draftName = item.name
                     }
                 }
         } else {
@@ -146,6 +155,123 @@ struct FileRow: View {
         }
 
         return .clear
+    }
+}
+
+private struct InlineNameTextField: NSViewRepresentable {
+    @Binding var text: String
+    let textColor: NSColor
+    let onCommit: () -> Void
+    let onCancel: () -> Void
+
+    func makeNSView(context: Context) -> CommitCancelTextField {
+        let textField = CommitCancelTextField()
+        textField.isBordered = false
+        textField.isBezeled = false
+        textField.drawsBackground = false
+        textField.focusRingType = .none
+        textField.lineBreakMode = .byTruncatingMiddle
+        textField.usesSingleLineMode = true
+        textField.cell?.wraps = false
+        textField.cell?.isScrollable = true
+        textField.delegate = context.coordinator
+        context.coordinator.onCommit = onCommit
+        context.coordinator.onCancel = onCancel
+        textField.onTextChange = { value in
+            if text != value {
+                text = value
+            }
+        }
+        textField.onCommit = onCommit
+        textField.onCancel = onCancel
+        return textField
+    }
+
+    func updateNSView(_ nsView: CommitCancelTextField, context: Context) {
+        nsView.textColor = textColor
+        context.coordinator.onCommit = onCommit
+        context.coordinator.onCancel = onCancel
+        nsView.onCommit = onCommit
+        nsView.onCancel = onCancel
+        nsView.onTextChange = { value in
+            if text != value {
+                text = value
+            }
+        }
+
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+            if window.firstResponder !== nsView.currentEditor() {
+                window.makeFirstResponder(nsView)
+                nsView.currentEditor()?.selectAll(nil)
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        @Binding var text: String
+        var onCommit: (() -> Void)?
+        var onCancel: (() -> Void)?
+
+        init(text: Binding<String>) {
+            _text = text
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let textField = notification.object as? NSTextField else { return }
+            if text != textField.stringValue {
+                text = textField.stringValue
+            }
+        }
+
+        func control(
+            _ control: NSControl,
+            textView: NSTextView,
+            doCommandBy commandSelector: Selector
+        ) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                text = textView.string
+                onCommit?()
+                return true
+            }
+
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                onCancel?()
+                return true
+            }
+
+            return false
+        }
+    }
+}
+
+private final class CommitCancelTextField: NSTextField {
+    var onTextChange: ((String) -> Void)?
+    var onCommit: (() -> Void)?
+    var onCancel: (() -> Void)?
+
+    override func textDidChange(_ notification: Notification) {
+        super.textDidChange(notification)
+        onTextChange?(stringValue)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        switch event.keyCode {
+        case 36, 76:
+            onCommit?()
+        case 53:
+            onCancel?()
+        default:
+            super.keyDown(with: event)
+        }
     }
 }
 

@@ -66,7 +66,12 @@ enum FileBrowserDirectoryState {
         }
 
         return selectedItemIDs
-            .compactMap { allItemLookup[$0.standardizedFileURL]?.url }
+            .compactMap { id -> URL? in
+                guard let item = allItemLookup[id.standardizedFileURL], !item.isDirectory else {
+                    return nil
+                }
+                return item.url
+            }
             .map { url in
                 if ZipArchiveBrowser.canCopyFromArchive(url),
                    let materializedURL = try? ZipArchiveBrowser.materializedURL(for: url) {

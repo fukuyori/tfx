@@ -16,10 +16,10 @@ struct PinnedFolderTreeRow: View {
                 GeometryReader { proxy in
                     Color.clear
                         .onAppear {
-                            rowHeight = proxy.size.height
+                            updateRowHeight(proxy.size.height)
                         }
-                        .onChange(of: proxy.size.height) {
-                            rowHeight = proxy.size.height
+                        .onChange(of: proxy.size.height) { _, newHeight in
+                            updateRowHeight(newHeight)
                         }
                 }
             )
@@ -63,6 +63,14 @@ struct PinnedFolderTreeRow: View {
 
     private var showsFloatingDragRow: Bool {
         model.isDraggingPinnedFolder(url) && abs(dragTranslationY) > 0.5
+    }
+
+    private func updateRowHeight(_ height: CGFloat) {
+        Task { @MainActor in
+            await Task.yield()
+            guard abs(rowHeight - height) > 0.5 else { return }
+            rowHeight = height
+        }
     }
 }
 

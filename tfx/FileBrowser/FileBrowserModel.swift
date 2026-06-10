@@ -11,17 +11,9 @@ final class FileBrowserModel: ObservableObject {
             rebuildVisibleItemIndexes()
         }
     }
-    @Published var selectedItemIDs: Set<FileItem.ID> = [] {
-        didSet {
-            refreshPreviewURLs()
-        }
-    }
+    @Published var selectedItemIDs: Set<FileItem.ID> = []
     @Published var primarySelectedItemID: FileItem.ID?
-    @Published var isParentDirectorySelected = false {
-        didSet {
-            refreshPreviewURLs()
-        }
-    }
+    @Published var isParentDirectorySelected = false
     @Published var folderTreeSelection: URL?
     @Published var folderTreeSelectionSection: FolderTreeSelectionSection = .tree
     @Published var isShowingError = false
@@ -145,8 +137,27 @@ final class FileBrowserModel: ObservableObject {
     let pinnedFoldersKey = "TerminalFileManager.pinnedFolders"
 
     init(initialDirectory: URL = URL(fileURLWithPath: NSHomeDirectory())) {
-        currentDirectory = initialDirectory.standardizedFileURL
-        folderTreeSelection = currentDirectory
+        // SwiftUI may construct this model from inside
+        // `StateObject.Box.update`, which runs as part of the
+        // view-update transaction. Any `@Published` write that
+        // happens before this initializer returns is reported as
+        // "Publishing changes from within view updates is not
+        // allowed" and feeds back into an AttributeGraph cycle.
+        //
+        // Two mitigations:
+        //   1. Initialize the storage of every `@Published` we
+        //      touch here through its `_property = Published(...)`
+        //      back door so the writes don't go through the
+        //      publishing setter at all.
+        //   2. Defer the rest of the startup work (`reload`,
+        //      `expandAncestors`) to the next runloop tick via
+        //      `DispatchQueue.main.async`; by then SwiftUI has
+        //      finished its current update transaction and
+        //      ordinary `@Published` writes are safe again.
+        let standardized = initialDirectory.standardizedFileURL
+        _currentDirectory = Published(initialValue: standardized)
+        _folderTreeSelection = Published(initialValue: standardized)
+
         pinnedFoldersObserver = NotificationCenter.default
             .publisher(for: .pinnedFoldersDidChange)
             .sink { [weak self] _ in
@@ -172,8 +183,11 @@ final class FileBrowserModel: ObservableObject {
                 self?.startWatchingDirectory(newURL)
             }
         loadPinnedFolders()
-        reload()
-        expandAncestors(of: currentDirectory)
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.reload()
+            self.expandAncestors(of: self.currentDirectory)
+        }
     }
 
     func isDropTargetDirectory(_ url: URL) -> Bool {

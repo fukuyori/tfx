@@ -51,10 +51,12 @@ extension FileBrowserModel {
         updateAvailableCapacity()
 
         if !update.selectedURLs.isEmpty {
-            selectedItemIDs = Set(update.selectedURLs)
-            primarySelectedItemID = update.selectedURLs.last
-            selectionAnchorItemID = update.selectedURLs.first
-            isParentDirectorySelected = false
+            setSelectionState(
+                selectedItemIDs: Set(update.selectedURLs),
+                primarySelectedItemID: update.selectedURLs.last,
+                selectionAnchorItemID: update.selectedURLs.first,
+                isParentDirectorySelected: false
+            )
         }
 
         applyFiltersAndSortAsync(pruneAfterUpdate: pruneAfterUpdate)
@@ -80,7 +82,10 @@ extension FileBrowserModel {
     }
 
     func updateAvailableCapacity() {
-        availableCapacityText = FileBrowserDirectoryReader.availableCapacityText(for: currentDirectory)
+        let nextText = FileBrowserDirectoryReader.availableCapacityText(for: currentDirectory)
+        if availableCapacityText != nextText {
+            availableCapacityText = nextText
+        }
     }
 }
 

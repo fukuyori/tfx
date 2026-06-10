@@ -141,6 +141,12 @@ private struct PathBreadcrumbBar: View {
     }
 
     private func scrollToEnd(with proxy: ScrollViewProxy) {
+        // `ScrollViewProxy.scrollTo` traps with "may not be
+        // accessed during view updates" if it lands inside
+        // SwiftUI's current update transaction; `Task.yield()`
+        // doesn't guarantee that. `DispatchQueue.main.async`
+        // always reaches the next runloop tick, after the
+        // current update completes.
         DispatchQueue.main.async {
             proxy.scrollTo("path-end", anchor: .trailing)
         }

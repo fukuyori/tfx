@@ -174,11 +174,31 @@ struct TerminalFileManagerView: View {
             // in that file. Adding another writer here would split
             // ownership again, which is exactly what the previous
             // round of layout bugs traced back to.
-            .background(KeyboardEventHandler(isEnabled: !isSearchFocused && activeArea != .terminal) { event in
+            .background(KeyboardEventHandler(isEnabled: keyboardHandlerEnabled) { event in
                 handleKeyEvent(event)
             })
             .background(Color.clear)
         )
+    }
+
+    /// True when the global keyboard handler should be the
+    /// window's first responder. Disabled while:
+    ///   - the search field is focused (it owns the keys);
+    ///   - the terminal area is active (xterm owns the keys);
+    ///   - an inline file-name edit is in progress (the
+    ///     row's TextField must keep first responder; without
+    ///     this guard `KeyHandlingNSView.updateNSView`
+    ///     re-races for first responder on every re-render
+    ///     triggered by the post-create file-list refresh and
+    ///     steals focus from the rename TextField, which
+    ///     manifests as an AttributeGraph cycle plus the new-
+    ///     folder name field appearing to auto-commit before
+    ///     the user can type a single character).
+    private var keyboardHandlerEnabled: Bool {
+        guard !isSearchFocused else { return false }
+        guard activeArea != .terminal else { return false }
+        if leftModel.inlineNameEdit != nil || rightModel.inlineNameEdit != nil { return false }
+        return true
     }
 
     private var lifecycleView: AnyView {
