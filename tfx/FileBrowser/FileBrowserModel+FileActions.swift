@@ -92,7 +92,9 @@ extension FileBrowserModel {
 
     func commitInlineNameEdit(text: String?) {
         guard let edit = inlineNameEdit else { return }
-        guard let item = allItemLookup[edit.url.standardizedFileURL] else {
+        // `edit.url` is standardized at `beginInlineNameEdit`, so
+        // it already matches `allItemLookup`'s key shape.
+        guard let item = allItemLookup[edit.url] else {
             inlineNameEdit = nil
             return
         }

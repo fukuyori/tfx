@@ -21,7 +21,7 @@ extension FileBrowserModel {
     var primarySelectedItem: FileItem? {
         guard !isParentDirectorySelected else { return nil }
         guard let primarySelectedItemID else { return nil }
-        return allItemLookup[primarySelectedItemID.standardizedFileURL]
+        return allItemLookup[primarySelectedItemID]
     }
 
     var selectedItems: [FileItem] {

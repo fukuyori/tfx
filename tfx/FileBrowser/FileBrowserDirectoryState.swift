@@ -13,7 +13,10 @@ enum FileBrowserDirectoryState {
         var lookup: [FileItem.ID: FileItem] = [:]
         lookup.reserveCapacity(items.count)
         for item in items {
-            lookup[item.id.standardizedFileURL] = item
+            // `item.id` is the already-standardized URL (see
+            // `FileItem.standardizedID`), so no re-normalization
+            // is required on insert or on subsequent lookups.
+            lookup[item.id] = item
         }
         return lookup
     }
@@ -22,14 +25,14 @@ enum FileBrowserDirectoryState {
         var lookup: [FileItem.ID: Int] = [:]
         lookup.reserveCapacity(items.count)
         for (index, item) in items.enumerated() {
-            lookup[item.id.standardizedFileURL] = index
+            lookup[item.id] = index
         }
         return lookup
     }
 
     static func selectedItems(from selectedItemIDs: Set<FileItem.ID>, lookup: [FileItem.ID: FileItem]) -> [FileItem] {
         selectedItemIDs
-            .compactMap { lookup[$0.standardizedFileURL] }
+            .compactMap { lookup[$0] }
             .sorted {
                 $0.url.path < $1.url.path
             }
@@ -42,10 +45,9 @@ enum FileBrowserDirectoryState {
     ) -> [FileItem] {
         selectedItemIDs
             .compactMap { id -> (index: Int, item: FileItem)? in
-                let key = id.standardizedFileURL
                 guard
-                    let index = visibleItemIndexLookup[key],
-                    let item = allItemLookup[key]
+                    let index = visibleItemIndexLookup[id],
+                    let item = allItemLookup[id]
                 else {
                     return nil
                 }
@@ -67,7 +69,7 @@ enum FileBrowserDirectoryState {
 
         return selectedItemIDs
             .compactMap { id -> URL? in
-                guard let item = allItemLookup[id.standardizedFileURL], !item.isDirectory else {
+                guard let item = allItemLookup[id], !item.isDirectory else {
                     return nil
                 }
                 return item.url
@@ -102,13 +104,13 @@ enum FileBrowserDirectoryState {
         var shouldRefreshPreview = false
 
         if !removedIDs.isEmpty {
-            nextItems.removeAll { removedIDs.contains($0.id.standardizedFileURL) }
+            nextItems.removeAll { removedIDs.contains($0.id) }
             shouldRefreshPreview = true
         }
 
         if !addedItems.isEmpty {
-            let addedIDs = Set(addedItems.map { $0.id.standardizedFileURL })
-            nextItems.removeAll { addedIDs.contains($0.id.standardizedFileURL) }
+            let addedIDs = Set(addedItems.map { $0.id })
+            nextItems.removeAll { addedIDs.contains($0.id) }
             nextItems.append(contentsOf: addedItems)
             shouldRefreshPreview = true
         }

@@ -59,7 +59,7 @@ extension FileBrowserModel {
         guard
             let state = mouseRangeSelectionState,
             let anchorIndex = visibleItemIndexLookup[state.anchorItemID.standardizedFileURL],
-            let targetIndex = visibleItemIndexLookup[item.id.standardizedFileURL]
+            let targetIndex = visibleItemIndexLookup[item.id]
         else {
             return
         }
@@ -89,7 +89,7 @@ extension FileBrowserModel {
     }
 
     func updateMouseRangeSelection(startingAt item: FileItem, verticalOffset: CGFloat, rowHeight: CGFloat) {
-        guard rowHeight > 0, let startIndex = visibleItemIndexLookup[item.id.standardizedFileURL] else { return }
+        guard rowHeight > 0, let startIndex = visibleItemIndexLookup[item.id] else { return }
 
         let rowOffset = Int(round(-verticalOffset / rowHeight))
         let targetIndex = FileBrowserSelectionSupport.clampedIndex(startIndex + rowOffset, count: items.count)
@@ -165,7 +165,7 @@ extension FileBrowserModel {
     }
 
     func selectRange(to item: FileItem) {
-        guard let itemIndex = visibleItemIndexLookup[item.id.standardizedFileURL] else {
+        guard let itemIndex = visibleItemIndexLookup[item.id] else {
             return
         }
 

@@ -43,7 +43,7 @@ extension FileBrowserSelectionSupport {
         if isParentDirectorySelected {
             return 0
         } else if let primarySelectedItemID,
-                  let itemIndex = visibleItemIndexLookup[primarySelectedItemID.standardizedFileURL] {
+                  let itemIndex = visibleItemIndexLookup[primarySelectedItemID] {
             return parentOffset + itemIndex
         } else {
             return delta >= 0 ? -1 : rowCount

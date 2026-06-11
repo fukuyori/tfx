@@ -58,7 +58,7 @@ extension FileBrowserSelectionSupport {
             return existingAnchorID
         }
 
-        if let primarySelectedItemID, visibleItemIndexLookup[primarySelectedItemID.standardizedFileURL] != nil {
+        if let primarySelectedItemID, visibleItemIndexLookup[primarySelectedItemID] != nil {
             return primarySelectedItemID
         } else if items.indices.contains(fallbackItemIndex) {
             return items[fallbackItemIndex].id

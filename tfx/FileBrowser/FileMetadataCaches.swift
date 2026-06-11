@@ -22,6 +22,15 @@ final class FilePermissionCache {
         return nil
     }
 
+    /// Pure cache read with no side effects. Matches the
+    /// `FileKindCache.cachedKind(for:)` rationale — used by
+    /// `FileItem.init` to populate `permissionsTextValue` without
+    /// dispatching one GCD fill per row at directory-load time.
+    nonisolated func cachedPermissions(for url: URL) -> Int? {
+        let key = NSString(string: url.path)
+        return cache.object(forKey: key)?.intValue
+    }
+
     nonisolated func prefetch(for urls: [URL], cancellation: MetadataPrefetchCancellation) {
         // `prefetch` itself is invoked from the background
         // metadata-prefetch work item, so do the disk read
@@ -76,6 +85,20 @@ final class FileKindCache {
         let fallback = isDirectory ? String(localized: "Folder") : url.pathExtension.uppercased()
         fill(url: url, isDirectory: isDirectory)
         return fallback
+    }
+
+    /// Pure cache read with no side effects. Used by `FileItem.init`,
+    /// which is called for every entry in a freshly-loaded
+    /// directory — going through `kind(for:)` there would schedule
+    /// N parallel GCD tasks each calling
+    /// `URLResourceValues(.localizedTypeDescriptionKey)`, which
+    /// triggers a LaunchServices / SQLite stampede (visible as a
+    /// flood of "os_unix.c:51044 open(.../DetachedSignatures)"
+    /// stderr noise). The metadata-prefetch worker fills the cache
+    /// in a single ordered pass instead.
+    nonisolated func cachedKind(for url: URL) -> String? {
+        let key = NSString(string: url.path)
+        return cache.object(forKey: key) as String?
     }
 
     nonisolated func prefetch(for items: [FileItem], cancellation: MetadataPrefetchCancellation) {

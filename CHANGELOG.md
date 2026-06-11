@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.1] - 2026-06-11
+
+Performance tuning around the file pane: snapshot per-row metadata once at construction time, and stop re-normalizing URLs on every selection / lookup.
+
+### Changed
+
+- File-list scroll: `FileItem.kindText` and `FileItem.permissionsText` now read their values from snapshots captured in `FileItem.init` instead of consulting `FileKindCache` / `FilePermissionCache` per row body invocation. The on-render NSCache lookup that ran for every visible row on every scroll-driven body re-evaluation is gone. Trade-off: a freshly-loaded directory shows the cheap fallback ("PDF" / extension) until the next navigation primes the cache before items are constructed; the previous lazy "next frame after background fill" upgrade no longer applies within the same directory view.
+- Avoided a LaunchServices / SQLite stampede that the first pass at the above caused. `FileItem.init` runs for every entry in a freshly-loaded directory, so calling `FileKindCache.kind(for:)` / `FilePermissionCache.permissions(for:)` per item scheduled N parallel GCD fills, each issuing a `URLResourceValues(.localizedTypeDescriptionKey)` call that triggered a flood of `os_unix.c:51044 open(/private/var/db/DetachedSignatures)` stderr noise. Added pure read-only `cachedKind(for:)` / `cachedPermissions(for:)` variants that the constructor uses; the metadata-prefetch worker still fills the cache in a single ordered pass.
+- Pane switching / selection change: standardized URLs are now cached on `FileItem` as `standardizedID` and returned from `var id`. The `allItemLookup` / `visibleItemIndexLookup` builders and every downstream lookup (`primarySelectedItem`, range / blank / row-keyboard selection, `previewURLs`, inline-rename commit, `isEditingName` per-row check) stop re-normalizing URLs on each access. The old hot paths called `URL.standardizedFileURL` per selected item per click, allocating a path string and a fresh URL each time; those allocations are gone.
+
+### Updated
+
+- Version bumped to `0.8.1`, build `61`.
+
 ## [0.8.0] - 2026-06-11
 
 Background copy / move with progress UI, quit-safety alert, and locale-independent size formatting.

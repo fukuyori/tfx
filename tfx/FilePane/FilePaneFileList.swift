@@ -125,7 +125,11 @@ struct FilePaneFileList: View {
 
     private var fileRows: some View {
         ForEach(model.items) { item in
-            let isEditingName = model.inlineNameEdit?.url == item.url.standardizedFileURL
+            // `FileItem.id` is the already-standardized URL and
+            // `inlineNameEdit.url` is standardized at
+            // `beginInlineNameEdit`, so this is a direct URL
+            // equality check with no per-row normalization.
+            let isEditingName = model.inlineNameEdit?.url == item.id
             FileRow(
                 item: item,
                 isSelected: model.isSelected(item),

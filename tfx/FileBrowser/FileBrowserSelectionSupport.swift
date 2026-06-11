@@ -107,7 +107,7 @@ enum FileBrowserSelectionSupport {
         visibleItemIndexLookup: [FileItem.ID: Int]
     ) -> FilePruneSelectionResult {
         let visibleSelectedItemIDs = Set(
-            selectedItemIDs.filter { visibleItemIndexLookup[$0.standardizedFileURL] != nil }
+            selectedItemIDs.filter { visibleItemIndexLookup[$0] != nil }
         )
         let nextIsParentDirectorySelected = isParentDirectorySelected && canGoUp
         let nextPrimarySelectedItemID: FileItem.ID?

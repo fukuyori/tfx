@@ -11,6 +11,18 @@ import Foundation
 /// per-row comparison cheap.
 struct FileItem: Identifiable, Hashable {
     let url: URL
+    /// `url` after `URL.standardizedFileURL` resolution, cached
+    /// at construction time. Selection sets, the per-pane
+    /// `allItemLookup` / `visibleItemIndexLookup` dictionaries,
+    /// the preview-URL pipeline, and the row-identity calculation
+    /// all key off this. Caching avoids re-normalizing on every
+    /// `selectedItemIDs.contains(item.id)` /
+    /// `allItemLookup[id.standardizedFileURL]` hit during click,
+    /// arrow-key navigation, drag-select, etc. — each
+    /// `URL.standardizedFileURL` call allocates a path string and
+    /// a fresh URL value, so the savings add up across a
+    /// directory of hundreds of items.
+    let standardizedID: URL
     let isDirectory: Bool
     let isHidden: Bool
     let size: Int64
@@ -25,8 +37,30 @@ struct FileItem: Identifiable, Hashable {
     let modifiedTextValue: String
     let createdTextValue: String
     let tagsValue: [FileTag]
+    /// Snapshot of `FileKindCache` at construction time. Captured
+    /// here (rather than re-queried per row body invocation)
+    /// because every visible row hit `FileKindCache.shared.kind`
+    /// on every scroll-driven body re-evaluation, which copied a
+    /// fresh `NSString(string: url.path)` and bridged the cached
+    /// value back to Swift per call. Trade-off: rows in a freshly-
+    /// loaded directory will keep the cheap fallback ("PDF" /
+    /// extension) until the next navigation populates the cache
+    /// before items are constructed; the previously-lazy "next
+    /// frame after background fill" upgrade no longer applies.
+    let kindTextValue: String
+    /// Same pattern as `kindTextValue`: snapshot
+    /// `FilePermissionCache` at construction time so the
+    /// `permissions` column doesn't pay an NSCache lookup per row
+    /// during scroll. The cache still warms in the background via
+    /// `FileBrowserMetadataPrefetch`, but the visible row text
+    /// reflects whatever was cached when the item was built.
+    let permissionsTextValue: String
 
-    nonisolated var id: URL { url }
+    /// Identity for `Identifiable` / `Set<FileItem.ID>` / lookup
+    /// dictionaries. Resolves to the standardized URL so selection
+    /// state stored as `FileItem.ID` is already normalized — no
+    /// per-access `URL.standardizedFileURL` allocations downstream.
+    nonisolated var id: URL { standardizedID }
     nonisolated var name: String { nameValue }
     nonisolated var isApplicationBundle: Bool {
         isDirectory && url.pathExtension.caseInsensitiveCompare("app") == .orderedSame
@@ -47,17 +81,11 @@ struct FileItem: Identifiable, Hashable {
     nonisolated var mode: String { modeValue }
     nonisolated var sizeText: String { sizeTextValue }
     nonisolated var kindSortKey: String { kindSortKeyValue }
-    var kindText: String {
-        let kind = FileKindCache.shared.kind(for: url, isDirectory: isDirectory)
-        return kind.isEmpty ? "-" : kind
-    }
+    nonisolated var kindText: String { kindTextValue }
     nonisolated var modifiedText: String { modifiedTextValue }
     nonisolated var createdText: String { createdTextValue }
     nonisolated var tags: [FileTag] { tagsValue }
-    var permissionsText: String {
-        guard let permissions = FilePermissionCache.shared.permissions(for: url) else { return "-" }
-        return String(format: "%03o", permissions)
-    }
+    nonisolated var permissionsText: String { permissionsTextValue }
 
     nonisolated private static func isDirectoryOrDirectorySymlink(_ url: URL, values: URLResourceValues?) -> Bool {
         // URLResourceValues.isDirectory follows POSIX symlinks, so plain
@@ -105,6 +133,7 @@ struct FileItem: Identifiable, Hashable {
 
     nonisolated init(url: URL) {
         self.url = url
+        self.standardizedID = url.standardizedFileURL
 
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey, .isAliasFileKey, .fileSizeKey, .contentModificationDateKey, .creationDateKey, .tagNamesKey])
         isDirectory = Self.isDirectoryOrDirectorySymlink(url, values: values)
@@ -134,11 +163,29 @@ struct FileItem: Identifiable, Hashable {
         modifiedTextValue = FileDisplayTextCache.shared.dateText(for: modified)
         createdTextValue = FileDisplayTextCache.shared.dateText(for: created)
         tagsValue = values?.tagNames?.map(FileTag.init(rawTagName:)) ?? []
+        // Use the no-side-effect cache reads so a freshly-loaded
+        // directory doesn't fire N parallel background fills (and
+        // the LaunchServices / SQLite stderr noise that comes
+        // with them). The metadata-prefetch pass populates the
+        // cache; once warm, subsequent navigations into the same
+        // directory pick up the localized type / numeric
+        // permissions snapshot here.
+        if let cachedKind = FileKindCache.shared.cachedKind(for: url), !cachedKind.isEmpty {
+            kindTextValue = cachedKind
+        } else {
+            kindTextValue = isDirectory ? String(localized: "Folder") : (extensionName.isEmpty ? "-" : extensionName.uppercased())
+        }
+        if let permissions = FilePermissionCache.shared.cachedPermissions(for: url) {
+            permissionsTextValue = String(format: "%03o", permissions)
+        } else {
+            permissionsTextValue = "-"
+        }
     }
 
     nonisolated init(zipEntry: ZipArchiveEntry, archiveURL: URL) {
         let virtualURL = ZipArchiveBrowser.virtualURL(archiveURL: archiveURL, innerPath: zipEntry.path)
         self.url = virtualURL
+        self.standardizedID = virtualURL.standardizedFileURL
 
         isDirectory = zipEntry.isDirectory
         isHidden = virtualURL.lastPathComponent.hasPrefix(".")
@@ -156,6 +203,11 @@ struct FileItem: Identifiable, Hashable {
         createdTextValue = "-"
         // Zip-archive entries do not carry macOS Finder tags.
         tagsValue = []
+        // Zip entries don't live on disk in the usual sense, so the
+        // localized-type / POSIX-permissions lookups would just miss
+        // — bake in the cheap fallbacks here.
+        kindTextValue = isDirectory ? String(localized: "Folder") : (extensionName.isEmpty ? "-" : extensionName.uppercased())
+        permissionsTextValue = "-"
     }
 }
 #endif
