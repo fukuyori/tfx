@@ -152,7 +152,12 @@ struct FileBrowserModelTests {
     }
 
     @Test
-    func cancelInlineNewFileRemovesCreatedPlaceholder() throws {
+    func cancelInlineNewFileKeepsCreatedPlaceholder() throws {
+        // Behaviour changed in 0.7.94: cancelling the inline rename for a
+        // freshly-created file no longer deletes the file on disk — the
+        // placeholder name (e.g. "untitled") is committed instead. The
+        // user explicitly asked for this so partial work is never lost
+        // when they tab away or click elsewhere mid-edit.
         let dir = try Self.makeTempDir()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -164,7 +169,7 @@ struct FileBrowserModelTests {
 
         model.cancelInlineNameEdit()
 
-        #expect(!FileManager.default.fileExists(atPath: createdURL.path))
+        #expect(FileManager.default.fileExists(atPath: createdURL.path))
         #expect(model.inlineNameEdit == nil)
     }
 

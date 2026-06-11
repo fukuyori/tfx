@@ -8,11 +8,14 @@ import Testing
 struct ShortcutConfigurationTests {
     @Test
     func parsesShortcutOverrides() throws {
+        // `cmd+shift+l` was chosen for `reload` because the original
+        // `cmd+shift+r` now collides with the `toggleRendered` default
+        // added for the rendered-preview toggle.
         let shortcuts = try ShortcutConfigurationLoader.parse("""
         version = 1
 
         [shortcuts]
-        reload = "cmd+shift+r"
+        reload = "cmd+shift+l"
         openTerminal = "f12"
         toggleSplit = "cmd+backslash"
         goUp = "cmd+up"
@@ -21,7 +24,7 @@ struct ShortcutConfigurationTests {
         """)
 
         let f12 = try #require(ShortcutInfo.functionKeyCharacter(12))
-        #expect(shortcuts[.reload] == ShortcutInfo(key: "r", modifiers: [.command, .shift]))
+        #expect(shortcuts[.reload] == ShortcutInfo(key: "l", modifiers: [.command, .shift]))
         #expect(shortcuts[.openTerminal] == ShortcutInfo(key: KeyEquivalent(f12), modifiers: []))
         #expect(shortcuts[.toggleSplit] == ShortcutInfo(key: "\\", modifiers: .command))
         #expect(shortcuts[.goUp] == ShortcutInfo(key: .upArrow, modifiers: .command))
@@ -35,7 +38,7 @@ struct ShortcutConfigurationTests {
         version = 1
 
         [shortcuts]
-        reload = "cmd+shift+r"
+        reload = "cmd+shift+l"
 
         [[commands]]
         name = "swift run"
@@ -48,7 +51,7 @@ struct ShortcutConfigurationTests {
         terminal = true
         """)
 
-        #expect(shortcuts[.reload] == ShortcutInfo(key: "r", modifiers: [.command, .shift]))
+        #expect(shortcuts[.reload] == ShortcutInfo(key: "l", modifiers: [.command, .shift]))
     }
 
     @Test
