@@ -8,19 +8,31 @@ import Foundation
 /// silently killing the operation and leaving partial files
 /// behind. Each `FileBrowserModel` registers / un-registers its
 /// `activeOperation` here as it starts / completes.
-@MainActor
-final class FileOperationRegistry {
+///
+/// Not annotated with `@MainActor` so it can be called from the
+/// model's `didSet` hook without forcing every caller into the
+/// main actor: in practice all entry points (didSet, app
+/// delegate's `applicationShouldTerminate`, the Cancel button)
+/// already run on the main thread, and we serialize internal
+/// state via `lock` to be safe.
+final class FileOperationRegistry: @unchecked Sendable {
     static let shared = FileOperationRegistry()
 
+    private let lock = NSLock()
     private var operations: [ObjectIdentifier: FileOperationProgressViewModel] = [:]
 
-    var hasActiveOperation: Bool { !operations.isEmpty }
+    var hasActiveOperation: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return !operations.isEmpty
+    }
 
     func register(_ operation: FileOperationProgressViewModel) {
+        lock.lock(); defer { lock.unlock() }
         operations[ObjectIdentifier(operation)] = operation
     }
 
     func unregister(_ operation: FileOperationProgressViewModel) {
+        lock.lock(); defer { lock.unlock() }
         operations.removeValue(forKey: ObjectIdentifier(operation))
     }
 
@@ -29,7 +41,10 @@ final class FileOperationRegistry {
     /// boundary and remove any partial destination file before
     /// the progress view model deregisters itself.
     func cancelAll() {
-        for op in operations.values {
+        lock.lock()
+        let snapshot = Array(operations.values)
+        lock.unlock()
+        for op in snapshot {
             op.cancel()
         }
     }
