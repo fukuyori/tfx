@@ -466,6 +466,7 @@ enum UserCommandRunner {
         let commandBody: String
     }
 
+    @MainActor
     static func execute(
         _ command: UserCommand,
         selection: [FileItem],
@@ -504,6 +505,7 @@ enum UserCommandRunner {
         }
     }
 
+    @MainActor
     private static func executeCapturingOutput(
         _ process: Process,
         command: UserCommand,
