@@ -80,6 +80,23 @@ final class FileBrowserModel: ObservableObject {
     /// render the branch indicator in the status line.
     @Published var gitRepositoryStatus: GitRepositoryStatus?
     @Published var inlineNameEdit: InlineNameEdit?
+    /// Live progress reporter for a long-running file operation
+    /// (paste / drop). When non-nil the file pane shows an
+    /// inline card with the OS-localized progress string and a
+    /// Cancel button. Set/cleared by `runFileOperation(...)`.
+    /// The didSet hook keeps `FileOperationRegistry.shared` in
+    /// sync so the app-delegate can refuse to quit silently
+    /// while any pane is mid-copy.
+    @Published var activeOperation: FileOperationProgressViewModel? {
+        didSet {
+            if let oldValue, oldValue !== activeOperation {
+                FileOperationRegistry.shared.unregister(oldValue)
+            }
+            if let activeOperation, activeOperation !== oldValue {
+                FileOperationRegistry.shared.register(activeOperation)
+            }
+        }
+    }
 
     var allItems: [FileItem] = []
     var allItemLookup: [FileItem.ID: FileItem] = [:]

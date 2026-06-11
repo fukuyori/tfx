@@ -38,6 +38,15 @@ final class AppOpenDirectoryDelegate: NSObject, NSApplicationDelegate {
         AppOpenDirectoryRouter.shared.open(urls)
     }
 
+    /// Refuse to quit silently while a file copy / move is
+    /// running. `FileOperationRegistry` shows a confirmation
+    /// alert and either cancels the work and waits for cleanup
+    /// to finish (returning `.terminateLater` and replying
+    /// later) or aborts the quit altogether.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        FileOperationRegistry.shared.handleApplicationTerminate(sender)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Apply startup geometry once the first window has been
         // created. Precedence: command-line `--geometry` / `-g`

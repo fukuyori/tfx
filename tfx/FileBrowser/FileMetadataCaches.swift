@@ -135,7 +135,6 @@ final class FileDisplayTextCache: @unchecked Sendable {
 
     nonisolated(unsafe) private let sizeCache = NSCache<NSNumber, NSString>()
     nonisolated(unsafe) private let dateCache = NSCache<NSString, NSString>()
-    nonisolated(unsafe) private let sizeFormatter = ByteCountFormatter()
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -143,24 +142,41 @@ final class FileDisplayTextCache: @unchecked Sendable {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }()
-    private let sizeLock = NSLock()
     private let dateLock = NSLock()
 
-    private init() {
-        sizeFormatter.countStyle = .file
-    }
+    private init() {}
 
+    /// Format a byte count with consistent "B / KB / MB / GB /
+    /// TB" suffixes regardless of the system locale. `Foundation`'s
+    /// `ByteCountFormatter` localizes the smallest unit through
+    /// the user's `Locale` and has no override for that — under
+    /// a Japanese system it prints "538 バイト" while bigger
+    /// files in the same listing still read "KB" / "MB". Rolling
+    /// the format by hand sidesteps that mismatch.
     nonisolated func sizeText(byteCount: Int64) -> String {
         let key = NSNumber(value: byteCount)
         if let cachedText = sizeCache.object(forKey: key) {
             return cachedText as String
         }
 
-        sizeLock.lock()
-        let text = sizeFormatter.string(fromByteCount: byteCount)
-        sizeLock.unlock()
+        let text = formatBytes(byteCount)
         sizeCache.setObject(NSString(string: text), forKey: key)
         return text
+    }
+
+    private nonisolated func formatBytes(_ bytes: Int64) -> String {
+        // Match `ByteCountFormatter(.file)` semantics: SI-style
+        // suffixes (B/KB/MB/…) with 1024 as the unit step. Bytes
+        // print as an integer; everything else gets one decimal.
+        if bytes < 1024 { return "\(bytes) B" }
+        let units = ["KB", "MB", "GB", "TB", "PB"]
+        var size = Double(bytes) / 1024
+        var unitIndex = 0
+        while size >= 1024, unitIndex < units.count - 1 {
+            size /= 1024
+            unitIndex += 1
+        }
+        return String(format: "%.1f %@", size, units[unitIndex])
     }
 
     nonisolated func dateText(for date: Date?) -> String {

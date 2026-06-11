@@ -144,6 +144,17 @@ struct FilePane: View {
                     lineWidth: model.isPaneDropTarget ? 3 : 0
                 )
         )
+        // Inline progress card for long-running copy / move
+        // operations. Pinned to the bottom of the pane (above the
+        // status line) so it doesn't fight with the file list for
+        // vertical real estate, and only renders while
+        // `activeOperation` is non-nil.
+        .overlay(alignment: .bottom) {
+            if let op = model.activeOperation {
+                FileOperationProgressCard(operation: op)
+                    .padding(10)
+            }
+        }
         .onAppear {
             model.prefetchVisibleMetadata(for: visibleColumns)
         }

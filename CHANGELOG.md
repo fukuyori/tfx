@@ -4,6 +4,26 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.0] - 2026-06-11
+
+Background copy / move with progress UI, quit-safety alert, and locale-independent size formatting.
+
+### Added
+
+- File pane now shows an inline progress card whenever a copy / move is in flight (paste, cross-pane drop). The card surfaces the OS-localized "X of Y, about N seconds remaining" string (via `Foundation.Progress`), a determinate progress bar driven by `Progress.fractionCompleted`, the file currently being copied, and a Cancel button. The Dock icon also picks up the standard system progress badge through `Progress.kind = .file` / `fileOperationKind = .copying`.
+- Quitting the app while a file operation is running now shows a confirmation alert ("A file operation is in progress / Quitting now will leave partially copied files behind at the destination."). The user can choose **Quit Anyway** — the registry asks the background thread to stop and the app exits immediately, accepting the possibility of partial files at the destination — or **Keep Running** to stay in the app and let the operation finish. Implemented via a process-wide `FileOperationRegistry` consulted from `applicationShouldTerminate`.
+
+### Fixed
+
+- Cancel during a copy / move now actually stops mid-file instead of mid-batch. `SafeFileCopier` reads each source through `NSFileCoordinator` and writes it in 1 MiB chunks, polling the `Progress.isCancelled` flag between chunks. On cancel the partially-written destination file is closed and removed, so the destination directory never carries half-files. Source files for items that have not yet completed are left untouched.
+- Long copies no longer freeze the UI. The whole operation now runs on a background queue and reports progress to SwiftUI through a KVO bridge (`FileOperationProgressViewModel`).
+- File size column now reads consistently as `538 B` / `1.5 KB` / `2.3 MB` / … regardless of system language. `Foundation.ByteCountFormatter` localizes the byte unit through the user's `Locale` and has no override for it — under a Japanese system the smallest sizes printed as "538 バイト" while everything else in the same listing read "KB" / "MB". Switched to a hand-rolled formatter that always emits the English suffix, matching the SI-style step used by `ByteCountFormatter(.file)` (1024 between steps, one decimal place for non-byte units).
+
+### Changed
+
+- `FileBrowserModel+DropActions.moveDroppedFiles(...)` now collects every dragged URL into a single batch before kicking off the copy / move, so a multi-file drop shows one progress card instead of N flickering ones, and a Cancel actually stops the whole drop.
+- Updated the version to `0.8.0` and the build number to `60`.
+
 ## [0.7.96] - 2026-06-11
 
 Finder-style drop targeting: name-only highlight for folder rows + open-with for `.app` bundles.

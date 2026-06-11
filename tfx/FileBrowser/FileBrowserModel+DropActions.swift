@@ -9,13 +9,79 @@ extension FileBrowserModel {
         operation: FileClipboard.Operation,
         completion: (() -> Void)? = nil
     ) -> Bool {
-        FileBrowserDropProviderLoader.loadFileURLs(
-            from: providers,
-            onError: { [weak self] error in self?.show(error) },
-            onURL: { [weak self] sourceURL in
-                self?.drop(sourceURL, to: targetDirectory, operation: operation, completion: completion)
+        // Collect every dropped URL into a single batch, then run
+        // the copy / move through the chunk-copying progress
+        // runner. The pre-batch approach gives one progress card
+        // covering the whole drop instead of one per item, and
+        // lets Cancel actually stop the operation between files.
+        let fileProviders = providers.filter {
+            $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+        }
+        guard !fileProviders.isEmpty else { return false }
+
+        let total = fileProviders.count
+        var collected: [URL] = []
+        var completed = 0
+
+        for provider in fileProviders {
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { [weak self] item, error in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    completed += 1
+                    if let error {
+                        self.show(error)
+                    } else if let url = FileBrowserDropItemDecoder.url(from: item) {
+                        collected.append(url)
+                    }
+                    if completed == total, !collected.isEmpty {
+                        self.runBatchDrop(
+                            collected,
+                            to: targetDirectory,
+                            operation: operation,
+                            completion: completion
+                        )
+                    }
+                }
             }
-        )
+        }
+        return true
+    }
+
+    /// Dispatches the batched drop through `runFileOperation`,
+    /// then mirrors the bookkeeping the old per-item path used
+    /// to do (item-list update, folder-children refresh,
+    /// directories-changed notification with the source-side
+    /// removals).
+    private func runBatchDrop(
+        _ sources: [URL],
+        to targetDirectory: URL,
+        operation: FileClipboard.Operation,
+        completion: (() -> Void)?
+    ) {
+        let kind: FileOperationProgressViewModel.Kind = (operation == .copy) ? .copying : .moving
+        runFileOperation(
+            kind: kind,
+            items: sources,
+            destination: targetDirectory
+        ) { [weak self] added, removed in
+            guard let self else { return }
+            let sourceDirectories = Set(sources.map { $0.deletingLastPathComponent().standardizedFileURL })
+            for dir in sourceDirectories {
+                self.refreshFolderChildren(dir)
+            }
+            self.refreshFolderChildren(targetDirectory)
+            self.updateCurrentDirectoryItems(
+                adding: added,
+                removing: removed,
+                selecting: added
+            )
+            let affectedDirectories = sourceDirectories.union([targetDirectory.standardizedFileURL])
+            self.notifyDirectoriesChanged(
+                Array(affectedDirectories),
+                removedURLs: removed
+            )
+            completion?()
+        }
     }
 
     /// Launch / spawn `executableURL`, passing every dropped
