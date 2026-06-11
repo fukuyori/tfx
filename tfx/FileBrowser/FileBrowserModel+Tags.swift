@@ -144,10 +144,12 @@ extension FileBrowserModel {
         }
         guard !alreadyTagged else { return }
 
-        var values = URLResourceValues()
-        values.tagNames = current + [tag.rawTagString]
-        var mutableURL = url
-        try mutableURL.setResourceValues(values)
+        // `URLResourceValues.tagNames` is get-only on the macOS
+        // 15 SDK that CI uses to compile (the property is
+        // settable on newer SDKs). Route the write through
+        // `NSURL.setResourceValue(_:forKey:)` so the same source
+        // builds across SDK versions.
+        try (url as NSURL).setResourceValue(current + [tag.rawTagString], forKey: .tagNamesKey)
     }
 
     /// Write the tag list for `url` with one custom tag either added or
@@ -168,10 +170,7 @@ extension FileBrowserModel {
             nextTags.append(tag.rawTagString)
         }
 
-        var mutableURL = url
-        var values = URLResourceValues()
-        values.tagNames = nextTags
-        try mutableURL.setResourceValues(values)
+        try (url as NSURL).setResourceValue(nextTags, forKey: .tagNamesKey)
     }
 
     /// Write the tag list for `url` with one system color either added
@@ -193,10 +192,7 @@ extension FileBrowserModel {
             nextTags.append("\(name)\n\(colorID)")
         }
 
-        var mutableURL = url
-        var values = URLResourceValues()
-        values.tagNames = nextTags
-        try mutableURL.setResourceValues(values)
+        try (url as NSURL).setResourceValue(nextTags, forKey: .tagNamesKey)
     }
 }
 
