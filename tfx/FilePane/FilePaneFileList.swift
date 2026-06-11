@@ -129,13 +129,30 @@ struct FilePaneFileList: View {
             FileRow(
                 item: item,
                 isSelected: model.isSelected(item),
-                isDropTarget: item.isDirectory && model.isDropTargetDirectory(item.url),
+                // The pill highlight now also applies to
+                // executable file rows (run-with-arguments
+                // drop), so the row-level isDirectory guard is
+                // gone — the model already returns false for
+                // any URL that isn't the current drop target,
+                // which is the right semantics for both folders
+                // and executables.
+                isDropTarget: model.isDropTargetDirectory(item.url),
                 columns: visibleColumns,
                 fileNameColumnWidth: fileNameColumnWidth,
                 gitStatus: model.gitStatus(for: item),
                 isEditingName: isEditingName,
                 commitNameEdit: { model.commitInlineNameEdit(text: $0) },
-                cancelNameEdit: model.cancelInlineNameEdit
+                cancelNameEdit: model.cancelInlineNameEdit,
+                // Per-row delegate dispatch:
+                //  - `.app` bundle or executable file → run /
+                //    open the target with the dropped files as
+                //    arguments (Finder's "run with files"
+                //    behavior).
+                //  - Plain directory → drop INTO the folder.
+                //  - Plain non-executable file → nil, drops
+                //    fall through to `FilePane.onDrop` and
+                //    target the current directory.
+                nameCellDropDelegate: nameCellDelegate(for: item)
             )
             .id(FileListRowID.item(item.id))
             .contentShape(Rectangle())
@@ -148,17 +165,6 @@ struct FilePaneFileList: View {
                     )
                 }
             }
-            .onDrop(
-                of: [UTType.fileURL.identifier],
-                delegate: FileBrowserDropDelegate(
-                    model: model,
-                    targetDirectory: item.isDirectory ? item.url : model.currentDirectory,
-                    highlightedDirectory: item.isDirectory ? item.url : nil,
-                    reloadRelatedPanes: {
-                        activate()
-                    }
-                )
-            )
             .contextMenu {
                 // Always show the per-row menu for file rows. The
                 // `FileRowInteractionView.rightMouseDown` handler already
@@ -175,6 +181,32 @@ struct FilePaneFileList: View {
                 )
             }
         }
+    }
+
+    /// Returns the drop delegate that should be attached to
+    /// `item`'s name cell. See the comment at the call site for
+    /// the per-item dispatch rules. Executable detection
+    /// (`item.isExecutableTarget`) is checked BEFORE the plain
+    /// directory case, so `.app` bundles take the
+    /// run-with-arguments path instead of being treated like a
+    /// folder we'd drop INTO.
+    private func nameCellDelegate(for item: FileItem) -> (any DropDelegate)? {
+        if item.isExecutableTarget {
+            return FileExecuteDropDelegate(
+                model: model,
+                executableURL: item.url,
+                isApplicationBundle: item.isApplicationBundle
+            )
+        }
+        if item.isDirectory {
+            return FileBrowserDropDelegate(
+                model: model,
+                targetDirectory: item.url,
+                highlightedDirectory: item.url,
+                reloadRelatedPanes: { activate() }
+            )
+        }
+        return nil
     }
 
     private func scrollToSelection(with proxy: ScrollViewProxy) {

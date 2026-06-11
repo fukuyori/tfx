@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.7.96] - 2026-06-11
+
+Finder-style drop targeting: name-only highlight for folder rows + open-with for `.app` bundles.
+
+### Added
+
+- File row drop targeting now matches Finder. Hovering a folder's NAME (the text in the name column, not the rest of the row) highlights just the name with a rounded `fileListRowDropTarget`-colored pill, and dropping there moves the dragged items into that folder. Hovering ANYWHERE ELSE on the row — the icon, size column, kind column, the empty space between cells — drops to the pane's current directory, signalled by the pane-wide border highlight that landed in 0.7.94. Implemented by moving the row's `.onDrop` off the whole row and onto the name text itself, so the row's non-name regions naturally fall through to the pane's outer `.onDrop`. `FileRow.rowBackground` no longer applies the row-wide drop tint.
+- Dropping files on a `.app` bundle's name now opens that application with the dropped files as documents (the `NSWorkspace` "open with" channel). Used to launch the .app empty regardless of what was dropped. Plain non-app files keep falling through to the current-directory drop, so `tbla`, scripts, and other random executables don't accidentally run when the user just meant to drop a file next to them — this was the deliberately conservative trade-off after the user surfaced that "drop on any +x file = run it" was too surprising.
+
+### Changed
+
+- `FileItem.isExecutableTarget` is now `.app`-only by design. The model retains a `runInTerminalHandler` hook and `executeDroppedFiles` plumbing in case a future feature wants to route a deliberate "run this in terminal" action through the built-in PTY session — useful for things like a context-menu "Run with…" — but it is no longer reachable from a drop on a plain executable.
+- Updated the version to `0.7.96` and the build number to `59`.
+
 ## [0.7.95] - 2026-06-10
 
 Header toolbar icon legibility under system light mode + new tint override.

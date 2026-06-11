@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct FileRow: View {
     let item: FileItem
@@ -16,6 +17,16 @@ struct FileRow: View {
     let isEditingName: Bool
     let commitNameEdit: (String) -> Void
     let cancelNameEdit: () -> Void
+    /// Drop delegate attached to JUST the name text cell.
+    ///   - For folder rows: a `FileBrowserDropDelegate` that
+    ///     targets the folder itself.
+    ///   - For executable rows (`.app` bundles, executable
+    ///     files): a `FileExecuteDropDelegate` that runs the
+    ///     target with the dropped files as arguments.
+    ///   - Otherwise: `nil`, so the drop falls through to the
+    ///     surrounding `FilePane.onDrop` and targets the
+    ///     current directory — matching Finder.
+    var nameCellDropDelegate: (any DropDelegate)? = nil
 
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
@@ -109,10 +120,40 @@ struct FileRow: View {
                     }
                 }
         } else {
-            Text(item.name)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
+            nameLabel
+        }
+    }
+
+    /// The static-display variant of `nameCell` (non-editing). Pulled
+    /// out so the conditional `.onDrop` for folder rows can be
+    /// applied without re-typing the whole view chain.
+    @ViewBuilder
+    private var nameLabel: some View {
+        let label = Text(item.name)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.fileForeground)
+            // The pill is sized to wrap the visible text. Padding
+            // adds breathing room so the highlight does not
+            // visually touch the file-name baseline.
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(theme.fileListRowDropTarget.opacity(isDropTarget ? 1 : 0))
+            )
+            .fixedSize(horizontal: true, vertical: false)
+        // Attach the folder drop delegate only when this is a
+        // directory row AND a delegate was provided. SwiftUI's
+        // hit testing routes drops to the closest `.onDrop` —
+        // so dropping on the folder name text targets the
+        // folder, while dropping anywhere else on the row
+        // bubbles up to the surrounding `FilePane.onDrop`
+        // (current directory).
+        if let nameCellDropDelegate {
+            label.onDrop(of: [UTType.fileURL.identifier], delegate: nameCellDropDelegate)
+        } else {
+            label
         }
     }
 
@@ -146,14 +187,14 @@ struct FileRow: View {
     }
 
     private var rowBackground: Color {
-        if isDropTarget {
-            return theme.fileListRowDropTarget.opacity(design.opacity.background)
-        }
-
+        // Drop highlight is no longer rendered at row level — the
+        // Finder-style "pill behind the folder name" replaces it,
+        // and the row background is left to the selection state
+        // only. Pane-wide drops (anywhere outside a folder name)
+        // are signalled by the pane border, not the row.
         if isSelected {
             return theme.fileListRowSelected.opacity(design.opacity.background)
         }
-
         return .clear
     }
 }

@@ -507,11 +507,50 @@ struct TerminalFileManagerView: View {
         openRequestedDirectoryIfNeeded()
         applyStartupFocusIfNeeded()
         installDebugPaneToggleObserverIfNeeded()
+        installRunInTerminalHandlerIfNeeded()
         // `NSWindow.contentMinSize` is set by
         // `MainPaneSplitView.Coordinator.applyContentMinSize` on
         // the first `updateNSView`, which fires right after
         // `makeNSView` schedules its initial async pass — no
         // additional appear-time setup needed here.
+    }
+
+    /// Register a closure on both pane models that lets the
+    /// execute-drop path forward the shell command line into
+    /// the window's built-in terminal session, un-hiding the
+    /// terminal pane first if the user had it collapsed. The
+    /// handler is set per-window (via `installRunInTerminalHandlerIfNeeded`)
+    /// so each window targets its own terminal — there's no
+    /// global notification routing to keep straight.
+    /// Register a closure on both pane models that lets the
+    /// execute-drop path forward the shell command line into
+    /// the window's built-in terminal session, un-hiding the
+    /// terminal pane first if the user had it collapsed. The
+    /// handler is set per-window so each window targets its
+    /// own terminal — there's no global notification routing
+    /// to keep straight.
+    private func installRunInTerminalHandlerIfNeeded() {
+        let terminal = terminalModel
+        let revealTerminalPane: () -> Void = {
+            if !isTerminalPaneVisible {
+                isTerminalPaneVisible = true
+            }
+        }
+        let handler: (String) -> Void = { command in
+            revealTerminalPane()
+            // Write the command and a return so the shell
+            // executes it immediately. The user can then
+            // interact with the now-running program via the
+            // terminal pane normally.
+            terminal.sendTerminalInput(command)
+            terminal.sendReturn()
+        }
+        if leftModel.runInTerminalHandler == nil {
+            leftModel.runInTerminalHandler = handler
+        }
+        if rightModel.runInTerminalHandler == nil {
+            rightModel.runInTerminalHandler = handler
+        }
     }
 
     /// Listens (when `TFX_PANE_LAYOUT_LOGS=1`) for distributed

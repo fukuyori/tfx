@@ -31,6 +31,17 @@ struct FileItem: Identifiable, Hashable {
     nonisolated var isApplicationBundle: Bool {
         isDirectory && url.pathExtension.caseInsensitiveCompare("app") == .orderedSame
     }
+    /// True when this row is a sensible "open-with-files" drop
+    /// target. Restricted to `.app` bundles only — even a
+    /// non-directory file with a +x mode bit is NOT treated as
+    /// an execute-on-drop target, because doing so would
+    /// surprise users who expect a plain file drop to land in
+    /// the current folder. Plain executables fall through to
+    /// the pane's current-directory drop just like any other
+    /// non-folder file.
+    var isExecutableTarget: Bool {
+        isApplicationBundle
+    }
     nonisolated var searchName: String { searchNameValue }
     nonisolated var iconCacheKey: String { iconCacheKeyValue }
     nonisolated var mode: String { modeValue }

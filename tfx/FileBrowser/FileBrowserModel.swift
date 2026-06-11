@@ -126,6 +126,16 @@ final class FileBrowserModel: ObservableObject {
     /// the keyboard handler can drive horizontal scrolling without depending
     /// on SwiftUI's scroll view internals.
     var horizontalScrollHandler: ((CGFloat) -> Void)?
+    /// Closure registered by `TerminalFileManagerView` so the
+    /// model can send a shell command line into the built-in
+    /// terminal — used by execute-drop on a TUI binary like
+    /// `tbla`, which needs a real PTY to render its UI. The
+    /// closure is responsible for revealing the terminal pane
+    /// (if the user has it hidden) and writing the command +
+    /// `\r` to the session. When unset we fall back to spawning
+    /// the executable with `Process`, which is fine for GUI
+    /// helpers but useless for terminal-attached programs.
+    var runInTerminalHandler: ((String) -> Void)?
 
     /// Request a horizontal scroll on this pane's file list. No-op when the
     /// view hierarchy has not yet registered a handler.
