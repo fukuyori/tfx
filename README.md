@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.8.2**
+Version: **0.8.3**
 
 English | [日本語](README.ja.md)
 
@@ -72,8 +72,9 @@ English | [日本語](README.ja.md)
 - `Command + Shift + N`: New file
 - `Command + Return`: Rename inline
 - `Command + Backspace`: Move to Trash
-- `Command + C / X / V`: Copy / Cut / Paste
+- `Command + C / X / V`: Copy / Cut / Paste. When the clipboard holds no files, Cmd+V creates a new file from the clipboard content (spreadsheet → `.csv`, image → `.png`, URL → `.url`, rich text → `.rtf`, plain text → `.txt`) and opens it in inline rename.
 - `Command + Option + V`: Move-paste
+- `Command + Shift + V`: Paste as plain text (creates a `.txt` file, dropping any formatting). Configurable via `[shortcuts] pasteAsText = "..."` in `config.toml`.
 - `Command + A`: Select all
 - `Command + R`: Reload
 - `Command + T`: Open a terminal app here
@@ -149,7 +150,7 @@ tfx creates and reads its user configuration from:
 ```
 
 The current configuration supports compact `[font]`, `[colors]`, `[opacity]`,
-`[shortcuts]`, `[terminal]`, `[openWith]`, and `[[commands]]` blocks in `config.toml`:
+`[shortcuts]`, `[terminal]`, `[openWith]`, `[naming]`, and `[[commands]]` blocks in `config.toml`:
 
 ```toml
 version = 1
@@ -179,6 +180,9 @@ app = "/Applications/Ghostty.app"
 [openWith]
 md = "com.microsoft.VSCode"
 pdf = "/Applications/Preview.app"
+
+[naming]
+language = "auto"   # "auto" (follow system), "en", or "ja". Controls the placeholder names for New File, New Folder, and clipboard paste (e.g. `Untitled.txt` vs `名称未設定.txt`, `clipboard.csv` vs `クリップボード.csv`).
 
 [[commands]]
 name = "Git Pull"

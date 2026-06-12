@@ -154,6 +154,13 @@ struct FileItemContextMenu: View {
         .keyboardShortcut(shortcutStore.info(.pasteItems))
         .disabled(!model.canPaste)
 
+        Button("Paste as Plain Text") {
+            activate()
+            model.pasteAsText(into: item.isDirectory ? item.url : model.currentDirectory)
+        }
+        .keyboardShortcut(shortcutStore.info(.pasteAsText))
+        .disabled(!model.canPasteAsText)
+
         Divider()
 
         Button("Reveal in Finder") {
@@ -226,6 +233,13 @@ struct EmptyFileAreaContextMenu: View {
         }
         .keyboardShortcut(shortcutStore.info(.pasteItems))
         .disabled(!model.canPaste)
+
+        Button("Paste as Plain Text") {
+            activate()
+            model.pasteAsText()
+        }
+        .keyboardShortcut(shortcutStore.info(.pasteAsText))
+        .disabled(!model.canPasteAsText)
 
         Divider()
 

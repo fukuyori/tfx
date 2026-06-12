@@ -2,6 +2,28 @@
 import AppKit
 import Foundation
 
+/// Override for the language used in default placeholder
+/// filenames (`Untitled.txt` / `名称未設定.txt`,
+/// `Untitled Folder` / `名称未設定フォルダ`,
+/// `clipboard.*` / `クリップボード.*`). `auto` keeps the previous
+/// behavior — let `String(localized:)` follow the system
+/// language — while `english` / `japanese` pin the result
+/// regardless of macOS's Settings → Language & Region choice.
+enum NamingLanguage: String, Equatable {
+    case auto
+    case english
+    case japanese
+
+    init?(configValue raw: String) {
+        switch raw.lowercased() {
+        case "auto", "system": self = .auto
+        case "en", "english": self = .english
+        case "ja", "japanese": self = .japanese
+        default: return nil
+        }
+    }
+}
+
 struct AppLaunchConfiguration: Equatable {
     var startupLayout: StartupLayoutMode = .single
     var startupRightFolder: URL?
@@ -22,6 +44,7 @@ struct AppLaunchConfiguration: Equatable {
     var startupGeometry: AppLaunchArguments.Geometry?
     var terminalApplication: ApplicationReference?
     var openWithApplications: [String: ApplicationReference] = [:]
+    var namingLanguage: NamingLanguage = .auto
 
     static let `default` = AppLaunchConfiguration()
 
@@ -110,7 +133,7 @@ enum AppLaunchConfigurationLoader {
                 continue
             }
 
-            guard ["", "terminal", "startup", "openWith"].contains(section) else {
+            guard ["", "terminal", "startup", "openWith", "naming"].contains(section) else {
                 continue
             }
 
@@ -167,6 +190,17 @@ enum AppLaunchConfigurationLoader {
                         throw AppLaunchConfigurationError.invalidGeometry(line: lineNumber)
                     }
                     configuration.startupGeometry = geometry
+                default:
+                    continue
+                }
+            case "naming":
+                switch key {
+                case "language":
+                    let raw = try parseString(value, line: lineNumber)
+                    guard let language = NamingLanguage(configValue: raw) else {
+                        throw AppLaunchConfigurationError.invalidNamingLanguage(line: lineNumber)
+                    }
+                    configuration.namingLanguage = language
                 default:
                     continue
                 }
@@ -272,6 +306,7 @@ enum AppLaunchConfigurationError: LocalizedError {
     case invalidStartupLayout(line: Int)
     case invalidBool(line: Int)
     case invalidGeometry(line: Int)
+    case invalidNamingLanguage(line: Int)
     case unsupportedVersion(Int)
     case applicationUnavailable(String)
 
@@ -293,6 +328,8 @@ enum AppLaunchConfigurationError: LocalizedError {
             return "Invalid boolean at line \(line). Use true or false."
         case let .invalidGeometry(line):
             return "Invalid geometry at line \(line). Use X11 style like \"1200x800+100+50\"."
+        case let .invalidNamingLanguage(line):
+            return "Invalid naming language at line \(line). Use \"auto\", \"en\", or \"ja\"."
         case let .unsupportedVersion(version):
             return "Unsupported config version \(version)."
         case let .applicationUnavailable(reference):

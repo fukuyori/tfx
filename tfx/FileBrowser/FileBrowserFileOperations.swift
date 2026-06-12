@@ -99,7 +99,7 @@ enum FileBrowserFileOperations {
         guard let name = FileOperationPrompt.text(
             title: String(localized: "New Folder"),
             message: String(localized: "Enter a folder name."),
-            defaultValue: String(localized: "Untitled Folder")
+            defaultValue: DefaultPlaceholderNames.untitledFolderName()
         ) else {
             return nil
         }
@@ -120,7 +120,7 @@ enum FileBrowserFileOperations {
         guard let name = FileOperationPrompt.text(
             title: String(localized: "New File"),
             message: String(localized: "Enter a file name."),
-            defaultValue: String(localized: "Untitled.txt")
+            defaultValue: DefaultPlaceholderNames.untitledFileName()
         ) else {
             return nil
         }

@@ -125,6 +125,11 @@ extension TerminalFileManagerView {
             return true
         }
 
+        if shortcutStore.info(.pasteAsText).matches(event) {
+            activeModel.pasteAsText()
+            return true
+        }
+
         if shortcutStore.info(.selectAll).matches(event) {
             activeModel.selectAllVisibleItems()
             return true

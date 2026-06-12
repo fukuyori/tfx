@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.8.2**
+Version: **0.8.3**
 
 [English](README.md) | 日本語
 
@@ -72,8 +72,9 @@ Version: **0.8.2**
 - `Command + Shift + N`: 新規ファイル
 - `Command + Return`: インラインで名前を変更
 - `Command + Backspace`: ゴミ箱へ移動
-- `Command + C / X / V`: コピー / カット / ペースト
+- `Command + C / X / V`: コピー / カット / ペースト。クリップボードにファイルがない場合、⌘V はクリップボードの内容から新しいファイルを作成します (表計算 → `.csv`、画像 → `.png`、URL → `.url`、リッチテキスト → `.rtf`、プレーンテキスト → `.txt`)。作成後はインライン名前編集に入ります
 - `Command + Option + V`: 移動ペースト
+- `Command + Shift + V`: 書式なし貼り付け (書式を破棄して `.txt` を作成)。`config.toml` の `[shortcuts] pasteAsText = "..."` で変更可能
 - `Command + A`: すべて選択
 - `Command + R`: 再読み込み
 - `Command + T`: 現在フォルダでターミナルアプリを開く
@@ -149,7 +150,7 @@ tfx はユーザー設定を次の場所に作成し、読み込みます。
 ```
 
 現在対応している設定は、`config.toml` のコンパクトな `[font]`、`[colors]`、`[opacity]`、
-`[shortcuts]`、`[terminal]`、`[openWith]`、`[[commands]]` ブロックです。
+`[shortcuts]`、`[terminal]`、`[openWith]`、`[naming]`、`[[commands]]` ブロックです。
 
 ```toml
 version = 1
@@ -179,6 +180,9 @@ app = "/Applications/Ghostty.app"
 [openWith]
 md = "com.microsoft.VSCode"
 pdf = "/Applications/Preview.app"
+
+[naming]
+language = "auto"   # "auto" (システム言語に追従) / "en" / "ja"。新規ファイル / 新規フォルダ / クリップボード貼り付けの既定名 (`Untitled.txt` vs `名称未設定.txt`、`clipboard.csv` vs `クリップボード.csv` 等) を制御
 
 [[commands]]
 name = "Git Pull"

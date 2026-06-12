@@ -34,7 +34,7 @@ extension FileBrowserModel {
         }
 
         do {
-            guard let result = try FileBrowserFileOperations.createFile(named: String(localized: "Untitled.txt"), in: currentDirectory) else { return }
+            guard let result = try FileBrowserFileOperations.createFile(named: DefaultPlaceholderNames.untitledFileName(), in: currentDirectory) else { return }
             updateCurrentDirectoryItems(adding: [result.fileURL], selecting: [result.fileURL])
             notifyDirectoriesChanged([result.affectedDirectory])
             beginInlineNameEdit(url: result.fileURL, mode: .newItem)

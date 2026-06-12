@@ -4,6 +4,35 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.3] - 2026-06-12
+
+Clipboard-to-file paste, an explicit "Paste as Plain Text" path, and a config-file knob for the language of placeholder file / folder names.
+
+### Added
+
+- Pasting (Cmd+V) into a file pane with the clipboard holding no files now materializes the clipboard content into a fresh file in the current directory and opens it in inline rename, instead of doing nothing. Format dispatch in priority order — spreadsheet CSV → `.csv`, tab-separated spreadsheet text → `.csv` (with proper RFC 4180 quoting), rich text → `.rtf`, URL → `.url` (Windows-style `[InternetShortcut]` body, so Finder treats it as a link), image → `.png` (TIFF / PDF sources round-tripped through ImageIO), plain text → `.txt`. CSV / TSV / RTF / URL deliberately beat image because every modern spreadsheet (Excel, Numbers, Google Sheets via Safari) also ships a rasterized PNG/TIFF preview alongside the cell data, and `.png` is almost never what the user wants there. The `.png` slot is reserved for true image producers (screenshots, Preview.app, scanners). HTML is not emitted as its own file.
+- URL detection has a second-pass fallback: when the clipboard exposes only `public.utf8-plain-text` (Notes, Mail body, VS Code's "Copy Line", Safari's "Copy Link Text"), a single trimmed token that parses as a `http(s)` / `ftp(s)` / `sftp` / `ssh` / `mailto` URL is treated as a URL paste so it lands as `.url` rather than `.txt`.
+- New shortcut action `pasteAsText` (default `Command + Shift + V`, overrideable via `[shortcuts] pasteAsText = "..."` in `config.toml`). This bypasses RTF / image / CSV / URL detection and forces the plain-text rendering of whatever is on the clipboard into a new `.txt` file — useful for stripping formatting on a Word paste in one keystroke.
+- Both `Paste Here` (smart) and a new `Paste as Plain Text` ("書式なし貼り付け") entry now appear in the file-row and empty-area context menus. Both honor their respective shortcuts and disable themselves when the clipboard has nothing they can act on.
+- `[naming]` section in `config.toml` with a single `language` key (`auto` | `en` | `ja`). `auto` (default) keeps the previous behavior — placeholder names follow the system language picked by macOS Settings → Language & Region. Pin it to `en` or `ja` to force English (`Untitled.txt`, `Untitled Folder`, `clipboard.csv`) or Japanese (`名称未設定.txt`, `名称未設定フォルダ`, `クリップボード.csv`) regardless of the system setting. Applies to the New File prompt, the New Folder prompt, and the clipboard-paste base name. The value is read from disk once per process and cached, so changes require an app restart.
+
+### Performance
+
+- File-list scroll: `FileItem.kindText` and `FileItem.permissionsText` now read their values from snapshots captured in `FileItem.init` instead of consulting `FileKindCache` / `FilePermissionCache` per row body invocation. The on-render NSCache lookup that ran for every visible row on every scroll-driven body re-evaluation is gone. Trade-off: a freshly-loaded directory shows the cheap fallback ("PDF" / extension) until the next navigation primes the cache before items are constructed; the previously-lazy "next frame after background fill" upgrade no longer applies within the same directory view.
+- Avoided a LaunchServices / SQLite stampede that the first pass at the above caused. `FileItem.init` runs for every entry in a freshly-loaded directory, so calling `FileKindCache.kind(for:)` / `FilePermissionCache.permissions(for:)` per item scheduled N parallel GCD fills, each issuing a `URLResourceValues(.localizedTypeDescriptionKey)` call that triggered a flood of `os_unix.c:51044 open(/private/var/db/DetachedSignatures)` stderr noise. Added pure read-only `cachedKind(for:)` / `cachedPermissions(for:)` variants that the constructor uses; the metadata-prefetch worker still fills the cache in a single ordered pass.
+- Pane switching / selection change: standardized URLs are now cached on `FileItem` as `standardizedID` and returned from `var id`. The `allItemLookup` / `visibleItemIndexLookup` builders and every downstream lookup (`primarySelectedItem`, range / blank / row-keyboard selection, `previewURLs`, inline-rename commit, `isEditingName` per-row check) stop re-normalizing URLs on each access. The old hot paths called `URL.standardizedFileURL` per selected item per click, allocating a path string and a fresh URL each time; those allocations are gone.
+
+### Changed
+
+- Built-in terminal: hiding the pane (toolbar toggle, `Command + Option + T`, View menu) no longer tears down the PTY. The same shell keeps running in the background — re-opening the pane brings back the exact shell session, including command history, environment, and any long-running output that arrived while hidden. The directory-sync that used to fire on every re-open now only runs on the first opening (`followDirectory` early-returns once a session exists), so a still-alive shell never gets its cwd yanked around. Sessions only end on `exit` / Ctrl-D in the shell (handled by the natural PTY exit → `terminalExitRequestID` flow), the app quitting (`BuiltInTerminalModel.deinit`), or the model being released.
+- `exit` / Ctrl-D / any natural shell termination now also wipes the rendered transcript, raw byte buffer, captured user-command output, and the escape-sequence parser state via `resetTranscript()`. Without this, the next time the pane came up it spawned a fresh shell against the old transcript and looked like the previous session had been restored even though the PTY was gone. Same reset is applied to the `submitCommand` early-exit path so typing `exit` at the input field with no session running stays consistent with the natural-exit path.
+- `BuiltInTerminalModel.foregroundWorkingDirectory()` now resolves to the cwd of the **active tmux pane** when the foreground process on the PTY is a tmux client, instead of returning the client's own cwd (which is wherever the user typed `tmux`, not where the user has navigated to inside tmux). The same tmux binary the user is running (resolved via `proc_pidpath`) is shelled out with `tmux display-message -p '#{pane_current_path}'`; if that fails, a `list-clients` fallback matched against `tcgetpgrp`'s PGID covers multi-session setups. Other multiplexers (Zellij, screen) still fall back to the pre-existing best-effort behavior.
+
+### Documentation
+
+- README.md / README.ja.md: documented the clipboard-paste behavior, the new `pasteAsText` shortcut, and the `[naming]` section.
+- Version bumped to `0.8.3`, build `63`.
+
 ## [0.8.2] - 2026-06-12
 
 Built-in terminal: keep the shell session alive across pane visibility toggles, terminate cleanly on `exit`, and resolve the cwd-sync button against tmux's active pane instead of the tmux client's launch directory.

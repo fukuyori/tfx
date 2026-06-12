@@ -201,6 +201,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case cutItems
     case pasteItems
     case movePasteItems
+    case pasteAsText
     case selectAll
     case revealInFinder
     case copyPath
@@ -243,6 +244,7 @@ enum Shortcuts {
         .cutItems: ShortcutInfo(key: "x", modifiers: .command),
         .pasteItems: ShortcutInfo(key: "v", modifiers: .command),
         .movePasteItems: ShortcutInfo(key: "v", modifiers: [.command, .option]),
+        .pasteAsText: ShortcutInfo(key: "v", modifiers: [.command, .shift]),
         .selectAll: ShortcutInfo(key: "a", modifiers: .command),
         .revealInFinder: ShortcutInfo(key: "r", modifiers: [.command, .option]),
         .copyPath: ShortcutInfo(key: "c", modifiers: [.command, .option]),
