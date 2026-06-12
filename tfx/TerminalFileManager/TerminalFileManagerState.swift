@@ -80,7 +80,16 @@ extension TerminalFileManagerView {
         let wasVisible = isTerminalPaneVisible
         isTerminalPaneVisible = isVisible
         guard isVisible else {
-            terminalModel.close()
+            // Hiding the pane no longer terminates the shell.
+            // The PTY session keeps running in the background so
+            // re-opening the pane shows the same shell with its
+            // history, environment, and any long-running output
+            // intact. The only paths that actually tear down the
+            // session are the user typing `exit` / `logout` in
+            // the shell (handled by the natural PTY exit →
+            // `terminalExitRequestID` flow that just hides the
+            // pane on top of an already-dead session) and the
+            // app quitting (`BuiltInTerminalModel.deinit`).
             deactivateTerminalPaneIfNeeded()
             return
         }
@@ -131,13 +140,25 @@ extension TerminalFileManagerView {
 
     func onTerminalPaneVisibilityChange(isVisible: Bool) {
         if isVisible {
+            // `followDirectory` early-returns once a session
+            // exists, so re-opening the pane onto a still-alive
+            // shell does not yank its CWD around — the shell
+            // keeps wherever the user left it. The cwd sync
+            // therefore only applies the very first time the
+            // pane comes up after `exit` / app launch.
             terminalModel.followDirectory(activeModel.currentDirectory)
             if terminalModel.activeTab == .shell {
+                // `open()` → `startSessionIfNeeded()` is a
+                // no-op when the PTY is already running, so this
+                // just refreshes the shell tab without spawning
+                // a new session.
                 terminalModel.open()
                 activateTerminalPane()
             }
         } else {
-            terminalModel.close()
+            // Mirrors `setTerminalPaneVisible(false)`: hiding
+            // the pane keeps the shell session alive in the
+            // background.
             deactivateTerminalPaneIfNeeded()
         }
     }

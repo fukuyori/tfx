@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.8.1**
+Version: **0.8.2**
 
 English | [日本語](README.ja.md)
 
@@ -37,7 +37,7 @@ English | [日本語](README.ja.md)
 - Browse zip archives without extracting them
 - Copy files from browsed zip archives
 - Open a terminal app at the current folder
-- Built-in command terminal pane that starts in the active folder and accepts file/folder drops onto the terminal to insert shell-quoted paths
+- Built-in command terminal pane that starts in the active folder and accepts file/folder drops onto the terminal to insert shell-quoted paths. The shell session is kept alive while the pane is hidden — re-opening returns to the same shell with its history and environment intact. `exit` / Ctrl-D ends the session and the next opening starts fresh. A toolbar button syncs the active file pane to the shell's current working directory; when tmux is running, `tmux display-message` is queried so the active tmux pane's cwd is reflected rather than the cwd that tmux was launched from.
 - New File, New Folder, inline Rename, Move to Trash, and Reveal in Finder
 - "Open With" submenu listing applications that can open the file, with an "Other…" picker
 - Auto-refresh: each file pane updates automatically when its directory changes externally

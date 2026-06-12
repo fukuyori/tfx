@@ -4,6 +4,29 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.2] - 2026-06-12
+
+Built-in terminal: keep the shell session alive across pane visibility toggles, terminate cleanly on `exit`, and resolve the cwd-sync button against tmux's active pane instead of the tmux client's launch directory.
+
+### Changed
+
+- Hiding the built-in terminal pane (toolbar toggle, `Command + Option + T`, View menu) no longer tears down the PTY. The same shell keeps running in the background — re-opening the pane brings back the exact shell session, including command history, environment, and any long-running output that arrived while hidden. The directory-sync that used to fire on every re-open now only runs on the first opening (`followDirectory` early-returns once a session exists), so a still-alive shell never gets its cwd yanked around. `setTerminalPaneVisible(false)` / `onTerminalPaneVisibilityChange(false)` are the two affected paths; both used to call `terminalModel.close()` and that call is gone. Sessions only end on `exit` / Ctrl-D in the shell (handled by the natural PTY exit → `terminalExitRequestID` flow), the app quitting (`BuiltInTerminalModel.deinit`), or the model being released.
+- `exit` / Ctrl-D / any natural shell termination now also wipes the rendered transcript, raw byte buffer, captured user-command output, and the escape-sequence parser state via `resetTranscript()`. Without this, the next time the pane came up it spawned a fresh shell against the old transcript and looked like the previous session had been restored even though the PTY was gone. Same reset is applied to the `submitCommand` early-exit path so typing `exit` at the input field with no session running stays consistent with the natural-exit path.
+
+### Added
+
+- `BuiltInTerminalModel.foregroundWorkingDirectory()` now resolves to the cwd of the **active tmux pane** when the foreground process on the PTY is a tmux client, instead of returning the client's own cwd (which is wherever the user typed `tmux`, not where the user has navigated to inside tmux). Implemented in `PTYTerminalSession`:
+  - `proc_pidpath(targetPID)` reads the absolute path of the foreground binary; when the last path component is `tmux`, we use that same binary for the subsequent query (no PATH search, so Apple Silicon / Intel / Homebrew / Cellar variations all resolve to the user's own installation).
+  - Fast path: `tmux display-message -p '#{pane_current_path}'`. Tmux auto-picks the most-recently-active session, which matches the live client in the overwhelmingly common single-session setup.
+  - Fallback: `tmux list-clients -F '#{client_pid}\t#{session_id}'`, matched against `tcgetpgrp`'s PGID, then `tmux display-message -p -t <session> '#{pane_current_path}'` so multi-session setups still resolve correctly.
+  - Anything still failing returns the kernel-reported cwd of the tmux client itself, preserving the pre-existing best-effort behavior. Other multiplexers (Zellij, screen) keep that same fallback — they have no equivalently clean external CWD query, and injecting a `pwd` into the live PTY would be visible to the user and unsafe in modal apps like vim / less. Stderr from the subprocess is discarded so the integration stays silent.
+  - `runCapturingStdout` wires the `Process.terminationHandler` semaphore signal **before** `process.run()`, fixing a race where a fast-exiting tmux subprocess could finish before the handler was attached, leaving us waiting on a semaphore that would never fire and ultimately tripping the 1.5-second timeout for a query that actually succeeded.
+
+### Documentation
+
+- README.md / README.ja.md: expanded the built-in terminal bullet to describe the session-persist behavior and the tmux-aware cwd sync.
+- Version bumped to `0.8.2`, build `62`.
+
 ## [0.8.1] - 2026-06-11
 
 Performance tuning around the file pane: snapshot per-row metadata once at construction time, and stop re-normalizing URLs on every selection / lookup.

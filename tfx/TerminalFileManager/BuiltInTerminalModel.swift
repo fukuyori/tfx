@@ -95,6 +95,12 @@ final class BuiltInTerminalModel: ObservableObject {
         guard !command.isEmpty else { return }
 
         if session == nil, Self.isExitCommand(command) {
+            // `exit` typed at the input field when no shell is
+            // running (e.g. a user idled at the prompt after a
+            // previous shell exited). Treat this exactly like a
+            // natural shell exit: wipe the transcript so the
+            // next time the pane comes up it starts fresh.
+            resetTranscript()
             terminalExitRequestID = UUID()
             return
         }
@@ -225,6 +231,17 @@ final class BuiltInTerminalModel: ObservableObject {
                         if self.isClosingSessionExplicitly {
                             self.isClosingSessionExplicitly = false
                         } else {
+                            // Shell exited on its own (the user
+                            // typed `exit`, hit Ctrl-D, etc.).
+                            // Wipe the transcript here so that
+                            // when the user re-opens the pane,
+                            // `startSessionIfNeeded()` spawns a
+                            // fresh shell against a fresh
+                            // display — instead of looking like
+                            // the previous session was restored
+                            // (its bytes were still on screen
+                            // even though the PTY was gone).
+                            self.resetTranscript()
                             self.terminalExitRequestID = UUID()
                         }
                     }
@@ -238,6 +255,24 @@ final class BuiltInTerminalModel: ObservableObject {
             displayTranscript = outputDecoder.renderedTextWithCursor()
             isRunning = false
         }
+    }
+
+    /// Drop everything the previous shell wrote (rendered
+    /// transcript, raw bytes, captured user-command output, the
+    /// half-typed escape-sequence state machine) and reset the
+    /// shown tab to the live shell. Used whenever a session ends
+    /// non-explicitly so the next `open()` paints a clean pane
+    /// instead of resurrecting the dead shell's output.
+    private func resetTranscript() {
+        let initialTranscript = "tfx built-in terminal\n"
+        transcript = initialTranscript
+        rawTerminalTranscript = ""
+        commandOutputTranscript = ""
+        interactiveCommandBuffer = ""
+        isIgnoringEscapeSequence = false
+        activeTab = .shell
+        outputDecoder.reset(with: initialTranscript)
+        displayTranscript = outputDecoder.renderedTextWithCursor()
     }
 
     private func appendTerminalOutput(_ output: String) {
@@ -601,6 +636,19 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
     /// the shell itself) and ask the kernel for its current
     /// working directory via `proc_pidinfo`. Returns `nil` if
     /// the FD is gone or the process exited.
+    ///
+    /// When the foreground process is a tmux client, the kernel
+    /// only knows the client's own cwd — which is wherever the
+    /// user ran `tmux` from, NOT the cwd of the pane the user is
+    /// currently looking at (each pane's shell lives under the
+    /// tmux *server* and has its own controlling tty that is
+    /// unreachable from our master fd). Special-case that path
+    /// by shelling out to tmux's own `display-message` query.
+    /// Zellij and other multiplexers have no equivalently clean
+    /// external CWD query, so they keep using the generic kernel
+    /// lookup — which returns the multiplexer's own startup cwd,
+    /// the best safe approximation without injecting commands
+    /// into the running session.
     func foregroundWorkingDirectory() -> URL? {
         lock.lock()
         let fd = masterFD
@@ -615,10 +663,23 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         let targetPID = pgid > 0 ? pid_t(pgid) : shellPID
         guard targetPID > 0 else { return nil }
 
+        if let executablePath = Self.processExecutablePath(targetPID),
+           (executablePath as NSString).lastPathComponent == "tmux",
+           let url = Self.tmuxActivePaneCWD(clientPID: targetPID, tmuxBinaryPath: executablePath) {
+            return url
+        }
+
+        return Self.kernelReportedCWD(of: targetPID)
+    }
+
+    /// `proc_pidinfo(PROC_PIDVNODEPATHINFO)` — works for any
+    /// regular process attached to its own tty, including the
+    /// non-multiplexer shell case.
+    nonisolated private static func kernelReportedCWD(of pid: pid_t) -> URL? {
         var info = proc_vnodepathinfo()
         let infoSize = MemoryLayout<proc_vnodepathinfo>.size
         let result = withUnsafeMutablePointer(to: &info) { ptr -> Int32 in
-            proc_pidinfo(targetPID, PROC_PIDVNODEPATHINFO, 0, ptr, Int32(infoSize))
+            proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, ptr, Int32(infoSize))
         }
         guard result == Int32(infoSize) else { return nil }
 
@@ -629,6 +690,112 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         }
         guard !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path).standardizedFileURL
+    }
+
+    /// Absolute path to a process's executable image. We reuse
+    /// this path as the tmux binary to invoke, so we always hit
+    /// the SAME tmux build the user is running (no PATH search
+    /// surprises across Homebrew / Apple Silicon / Intel).
+    nonisolated private static func processExecutablePath(_ pid: pid_t) -> String? {
+        var buffer = [CChar](repeating: 0, count: 4096)
+        let written = proc_pidpath(pid, &buffer, UInt32(buffer.count))
+        guard written > 0 else { return nil }
+        return String(cString: buffer)
+    }
+
+    /// External query for the cwd of the tmux pane the user is
+    /// currently focused on. Three attempts:
+    ///
+    /// 1. Bare `tmux display-message -p '#{pane_current_path}'`
+    ///    — `tmux` picks the most-recently-active session
+    ///    automatically, which matches the live client in
+    ///    single-session setups (the overwhelmingly common case).
+    /// 2. If that fails, query `list-clients` and match by
+    ///    `#{client_pid}` so multi-session setups still resolve
+    ///    correctly.
+    /// 3. Anything still failing returns `nil` and the caller
+    ///    falls back to the kernel-reported cwd of the tmux
+    ///    client itself.
+    ///
+    /// All invocations use the user's own tmux binary (via
+    /// `processExecutablePath`) so they share the server socket
+    /// and version that the live session is running on.
+    nonisolated private static func tmuxActivePaneCWD(clientPID: pid_t, tmuxBinaryPath: String) -> URL? {
+        if let path = tmuxQueryPath(tmuxBinaryPath: tmuxBinaryPath, target: nil) {
+            return path
+        }
+
+        guard let clientsOutput = runCapturingStdout(
+            executable: tmuxBinaryPath,
+            arguments: ["list-clients", "-F", "#{client_pid}\t#{session_id}"]
+        ) else { return nil }
+
+        var sessionID: String?
+        for line in clientsOutput.split(separator: "\n") {
+            let parts = line.split(separator: "\t", maxSplits: 1)
+            guard parts.count == 2, let pid = pid_t(parts[0]) else { continue }
+            if pid == clientPID {
+                sessionID = String(parts[1])
+                break
+            }
+        }
+        guard let sessionID else { return nil }
+
+        return tmuxQueryPath(tmuxBinaryPath: tmuxBinaryPath, target: sessionID)
+    }
+
+    nonisolated private static func tmuxQueryPath(tmuxBinaryPath: String, target: String?) -> URL? {
+        var args = ["display-message", "-p"]
+        if let target {
+            args.append(contentsOf: ["-t", target])
+        }
+        args.append("#{pane_current_path}")
+
+        guard let output = runCapturingStdout(executable: tmuxBinaryPath, arguments: args) else { return nil }
+        let path = output.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty, path.hasPrefix("/") else { return nil }
+        return URL(fileURLWithPath: path).standardizedFileURL
+    }
+
+    /// Run a short-lived helper, capture its stdout, and bail out
+    /// with `nil` on launch failure, non-zero exit, or a 1.5-second
+    /// timeout. Stderr is discarded so the integration is silent
+    /// even if tmux complains. Synchronous on purpose — this is
+    /// driven by a user button click and the timeout keeps the UI
+    /// from stalling if the tmux socket has gone weird.
+    nonisolated private static func runCapturingStdout(
+        executable: String,
+        arguments: [String],
+        timeout: TimeInterval = 1.5
+    ) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        // Set the handler BEFORE `run()` so a fast-exiting
+        // subprocess (tmux returns in single-digit ms) cannot
+        // terminate before we wire up the signal and leave us
+        // waiting on a semaphore that will never fire.
+        let semaphore = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in semaphore.signal() }
+
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+
+        if semaphore.wait(timeout: .now() + timeout) == .timedOut {
+            process.terminate()
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+
+        let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8)
     }
 
     private func childExecuteShell(shellPath: String, shellName: String, directoryPath: String) -> Never {
