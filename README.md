@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.8.3**
+Version: **0.8.4**
 
 English | [日本語](README.ja.md)
 
@@ -159,6 +159,11 @@ version = 1
 ui = "system"
 mono = "monospace"
 size = 13
+# Per-pane overrides (optional). Empty family or size = 0 inherits the global mono / size.
+# fileList         = "JetBrains Mono"   # fileListSize   — file rows, status line, archive view
+# folderTree       = "SF Pro Text"      # folderTreeSize — folder tree + pinned list
+# preview          = "Hiragino Sans"    # previewSize    — preview pane (rendered + source)
+# terminal         = "Cica"             # terminalSize   — built-in terminal pane
 
 [colors]
 fileListBackground = "#020A12"

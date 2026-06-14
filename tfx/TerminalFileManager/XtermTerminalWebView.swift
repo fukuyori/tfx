@@ -448,8 +448,8 @@ private struct XtermTheme {
         cursor = Self.hex(theme.directoryForeground)
         selectionBackground = Self.hex(theme.fileListRowSelected)
 
-        let font = design.fonts.nsFont(for: .previewCode)
-        fontFamily = Self.cssFontFamily(for: design.fonts.monoFamily, resolvedFont: font)
+        let font = design.fonts.nsFont(for: .terminal)
+        fontFamily = Self.cssFontFamily(for: design.fonts.resolvedFamily(for: .terminal), resolvedFont: font)
         fontSize = max(8, Int(round(font.pointSize)))
     }
 

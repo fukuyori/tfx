@@ -117,14 +117,67 @@ enum DesignConfigurationLoader {
             let family = try parseString(value, line: line)
             fonts.monoFamily = family == "monospace" ? nil : ConfiguredFontRegistrar.resolve(family)
         case "size":
-            let parsed = try parseDouble(value, line: line)
-            guard parsed >= 8, parsed <= 40 else {
-                throw DesignConfigurationError.invalidFontSize(line: line)
-            }
-            fonts.baseSize = CGFloat(parsed)
+            fonts.baseSize = try parsePointSize(value, line: line)
+        // Per-pane overrides. Empty string → no override (cleared
+        // by the user, fall back to global `mono` / `ui`). A
+        // family name that doesn't resolve gets stored verbatim
+        // so the existing fall-through in `DesignFontTokens`
+        // (NSFont(name:) returning nil → system mono / system
+        // ui) keeps the pane usable.
+        case "fileList":
+            fonts.fileListFamily = parsePaneFamily(try parseString(value, line: line))
+        case "fileListSize":
+            fonts.fileListSize = try parsePaneSize(value, line: line)
+        case "folderTree":
+            fonts.folderTreeFamily = parsePaneFamily(try parseString(value, line: line))
+        case "folderTreeSize":
+            fonts.folderTreeSize = try parsePaneSize(value, line: line)
+        case "preview":
+            fonts.previewFamily = parsePaneFamily(try parseString(value, line: line))
+        case "previewSize":
+            fonts.previewSize = try parsePaneSize(value, line: line)
+        case "terminal":
+            fonts.terminalFamily = parsePaneFamily(try parseString(value, line: line))
+        case "terminalSize":
+            fonts.terminalSize = try parsePaneSize(value, line: line)
         default:
             break
         }
+    }
+
+    /// Family lookup for per-pane keys. Sentinel values that
+    /// mean "inherit from the global setting" — `""`, the
+    /// literal `"system"` (mirroring `[font] ui`), and
+    /// `"monospace"` (mirroring `[font] mono`) — collapse to
+    /// `nil` so `DesignFontTokens.resolvedFamily(for:)` falls
+    /// back to `uiFamily` / `monoFamily`.
+    private static func parsePaneFamily(_ family: String) -> String? {
+        let trimmed = family.trimmingCharacters(in: .whitespaces)
+        switch trimmed {
+        case "", "system", "monospace": return nil
+        default: return ConfiguredFontRegistrar.resolve(trimmed)
+        }
+    }
+
+    /// Size override. `0` (and anything missing) means inherit
+    /// the global base size — same convention as the family
+    /// sentinels above. Anything else is bounds-checked the
+    /// same way `[font] size` is.
+    private static func parsePaneSize(_ value: String, line: Int) throws -> CGFloat? {
+        let parsed = try parseDouble(value, line: line)
+        if parsed == 0 { return nil }
+        guard parsed >= 8, parsed <= 40 else {
+            throw DesignConfigurationError.invalidFontSize(line: line)
+        }
+        return CGFloat(parsed)
+    }
+
+    private static func parsePointSize(_ value: String, line: Int) throws -> CGFloat {
+        let parsed = try parseDouble(value, line: line)
+        guard parsed >= 8, parsed <= 40 else {
+            throw DesignConfigurationError.invalidFontSize(line: line)
+        }
+        return CGFloat(parsed)
     }
 
     private static func applyColorValue(
@@ -265,6 +318,16 @@ enum DesignConfigurationLoader {
     ui = "system"
     mono = "monospace"
     size = 13
+
+    # Optional per-pane overrides. Empty family or size = 0 inherits global.
+    #   fileList       fileListSize   — file rows, status line, archive view
+    #   folderTree     folderTreeSize — folder tree + pinned list
+    #   preview        previewSize    — preview pane (rendered + source)
+    #   terminal       terminalSize   — built-in terminal pane
+    # Examples:
+    # terminal = "JetBrains Mono"
+    # terminalSize = 13
+    # previewSize = 14
 
     # Optional color overrides. Unspecified colors use the built-in tfx base.
     #

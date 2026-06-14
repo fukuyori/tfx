@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.8.3**
+Version: **0.8.4**
 
 [English](README.md) | 日本語
 
@@ -159,6 +159,11 @@ version = 1
 ui = "system"
 mono = "monospace"
 size = 13
+# ペイン個別オーバーライド (任意)。空文字列またはサイズ = 0 でグローバル設定を継承
+# fileList         = "JetBrains Mono"   # fileListSize   — ファイル行、ステータス行、アーカイブビュー
+# folderTree       = "Hiragino Sans"    # folderTreeSize — フォルダツリー + ピン留めリスト
+# preview          = "Noto Sans CJK JP" # previewSize    — プレビューペイン (レンダリング + ソース)
+# terminal         = "Cica"             # terminalSize   — 内蔵ターミナルペイン
 
 [colors]
 fileListBackground = "#020A12"

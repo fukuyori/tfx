@@ -4,6 +4,30 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.4] - 2026-06-12
+
+Per-pane font overrides in `config.toml`.
+
+### Added
+
+- New optional keys in the `[font]` section let each pane override the global font and / or size independently of the rest of the UI:
+  - `fileList` / `fileListSize` — file rows, status line, and archive view
+  - `folderTree` / `folderTreeSize` — folder tree and pinned list
+  - `preview` / `previewSize` — preview pane (both rendered and source views)
+  - `terminal` / `terminalSize` — built-in terminal pane
+- Empty family (`""`) or zero size (`0`) — or simply omitting the key — falls back to the global `[font] mono` / `[font] ui` / `[font] size`. Sentinel values `"system"` (matches `[font] ui`) and `"monospace"` (matches `[font] mono`) also collapse to "inherit global" so the same vocabulary can be used in either place.
+- Role-derived size adjustments (status line = `base - 2pt`, pane title = `base - 1pt`, etc.) are now applied against the *effective* base size for that pane. So `fileListSize = 14` makes file rows 14pt and the status line below them 12pt; the relative spacing inside the pane is preserved.
+
+### Changed
+
+- `DesignFontRole` gained a `.terminal` case, and `XtermTerminalWebView` now resolves its CSS `font-family` / `font-size` through `.terminal` instead of borrowing `.previewCode`. Without this change, setting `terminal = "JetBrains Mono"` in `config.toml` would still render the terminal with whatever `preview` (or the global `mono`) resolved to.
+- `DesignFontTokens` exposes a public `resolvedFamily(for:)` helper so non-SwiftUI surfaces (the xterm WebView, currently) can stay in sync with what `nsFont(for:)` actually picked, including the per-pane override layer.
+
+### Documentation
+
+- README.md / README.ja.md: documented the four new per-pane keys with inline examples in the `[font]` block.
+- Version bumped to `0.8.4`, build `64`.
+
 ## [0.8.3] - 2026-06-12
 
 Clipboard-to-file paste, an explicit "Paste as Plain Text" path, and a config-file knob for the language of placeholder file / folder names.
