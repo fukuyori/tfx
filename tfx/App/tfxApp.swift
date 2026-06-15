@@ -38,7 +38,17 @@ struct tfxApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        // `Window` (not `WindowGroup`) — tfx is a single-window
+        // app. `WindowGroup` on macOS treats every incoming
+        // file URL as a candidate document and can spawn a
+        // brand-new window for it, racing the existing window
+        // that's about to receive the URL through
+        // `AppOpenDirectoryDelegate.application(_:open:)`. With
+        // a zsh alias `alias tfx='open -a tfx "$PWD"'` the user
+        // could end up with two windows after a single `tfx`
+        // invocation. `Window` guarantees one scene and routes
+        // every file-URL open through the existing window.
+        Window("tfx", id: "main") {
             ContentView()
 #if os(macOS)
                 .environmentObject(designStore)

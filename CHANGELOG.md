@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.7] - 2026-06-15
+
+Force-single-window the SwiftUI scene so a single `open -a tfx <dir>` invocation can't end up with two windows.
+
+### Fixed
+
+- Switched `tfxApp.swift` from `WindowGroup { ContentView() }` to `Window("tfx", id: "main") { ContentView() }`. With a zsh alias like `alias tfx='open -a tfx "$PWD"'`, a single `tfx` invocation occasionally opened two tfx windows: `WindowGroup` on macOS treats every incoming file URL as a candidate document and can spawn a brand-new window for it, racing the existing window that's about to receive the URL through `AppOpenDirectoryDelegate.application(_:open:)`. `Window` (single scene, macOS 13+; tfx already targets 15.0) forces every file-URL open to route through the live window.
+
+### Documentation
+
+- Version bumped to `0.8.7`, build `67`.
+
 ## [0.8.6] - 2026-06-15
 
 Drag-and-drop safety inside a single file pane.

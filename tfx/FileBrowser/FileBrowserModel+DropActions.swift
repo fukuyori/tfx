@@ -216,7 +216,15 @@ extension FileBrowserModel {
     /// no confirmation, or because the user clicked the action
     /// button. Returns `false` only when the user explicitly
     /// cancelled.
-    @MainActor
+    // Not annotated `@MainActor` — drop callbacks already run
+    // on the main thread (SwiftUI's drag-drop pipeline / drop
+    // delegates) and the rest of the dropmodel pipeline is
+    // non-isolated. Adding the annotation here forced callers
+    // through `await`, which Swift 6.1's strict-concurrency
+    // diagnostic refused from the synchronous, non-isolated
+    // `runBatchDrop` / `drop` entry points. Matching the
+    // existing `FileOperationPrompt` / `FileOperationRegistry`
+    // NSAlert call sites, which also stay non-isolated.
     private func confirmSameListingFolderDropIfNeeded(
         sources: [URL],
         targetDirectory: URL,
