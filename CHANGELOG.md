@@ -4,6 +4,18 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.5] - 2026-06-12
+
+Removed a duplicate file-URL delivery path on launch.
+
+### Changed
+
+- `tfxApp.swift` no longer attaches `.onOpenURL { AppOpenDirectoryRouter.shared.open([url]) }` to the `WindowGroup` content. On macOS, SwiftUI's `.onOpenURL` modifier fires for `file://` URLs in addition to the AppKit `application(_:open:)` delegate path, so a single `open -a tfx ~/foo` invocation called `AppOpenDirectoryRouter.shared.open` twice and re-fired `openRequestedDirectoryIfNeeded` for the same directory. `FileBrowserModel.navigate(to:)`'s "target == current" guard absorbed the second call as a visible no-op, but the second republish was still real work. The AppKit delegate is now the single entry point for file-URL opens; `tfx://`-style URL scheme handling is unaffected (tfx doesn't register one).
+
+### Documentation
+
+- Version bumped to `0.8.5`, build `65`.
+
 ## [0.8.4] - 2026-06-12
 
 Per-pane font overrides in `config.toml`.

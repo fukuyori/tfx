@@ -45,9 +45,17 @@ struct tfxApp: App {
                 .environmentObject(shortcutStore)
                 .environmentObject(userCommandStore)
                 .environmentObject(previewConfigurationStore)
-                .onOpenURL { url in
-                    AppOpenDirectoryRouter.shared.open([url])
-                }
+                // File URLs are delivered through
+                // `AppOpenDirectoryDelegate.application(_:open:)`
+                // (the AppKit application-delegate path). SwiftUI's
+                // `.onOpenURL` modifier ALSO fires for file URLs on
+                // macOS, which used to invoke
+                // `AppOpenDirectoryRouter.shared.open` a second time
+                // and re-fire `openRequestedDirectoryIfNeeded` for
+                // the same directory. The `navigate(to:)` guard made
+                // that second call a visible no-op, but the duplicate
+                // republish was real work — kill the SwiftUI hook so
+                // the delegate is the single entry point.
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                     designStore.reload()
                     shortcutStore.reload()
