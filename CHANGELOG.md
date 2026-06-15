@@ -4,6 +4,25 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.6] - 2026-06-15
+
+Drag-and-drop safety inside a single file pane.
+
+### Fixed
+
+- Dragging a row in a file pane and releasing it on the **pane background** (i.e. the same directory the row already lives in) used to run through the normal copy / move pipeline, which routed the operation past `FileConflictResolver` and produced `name 2.ext` on disk. `FileBrowserModel+DropActions.runBatchDrop` and `drop(_:to:operation:completion:)` now filter / short-circuit those drop-in-place cases up front, so a same-pane release simply does nothing instead of duplicating the row.
+
+### Added
+
+- Dragging a row onto a **folder row** that lives in the same file pane now opens a confirmation alert before relocating the item. The condition is `source.parent == currentDirectory && target.parent == currentDirectory`; cross-pane drags, drops from Finder / outside apps, and drops onto sibling-of-current targets still execute without the prompt. Catches the common "I was scrolling and let go on the wrong folder row" mistake. Alert is wired into `FileBrowserModel+DropActions.confirmSameListingFolderDropIfNeeded(...)` and surfaces:
+  - **Single-item move/copy**: e.g. 「`report.pdf` を `archive` に移動しますか?」 / `Move "report.pdf" into "archive"?`
+  - **Multi-item move/copy**: e.g. 「`5 件` を `archive` に移動しますか?」 / `Move 5 items into "archive"?`
+- New Japanese strings in `Localizable.xcstrings`: `Copy`, `Move`, `Copy "%@" into "%@"?`, `Move "%@" into "%@"?`, `Copy %lld items into "%@"?`, `Move %lld items into "%@"?`, and the informative text for the alert.
+
+### Documentation
+
+- Version bumped to `0.8.6`, build `66`.
+
 ## [0.8.5] - 2026-06-12
 
 Removed a duplicate file-URL delivery path on launch.

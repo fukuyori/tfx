@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import Foundation
 import UniformTypeIdentifiers
 
@@ -58,10 +59,41 @@ extension FileBrowserModel {
         operation: FileClipboard.Operation,
         completion: (() -> Void)?
     ) {
+        // Drop-in-place is a no-op: copying a file onto the same
+        // folder it already lives in would synthesize a
+        // "<name> 2.ext" via the conflict resolver, and a move
+        // there has no work to do. Neither matches the user
+        // intent for "I let go of the drag inside the same pane".
+        // Filter those rows out before kicking off the copy /
+        // move pipeline so we don't show a 0-byte progress card
+        // either.
+        let targetStandardized = targetDirectory.standardizedFileURL
+        let effectiveSources = sources.filter {
+            $0.deletingLastPathComponent().standardizedFileURL != targetStandardized
+        }
+        guard !effectiveSources.isEmpty else {
+            completion?()
+            return
+        }
+
+        // Same-listing folder drop: every source AND the target
+        // folder are direct children of the current file pane.
+        // Confirm before running so a stray release while
+        // scrolling the file list doesn't quietly relocate rows
+        // into a sibling folder.
+        guard confirmSameListingFolderDropIfNeeded(
+            sources: effectiveSources,
+            targetDirectory: targetStandardized,
+            operation: operation
+        ) else {
+            completion?()
+            return
+        }
+
         let kind: FileOperationProgressViewModel.Kind = (operation == .copy) ? .copying : .moving
         runFileOperation(
             kind: kind,
-            items: sources,
+            items: effectiveSources,
             destination: targetDirectory
         ) { [weak self] added, removed in
             guard let self else { return }
@@ -175,6 +207,53 @@ extension FileBrowserModel {
         }
     }
 
+    /// Show the "are you sure?" alert when the user dragged
+    /// rows from the file list onto a folder row in the **same**
+    /// file list (both sources and target sit directly under
+    /// `currentDirectory`). Returns `true` when the operation
+    /// should proceed — either because the drop is between
+    /// different listings (cross-pane / from outside) and needs
+    /// no confirmation, or because the user clicked the action
+    /// button. Returns `false` only when the user explicitly
+    /// cancelled.
+    @MainActor
+    private func confirmSameListingFolderDropIfNeeded(
+        sources: [URL],
+        targetDirectory: URL,
+        operation: FileClipboard.Operation
+    ) -> Bool {
+        let currentDir = currentDirectory.standardizedFileURL
+        let targetParent = targetDirectory.deletingLastPathComponent().standardizedFileURL
+        guard targetParent == currentDir else { return true }
+        guard sources.allSatisfy({ $0.deletingLastPathComponent().standardizedFileURL == currentDir }) else {
+            return true
+        }
+
+        let folderName = targetDirectory.lastPathComponent
+        let count = sources.count
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        let actionTitle: String
+        switch operation {
+        case .copy:
+            actionTitle = String(localized: "Copy")
+            alert.messageText = count == 1
+                ? String(localized: "Copy \"\(sources[0].lastPathComponent)\" into \"\(folderName)\"?")
+                : String(localized: "Copy \(count) items into \"\(folderName)\"?")
+        case .move:
+            actionTitle = String(localized: "Move")
+            alert.messageText = count == 1
+                ? String(localized: "Move \"\(sources[0].lastPathComponent)\" into \"\(folderName)\"?")
+                : String(localized: "Move \(count) items into \"\(folderName)\"?")
+        }
+        alert.informativeText = String(localized: "Dragging within the same file list — confirm so a stray release doesn't relocate rows by mistake.")
+        alert.addButton(withTitle: actionTitle)
+        alert.addButton(withTitle: String(localized: "Cancel"))
+
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
     /// Quote a path for safe interpolation into a single shell
     /// command line. Wraps in single quotes and escapes any
     /// embedded single quotes via the standard `'\''` sequence.
@@ -188,6 +267,25 @@ extension FileBrowserModel {
     }
 
     func drop(_ sourceURL: URL, to targetDirectory: URL, operation: FileClipboard.Operation, completion: (() -> Void)? = nil) {
+        // Same drop-in-place guard as `runBatchDrop`: if the
+        // dragged URL already lives in the destination folder,
+        // skip the operation so we don't end up with
+        // `name 2.ext` on a same-pane drag-and-release.
+        let targetStandardized = targetDirectory.standardizedFileURL
+        if sourceURL.deletingLastPathComponent().standardizedFileURL == targetStandardized {
+            completion?()
+            return
+        }
+
+        guard confirmSameListingFolderDropIfNeeded(
+            sources: [sourceURL],
+            targetDirectory: targetStandardized,
+            operation: operation
+        ) else {
+            completion?()
+            return
+        }
+
         do {
             guard let result = try FileBrowserFileOperations.drop(sourceURL, to: targetDirectory, operation: operation) else { return }
             refreshFolderChildren(sourceURL.deletingLastPathComponent())

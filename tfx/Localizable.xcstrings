@@ -422,6 +422,60 @@
         }
       }
     },
+    "Copy" : {
+      "comment" : "Action button label confirming a copy operation in the drag-drop confirmation alert.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピー"
+          }
+        }
+      }
+    },
+    "Copy \"%@\" into \"%@\"?" : {
+      "comment" : "Drag-drop confirmation message for a single-file copy within the same file list. First %@ = source name, second %@ = destination folder name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy \"%1$@\" into \"%2$@\"?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%1$@」を「%2$@」にコピーしますか?"
+          }
+        }
+      }
+    },
+    "Copy %lld items into \"%@\"?" : {
+      "comment" : "Drag-drop confirmation message for a multi-file copy within the same file list. %lld = item count, %@ = destination folder name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy %1$lld items into \"%2$@\"?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 件を「%2$@」にコピーしますか?"
+          }
+        }
+      }
+    },
     "Copy Items" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -592,6 +646,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完了"
+          }
+        }
+      }
+    },
+    "Dragging within the same file list — confirm so a stray release doesn't relocate rows by mistake." : {
+      "comment" : "Informative text under the drag-drop confirmation alert when the source and target are both in the current file pane.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dragging within the same file list — confirm so a stray release doesn't relocate rows by mistake."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じファイル一覧の中でドラッグしています。手が滑った場合に行が意図せず移動するのを防ぐため、確認しています。"
           }
         }
       }
@@ -1208,6 +1280,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "変更日"
+          }
+        }
+      }
+    },
+    "Move" : {
+      "comment" : "Action button label confirming a move operation in the drag-drop confirmation alert.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移動"
+          }
+        }
+      }
+    },
+    "Move \"%@\" into \"%@\"?" : {
+      "comment" : "Drag-drop confirmation message for a single-file move within the same file list. First %@ = source name, second %@ = destination folder name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move \"%1$@\" into \"%2$@\"?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%1$@」を「%2$@」に移動しますか?"
+          }
+        }
+      }
+    },
+    "Move %lld items into \"%@\"?" : {
+      "comment" : "Drag-drop confirmation message for a multi-file move within the same file list. %lld = item count, %@ = destination folder name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move %1$lld items into \"%2$@\"?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 件を「%2$@」に移動しますか?"
           }
         }
       }
