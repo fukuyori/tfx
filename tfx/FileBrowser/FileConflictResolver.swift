@@ -7,6 +7,21 @@ enum FileConflictResolver {
         in directory: URL,
         operation: FileClipboard.Operation
     ) -> FileConflictDecision {
+        var batchResolution: ConflictResolution?
+        return destinationDecision(
+            for: sourceURL,
+            in: directory,
+            operation: operation,
+            batchResolution: &batchResolution
+        )
+    }
+
+    static func destinationDecision(
+        for sourceURL: URL,
+        in directory: URL,
+        operation: FileClipboard.Operation,
+        batchResolution: inout ConflictResolution?
+    ) -> FileConflictDecision {
         let destinationURL = directory.appendingPathComponent(sourceURL.lastPathComponent)
 
         if operation == .move && sourceURL.standardizedFileURL == destinationURL.standardizedFileURL {
@@ -21,7 +36,18 @@ enum FileConflictResolver {
             return .use(destinationURL, shouldReplace: false)
         }
 
-        switch FileOperationPrompt.conflictResolution(fileName: destinationURL.lastPathComponent) {
+        let resolution: ConflictResolution
+        if let batchResolution {
+            resolution = batchResolution
+        } else {
+            let choice = FileOperationPrompt.conflictResolutionChoice(fileName: destinationURL.lastPathComponent)
+            resolution = choice.resolution
+            if choice.appliesToAll {
+                batchResolution = resolution
+            }
+        }
+
+        switch resolution {
         case .replace:
             return .use(destinationURL, shouldReplace: true)
         case .keepBoth:

@@ -135,13 +135,14 @@ The release script defaults to the current project team and identities:
 - `TFX_DEVELOPMENT_TEAM=Q6GG27UYG5`
 - `TFX_APP_SIGN_IDENTITY="Developer ID Application: Noriaki Fukuyori (Q6GG27UYG5)"`
 - `TFX_PKG_SIGN_IDENTITY="Developer ID Installer: Noriaki Fukuyori (Q6GG27UYG5)"`
+- `TFX_NOTARY_PROFILE=notarytool`
 
-Override those environment variables when building with another Apple Developer account.
+Override those environment variables when building with another Apple Developer account. If the signing identities are stored outside the default keychain search path, set `TFX_SIGNING_KEYCHAIN` to that keychain path.
 
 For notarized direct-distribution builds, store a notarytool keychain profile once on the release machine:
 
 ```sh
-xcrun notarytool store-credentials tfx-notary \
+xcrun notarytool store-credentials notarytool \
     --apple-id "APPLE_ID" \
     --team-id "Q6GG27UYG5" \
     --password "APP_SPECIFIC_PASSWORD"
@@ -156,7 +157,7 @@ TFX_SKIP_NOTARIZATION=1 ./scripts/build_release_pkg.sh
 Build, submit for notarization, staple the ticket, and run Gatekeeper install assessment:
 
 ```sh
-TFX_NOTARY_PROFILE=tfx-notary ./scripts/build_release_pkg.sh
+./scripts/build_release_pkg.sh
 ```
 
 The output package is written to `artifacts/tfx-<version>.pkg`. The script verifies the app signature with `codesign`, verifies the package signature with `pkgutil`, validates the stapled ticket with `stapler`, and checks install assessment with `spctl`.

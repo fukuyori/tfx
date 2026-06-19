@@ -4,6 +4,28 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.8.8] - 2026-06-19
+
+Release packaging, paste progress, and batch conflict handling.
+
+### Added
+
+- Copy / move name-conflict alerts now include an "Apply to all conflicts" checkbox. When selected, the chosen Replace / Keep Both / Skip action is reused for the remaining conflicts in the same multi-item paste or drag-and-drop operation; Cancel still aborts the operation.
+
+### Fixed
+
+- Copy / move by paste now runs through the same byte-level progress pipeline as drag-and-drop, so long-running paste operations show the in-pane progress card and can be cancelled.
+- Folder-row drop highlights in the file list are now suppressed for the just-completed target after a drop, preventing SwiftUI's late `dropUpdated` replay from leaving a stale highlight behind.
+
+### Changed
+
+- `scripts/build_release_pkg.sh` now performs the full signed direct-distribution release flow by default: Developer ID identity checks, signed app build, timestamped signed package creation, Notary submission with the `notarytool` keychain profile, stapling, and Gatekeeper install assessment. The script also reports Xcode setup problems early and keeps `TFX_SKIP_SIGNING=1` / `TFX_SKIP_NOTARIZATION=1` escape hatches for local debugging.
+
+### Documentation
+
+- `docs/contributing.md` now documents the default `notarytool` profile and the signed + notarized release command.
+- Version bumped to `0.8.8`, build `68`.
+
 ## [0.8.7] - 2026-06-15
 
 Force-single-window the SwiftUI scene so a single `open -a tfx <dir>` invocation can't end up with two windows.

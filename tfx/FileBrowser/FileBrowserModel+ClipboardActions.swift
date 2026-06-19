@@ -71,6 +71,37 @@ extension FileBrowserModel {
             clipboard = FileClipboard(urls: clipboard.urls, operation: forcedOperation)
         }
 
+        guard !clipboard.urls.contains(where: { ZipArchiveBrowser.canCopyFromArchive($0) }) else {
+            pasteArchiveClipboard(clipboard, into: targetDirectory)
+            return
+        }
+
+        do {
+            guard let plan = try FileBrowserFileOperations.pasteOperationPlan(clipboard, into: targetDirectory) else { return }
+
+            let kind: FileOperationProgressViewModel.Kind = (clipboard.operation == .copy) ? .copying : .moving
+            runFileOperation(kind: kind, requests: plan.requests) { [weak self] added, removed in
+                guard let self else { return }
+                if plan.shouldClearClipboard {
+                    self.clipboard = nil
+                }
+                for directory in plan.affectedDirectories {
+                    self.refreshFolderChildren(directory)
+                }
+                self.updateCurrentDirectoryItems(
+                    adding: added,
+                    removing: removed,
+                    selecting: added
+                )
+                self.notifyDirectoriesChanged(Array(plan.affectedDirectories), removedURLs: removed)
+            }
+        } catch {
+            show(error)
+            reload()
+        }
+    }
+
+    private func pasteArchiveClipboard(_ clipboard: FileClipboard, into targetDirectory: URL) {
         do {
             guard let result = try FileBrowserFileOperations.paste(clipboard, into: targetDirectory) else { return }
 

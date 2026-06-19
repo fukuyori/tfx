@@ -37,11 +37,14 @@ struct FileExecuteDropDelegate: DropDelegate {
     }
 
     func dropExited(info: DropInfo) {
-        model.clearDropTargetDirectory(executableURL)
+        model.clearFileListDropTarget()
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        defer { model.clearDropTargetDirectory(executableURL) }
+        defer {
+            model.markFileListDropCompleted(on: executableURL)
+            model.clearFileListDropTarget()
+        }
         guard isEnabled else { return false }
         return model.executeDroppedFiles(
             info.itemProviders(for: [UTType.fileURL.identifier]),

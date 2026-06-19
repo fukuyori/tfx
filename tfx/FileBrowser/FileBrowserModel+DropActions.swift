@@ -90,12 +90,24 @@ extension FileBrowserModel {
             return
         }
 
+        let plan: FilePasteOperationPlan
+        do {
+            guard let resolvedPlan = try FileBrowserFileOperations.pasteOperationPlan(
+                FileClipboard(urls: effectiveSources, operation: operation),
+                into: targetDirectory
+            ) else {
+                completion?()
+                return
+            }
+            plan = resolvedPlan
+        } catch {
+            show(error)
+            completion?()
+            return
+        }
+
         let kind: FileOperationProgressViewModel.Kind = (operation == .copy) ? .copying : .moving
-        runFileOperation(
-            kind: kind,
-            items: effectiveSources,
-            destination: targetDirectory
-        ) { [weak self] added, removed in
+        runFileOperation(kind: kind, requests: plan.requests) { [weak self] added, removed in
             guard let self else { return }
             let sourceDirectories = Set(sources.map { $0.deletingLastPathComponent().standardizedFileURL })
             for dir in sourceDirectories {
@@ -107,7 +119,7 @@ extension FileBrowserModel {
                 removing: removed,
                 selecting: added
             )
-            let affectedDirectories = sourceDirectories.union([targetDirectory.standardizedFileURL])
+            let affectedDirectories = sourceDirectories.union(plan.affectedDirectories)
             self.notifyDirectoriesChanged(
                 Array(affectedDirectories),
                 removedURLs: removed

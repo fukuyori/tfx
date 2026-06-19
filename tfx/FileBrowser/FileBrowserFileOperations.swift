@@ -46,6 +46,12 @@ struct FilePasteResult {
     let shouldClearClipboard: Bool
 }
 
+struct FilePasteOperationPlan {
+    let requests: [FileOperationRequest]
+    let affectedDirectories: Set<URL>
+    let shouldClearClipboard: Bool
+}
+
 struct FileCreateFolderResult {
     let folderURL: URL
     let affectedDirectory: URL
@@ -248,6 +254,7 @@ enum FileBrowserFileOperations {
         var pastedURLs: [URL] = []
         var removedURLs: [URL] = []
         var affectedDirectories = Set<URL>()
+        var batchConflictResolution: ConflictResolution?
 
         for sourceURL in clipboard.urls {
             if ZipArchiveBrowser.canCopyFromArchive(sourceURL) {
@@ -276,7 +283,8 @@ enum FileBrowserFileOperations {
             let decision = FileConflictResolver.destinationDecision(
                 for: sourceURL,
                 in: targetDirectory,
-                operation: clipboard.operation
+                operation: clipboard.operation,
+                batchResolution: &batchConflictResolution
             )
 
             switch decision {
@@ -306,6 +314,52 @@ enum FileBrowserFileOperations {
         return FilePasteResult(
             pastedURLs: pastedURLs,
             removedURLs: removedURLs,
+            affectedDirectories: affectedDirectories,
+            shouldClearClipboard: clipboard.operation == .move
+        )
+    }
+
+    static func pasteOperationPlan(_ clipboard: FileClipboard, into targetDirectory: URL) throws -> FilePasteOperationPlan? {
+        guard ZipArchiveBrowser.location(for: targetDirectory) == nil else {
+            throw ZipArchiveBrowserError.unsupportedWrite
+        }
+
+        var requests: [FileOperationRequest] = []
+        var affectedDirectories: Set<URL> = [targetDirectory.standardizedFileURL]
+        var batchConflictResolution: ConflictResolution?
+
+        for sourceURL in clipboard.urls {
+            let decision = FileConflictResolver.destinationDecision(
+                for: sourceURL,
+                in: targetDirectory,
+                operation: clipboard.operation,
+                batchResolution: &batchConflictResolution
+            )
+
+            switch decision {
+            case .cancel:
+                return nil
+            case .skip:
+                continue
+            case let .use(destinationURL, shouldReplace):
+                requests.append(
+                    FileOperationRequest(
+                        sourceURL: sourceURL,
+                        destinationURL: destinationURL,
+                        shouldReplaceDestination: shouldReplace
+                    )
+                )
+
+                if clipboard.operation == .move {
+                    affectedDirectories.insert(sourceURL.deletingLastPathComponent().standardizedFileURL)
+                }
+            }
+        }
+
+        guard !requests.isEmpty else { return nil }
+
+        return FilePasteOperationPlan(
+            requests: requests,
             affectedDirectories: affectedDirectories,
             shouldClearClipboard: clipboard.operation == .move
         )

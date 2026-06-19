@@ -128,6 +128,9 @@ final class FileBrowserModel: ObservableObject {
     /// post-drop `dropUpdated` replays cannot re-open the accent line.
     var pinnedExternalDropCompletedAt: Date?
     static let pinDropSuppressionWindow: TimeInterval = 0.6
+    var fileListDropCompletedDirectory: URL?
+    var fileListDropCompletedAt: Date?
+    static let fileListDropSuppressionWindow: TimeInterval = 0.6
     /// Caches per-directory Git root resolution so re-entering a
     /// previously visited folder skips the `git rev-parse` cost. The
     /// optional value distinguishes "outside any work tree" (`.some(nil)`)
@@ -243,6 +246,14 @@ final class FileBrowserModel: ObservableObject {
     }
 
     func setDropTargetDirectory(_ url: URL?) {
+        if let url,
+           let completedDirectory = fileListDropCompletedDirectory,
+           let completedAt = fileListDropCompletedAt,
+           Date().timeIntervalSince(completedAt) < Self.fileListDropSuppressionWindow,
+           completedDirectory.standardizedFileURL == url.standardizedFileURL {
+            return
+        }
+
         let nextTarget = FileBrowserDropTargetState.setting(url, current: highlightedDropDirectory)
         guard highlightedDropDirectory != nextTarget else { return }
         highlightedDropDirectory = nextTarget
@@ -252,6 +263,17 @@ final class FileBrowserModel: ObservableObject {
         let nextTarget = FileBrowserDropTargetState.clearing(url, current: highlightedDropDirectory)
         guard highlightedDropDirectory != nextTarget else { return }
         highlightedDropDirectory = nextTarget
+    }
+
+    func markFileListDropCompleted(on url: URL?) {
+        fileListDropCompletedDirectory = url?.standardizedFileURL
+        fileListDropCompletedAt = Date()
+    }
+
+    func clearFileListDropTarget() {
+        if highlightedDropDirectory != nil {
+            highlightedDropDirectory = nil
+        }
     }
 
     func setPaneDropTarget(_ active: Bool) {

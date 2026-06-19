@@ -78,6 +78,12 @@ struct FileDropOperationResult {
     let affectedDirectories: Set<URL>
 }
 
+struct FileOperationRequest {
+    let sourceURL: URL
+    let destinationURL: URL
+    let shouldReplaceDestination: Bool
+}
+
 struct FileMouseRangeSelectionState {
     let anchorItemID: FileItem.ID
     let originalSelectedItemIDs: Set<FileItem.ID>
@@ -105,6 +111,11 @@ enum ConflictResolution {
     case keepBoth
     case skip
     case cancel
+}
+
+struct FileConflictResolutionChoice {
+    let resolution: ConflictResolution
+    let appliesToAll: Bool
 }
 
 struct InlineNameEdit: Equatable {

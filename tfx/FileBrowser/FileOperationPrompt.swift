@@ -4,6 +4,10 @@ import Foundation
 
 enum FileOperationPrompt {
     static func conflictResolution(fileName: String) -> ConflictResolution {
+        conflictResolutionChoice(fileName: fileName).resolution
+    }
+
+    static func conflictResolutionChoice(fileName: String) -> FileConflictResolutionChoice {
         let alert = NSAlert()
         alert.messageText = String(localized: "Item Already Exists")
         alert.informativeText = String(localized: "\"\(fileName)\" already exists in the destination.")
@@ -13,16 +17,26 @@ enum FileOperationPrompt {
         alert.addButton(withTitle: String(localized: "Skip"))
         alert.addButton(withTitle: String(localized: "Cancel"))
 
+        let applyToAll = NSButton(checkboxWithTitle: String(localized: "Apply to all conflicts"), target: nil, action: nil)
+        applyToAll.state = .off
+        alert.accessoryView = applyToAll
+
+        let resolution: ConflictResolution
         switch alert.runModal() {
         case .alertFirstButtonReturn:
-            return .replace
+            resolution = .replace
         case .alertSecondButtonReturn:
-            return .keepBoth
+            resolution = .keepBoth
         case .alertThirdButtonReturn:
-            return .skip
+            resolution = .skip
         default:
-            return .cancel
+            resolution = .cancel
         }
+
+        return FileConflictResolutionChoice(
+            resolution: resolution,
+            appliesToAll: applyToAll.state == .on && resolution != .cancel
+        )
     }
 
     static func text(title: String, message: String, defaultValue: String) -> String? {

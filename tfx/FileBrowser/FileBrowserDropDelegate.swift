@@ -45,7 +45,7 @@ struct FileBrowserDropDelegate: DropDelegate {
         if isPaneLevelDrop {
             model.setPaneDropTarget(false)
         } else {
-            model.clearDropTargetDirectory(highlightedDirectory)
+            model.clearFileListDropTarget()
         }
     }
 
@@ -54,16 +54,26 @@ struct FileBrowserDropDelegate: DropDelegate {
             if isPaneLevelDrop {
                 model.setPaneDropTarget(false)
             } else {
-                model.clearDropTargetDirectory(highlightedDirectory)
+                model.markFileListDropCompleted(on: highlightedDirectory)
+                model.clearFileListDropTarget()
             }
         }
 
         guard isEnabled else { return false }
+        let completion = {
+            if isPaneLevelDrop {
+                model.setPaneDropTarget(false)
+            } else {
+                model.markFileListDropCompleted(on: highlightedDirectory)
+                model.clearFileListDropTarget()
+            }
+            reloadRelatedPanes?()
+        }
         return model.moveDroppedFiles(
             info.itemProviders(for: [UTType.fileURL.identifier]),
             to: targetDirectory,
             operation: dropOperation,
-            completion: reloadRelatedPanes
+            completion: completion
         )
     }
 

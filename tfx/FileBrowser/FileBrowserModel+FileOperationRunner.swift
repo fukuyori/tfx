@@ -21,9 +21,37 @@ extension FileBrowserModel {
         destination: URL,
         completion: @escaping (_ added: [URL], _ removedFromSource: [URL]) -> Void
     ) {
+        let requests = items.map { source in
+            FileOperationRequest(
+                sourceURL: source,
+                destinationURL: FileConflictResolver.uniqueDestination(
+                    for: source.lastPathComponent,
+                    in: destination
+                ),
+                shouldReplaceDestination: false
+            )
+        }
+
+        runFileOperation(kind: kind, requests: requests, completion: completion)
+    }
+
+    func runFileOperation(
+        kind: FileOperationProgressViewModel.Kind,
+        requests: [FileOperationRequest],
+        completion: @escaping (_ added: [URL], _ removedFromSource: [URL]) -> Void
+    ) {
         // Pre-flight: tally the total byte size so the progress
         // bar reflects actual work rather than item count.
-        let totalBytes = items.reduce(0) { $0 + SafeFileCopier.totalSize(of: $1) }
+        let totalBytes = requests.reduce(Int64(0)) { total, request in
+            let source = request.sourceURL
+            let scoped = source.startAccessingSecurityScopedResource()
+            defer {
+                if scoped {
+                    source.stopAccessingSecurityScopedResource()
+                }
+            }
+            return total + SafeFileCopier.totalSize(of: source)
+        }
         let progress = Progress(totalUnitCount: max(totalBytes, 1))
         progress.kind = .file
         // `Progress.FileOperationKind` defines `.copying` and
@@ -33,24 +61,34 @@ extension FileBrowserModel {
         progress.fileOperationKind = .copying
         // The current file URL is updated per-item below.
         let viewModel = FileOperationProgressViewModel(kind: kind, progress: progress)
+        let shouldRemoveSource = kind == .moving
         activeOperation = viewModel
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var added: [URL] = []
             var removed: [URL] = []
 
-            for source in items {
+            for request in requests {
                 if progress.isCancelled { break }
+                let source = request.sourceURL
+                let destURL = request.destinationURL
                 progress.fileURL = source
 
-                let destURL = FileConflictResolver.uniqueDestination(
-                    for: source.lastPathComponent,
-                    in: destination
-                )
                 do {
+                    let scoped = source.startAccessingSecurityScopedResource()
+                    defer {
+                        if scoped {
+                            source.stopAccessingSecurityScopedResource()
+                        }
+                    }
+
+                    if request.shouldReplaceDestination {
+                        try FileManager.default.removeItem(at: destURL)
+                    }
+
                     try SafeFileCopier.copy(from: source, to: destURL, progress: progress)
                     added.append(destURL)
-                    if kind == .moving {
+                    if shouldRemoveSource {
                         // Source-side cleanup only after the
                         // destination is fully written and
                         // verified by `copy(...)` returning
