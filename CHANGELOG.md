@@ -4,6 +4,26 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.0] - 2026-06-26
+
+Pane layout refactor for window-size-stable side panes and adjustable split file lists.
+
+### Changed
+
+- Pane visibility changes no longer resize the window directly. The current window content area is reallocated instead, with the window minimum derived from visible panes' hard minimum sizes.
+- The horizontal folder/file/preview layout is resolved through a dedicated pane layout helper and `MainPaneSplitView`, keeping visible panes above their minimum widths while avoiding file-list overlap.
+- The folder tree remains width-stable on window growth, can be resized by dragging its divider, and only shrinks as the last fallback when the window is narrowed.
+- The preview pane keeps a hard minimum width and is no longer pushed to zero width by the file list after relaunch.
+- Split file-list mode now starts at 50:50 every time it is shown, while allowing the divider between left and right file lists to be dragged for the current split session. That split ratio is intentionally not persisted.
+- The built-in terminal pane now contributes its minimum height to the window minimum while visible, and file-list / terminal heights have explicit minimums.
+- Split release packaging so `scripts/build_release_app.sh` only builds the unsigned release app and writes release metadata. Signing and notarization are handled outside tracked documentation.
+
+### Documentation
+
+- Added `docs/pane-layout-refactor-plan.md` describing the pane layout behavior, implementation phases, resize priorities, and verification plan.
+- Updated architecture and roadmap documentation for the pane layout refactor.
+- Version bumped to `0.9.0`, build `69`.
+
 ## [0.8.8] - 2026-06-19
 
 Release packaging, paste progress, and batch conflict handling.
@@ -19,11 +39,11 @@ Release packaging, paste progress, and batch conflict handling.
 
 ### Changed
 
-- `scripts/build_release_pkg.sh` now performs the full signed direct-distribution release flow by default: Developer ID identity checks, signed app build, timestamped signed package creation, Notary submission with the `notarytool` keychain profile, stapling, and Gatekeeper install assessment. The script also reports Xcode setup problems early and keeps `TFX_SKIP_SIGNING=1` / `TFX_SKIP_NOTARIZATION=1` escape hatches for local debugging.
+- Improved the local direct-distribution release flow for signed package creation, notarization, stapling, and Gatekeeper install assessment.
 
 ### Documentation
 
-- `docs/contributing.md` now documents the default `notarytool` profile and the signed + notarized release command.
+- `docs/contributing.md` documented the signed direct-distribution release flow for that release.
 - Version bumped to `0.8.8`, build `68`.
 
 ## [0.8.7] - 2026-06-15
@@ -1010,7 +1030,7 @@ This release closes out the short-term drag-and-drop / context-menu cleanup trac
 
 ### Added
 
-- Added `scripts/build_release_pkg.sh` for Developer ID signed release pkg builds.
+- Added a local helper for Developer ID signed release package builds.
 
 ### Fixed
 

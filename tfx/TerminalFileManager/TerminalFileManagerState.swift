@@ -196,7 +196,14 @@ extension TerminalFileManagerView {
     /// directory-sync side effect that pulls the other pane onto
     /// the active directory when split first turns on.
     func onSplitViewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
-        guard oldValue != newValue, newValue else { return }
+        guard oldValue != newValue else { return }
+        if newValue {
+            fileSplitRatio = 0.5
+            fileSplitDragStart = nil
+        } else {
+            fileSplitDragStart = nil
+            return
+        }
         let sourceModel = activeModel
         let targetModel = activePane == .left ? rightModel : leftModel
         targetModel.navigate(
@@ -207,9 +214,9 @@ extension TerminalFileManagerView {
 
     /// Side-effect handler for `isFolderTreeVisible` changes.
     /// `MainPaneSplitView.Coordinator` owns the window
-    /// `contentMinSize` and the toggle-driven resize; this handler
-    /// only owns the focus fallback (arrow keys / Return must not
-    /// route to an invisible pane).
+    /// `contentMinSize` and pane reallocation; this handler only
+    /// owns the focus fallback (arrow keys / Return must not route
+    /// to an invisible pane).
     func onFolderTreeVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         guard oldValue != newValue else { return }
         if !newValue, activeArea == .folderTree {
@@ -219,8 +226,8 @@ extension TerminalFileManagerView {
 
     /// Side-effect handler for `isPreviewVisible` changes.
     /// `MainPaneSplitView.Coordinator` owns the window
-    /// `contentMinSize` and the toggle-driven resize; this handler
-    /// has nothing else to do.
+    /// `contentMinSize` and pane reallocation; this handler has
+    /// nothing else to do.
     func onPreviewVisibilityChange(from oldValue: Bool, to newValue: Bool) {
         _ = (oldValue, newValue)
     }

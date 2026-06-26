@@ -32,6 +32,13 @@ enum TerminalFileManagerLayout {
     /// for quick browsing.
     static let minimumWindowHeight: CGFloat = 300
 
+    static func minimumWindowHeight(isTerminalPaneVisible: Bool) -> CGFloat {
+        if isTerminalPaneVisible {
+            return minimumWindowHeight + minimumTerminalPaneHeight + dividerWidth
+        }
+        return minimumWindowHeight
+    }
+
     // MARK: - Folder tree
 
     static let defaultFolderTreeWidth: Double = 200
@@ -119,20 +126,16 @@ enum TerminalFileManagerLayout {
     /// Total window content width required for the given pane
     /// configuration. The window may not shrink below this value.
     ///
-    /// Each `PaneSnapshot` contributes its *current* width — clamped
-    /// up to the pane's own minimum — plus one divider. So dragging
-    /// the folder wider raises the window floor; dragging it narrower
-    /// lowers it. This is the property that keeps `NSSplitView` from
-    /// being asked to lay out in a window narrower than the user's
-    /// stored pane widths need, which would otherwise force the
-    /// split to shrink one of the panes below its stored value.
+    /// Each visible side pane contributes its hard minimum plus one
+    /// divider. User-stored widths are preferences for normal
+    /// allocation, not part of the window floor.
     static func minimumWindowWidth(
         visiblePanes: [PaneSnapshot],
         isSplitViewVisible: Bool
     ) -> CGFloat {
         var width = minimumFileAreaWidth(isSplitViewVisible: isSplitViewVisible)
         for snapshot in visiblePanes {
-            width += max(snapshot.pane.minimumWidth, snapshot.width) + dividerWidth
+            width += snapshot.pane.minimumWidth + dividerWidth
         }
         return width
     }

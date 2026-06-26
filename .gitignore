@@ -31,7 +31,7 @@ Package.resolved
 *.xcarchive
 *.pkg
 artifacts/
-scripts/build_release_pkg.sh
+scripts/sign_notarize_release_pkg.sh
 
 # Logs and temporary files
 *.log
@@ -43,3 +43,4 @@ scripts/build_release_pkg.sh
 .env
 .env.*
 *.profraw
+.claude/

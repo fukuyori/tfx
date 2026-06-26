@@ -85,10 +85,10 @@ enum PaneSide {
 /// A pane's contribution to the layout at one moment in time: which
 /// pane and how wide it is currently rendering. Used by
 /// `TerminalFileManagerLayout.minimumWindowWidth(visiblePanes:...)`
-/// so the window's content-minimum follows the user's stored pane
-/// widths — not the pane's hard minimum. This is what stops the
-/// window from being dragged narrow enough to force NSSplitView to
-/// squeeze the folder pane below the width the user set.
+/// so the window's content-minimum follows the set of visible panes.
+/// The width remains in the snapshot for callers that already have a
+/// measured pane state, but the minimum-width calculation intentionally
+/// ignores it: stored widths are preferences, not window floors.
 struct PaneSnapshot {
     let pane: LayoutPane
     let width: CGFloat

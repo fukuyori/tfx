@@ -19,6 +19,7 @@ Project documentation is written in English by default. `README.ja.md` is the Ja
 | [`docs/detailed-design.md`](detailed-design.md) | Current architecture, state model, file operations, persistence, limitations, and test focus. |
 | [`docs/code-organization.md`](code-organization.md) | Source layout, naming rules, and placement rules for Swift files. |
 | [`docs/file-manager-implementation-plan.md`](file-manager-implementation-plan.md) | Implementation history and phase status for the file manager feature set. |
+| [`docs/pane-layout-refactor-plan.md`](pane-layout-refactor-plan.md) | Planned pane-layout behavior and phased refactor plan for non-resizing pane toggles and temporary file-list split resizing. |
 | [`docs/development-roadmap.md`](development-roadmap.md) | Planned future work, prioritized in recommended execution order. |
 | [`docs/contributing.md`](contributing.md) | Local build and test commands, CI expectations, code-style conventions, and release-process notes. |
 
@@ -28,6 +29,7 @@ Project documentation is written in English by default. `README.ja.md` is the Ja
 - Update `docs/configuration.md` and `docs/configuration.ja.md` when user-editable configuration keys, file locations, defaults, or validation rules change.
 - Update `docs/detailed-design.md` when the current architecture or behavior changes.
 - Update `docs/file-manager-implementation-plan.md` when a planned phase changes status.
+- Update `docs/pane-layout-refactor-plan.md` while the pane-layout refactor is being planned or implemented.
 - Update `docs/development-roadmap.md` when future work is completed, removed, or reprioritized.
 - Update `docs/contributing.md` when build, test, CI, or release procedures change.
 - Update `CHANGELOG.md` for version changes and notable user-facing changes.

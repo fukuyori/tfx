@@ -408,7 +408,7 @@ Options:
 
 Notes for whoever picks this up:
 
-- Diagnostic logging exists: set `Developer.showsPaneLayoutLogs = true` in `UserDefaults` (or `TFX_PANE_LAYOUT_LOGS=1` in the environment) to print `[tfx pane]` lines from `MainPaneSplitView.Coordinator` covering `applyContentMinSize`, `resizeWindowForToggleIfNeeded`, and `splitViewDidResizeSubviews` decisions.
+- Diagnostic logging exists: set `Developer.showsPaneLayoutLogs = true` in `UserDefaults` (or `TFX_PANE_LAYOUT_LOGS=1` in the environment) to print `[tfx pane]` lines from `MainPaneSplitView.Coordinator` covering `applyContentMinSize` and `splitViewDidResizeSubviews` decisions.
 - The persistence guards in `splitViewDidResizeSubviews` (Phase G-3.2c) already prevent NSSplitView's mid-layout passes from corrupting stored widths, so widening the window restores pane widths cleanly. The only remaining symptom is visual clipping while the window is below the pin.
 
 ### 2.13 Markdown Preview Extensions

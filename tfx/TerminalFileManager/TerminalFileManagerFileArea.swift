@@ -1,40 +1,111 @@
 #if os(macOS)
 import SwiftUI
 
+struct FileSplitDragStart {
+    let availableWidth: CGFloat
+    let ratio: CGFloat
+}
+
 extension TerminalFileManagerView {
     @ViewBuilder
     var fileArea: some View {
         if isSplitViewVisible {
             GeometryReader { geometry in
                 let totalWidth = max(geometry.size.width, 0)
-                let dividerWidth: CGFloat = 1
-                let availableWidth = max(0, totalWidth - dividerWidth)
-                // Split view always shows both panes at equal width.
-                // The user adjusts the file-area total via the
-                // folder / preview dividers — there's no left/right
-                // adjustment inside the split. The left pane is
-                // rounded so the divider lands on a whole pixel; the
-                // right pane absorbs the half-point residue.
-                let leftWidth = (availableWidth / 2).rounded()
-                let rightWidth = max(0, availableWidth - leftWidth)
+                let dividerWidth = TerminalFileManagerLayout.dividerWidth
+                let splitLayout = PaneLayoutResolver.fileSplit(
+                    totalWidth: totalWidth,
+                    dividerWidth: dividerWidth,
+                    ratio: fileSplitRatio
+                )
 
                 HStack(spacing: 0) {
                     filePane(.left)
-                        .frame(width: leftWidth, height: geometry.size.height)
+                        .frame(width: splitLayout.leftWidth, height: geometry.size.height)
 
-                    SplitDivider()
+                    FileSplitDragHandle(
+                        canResize: splitLayout.canResize,
+                        onStarted: {
+                            fileSplitDragStart = FileSplitDragStart(
+                                availableWidth: max(0, totalWidth - dividerWidth),
+                                ratio: splitLayout.effectiveRatio
+                            )
+                        },
+                        onChanged: { translation in
+                            updateFileSplitRatio(
+                                translation: translation,
+                                totalWidth: totalWidth,
+                                dividerWidth: dividerWidth
+                            )
+                        },
+                        onEnded: {
+                            fileSplitDragStart = nil
+                        }
+                    )
                         .frame(width: dividerWidth, height: geometry.size.height)
 
                     filePane(.right)
-                        .frame(width: rightWidth, height: geometry.size.height)
+                        .frame(width: splitLayout.rightWidth, height: geometry.size.height)
                 }
                 .frame(width: totalWidth, height: geometry.size.height)
                 .clipped()
+                .onChange(of: geometry.size.width) { oldValue, newValue in
+                    reconcileFileSplitRatioAfterWidthChange(
+                        oldWidth: oldValue,
+                        newWidth: newValue,
+                        dividerWidth: dividerWidth
+                    )
+                }
             }
         } else {
             filePane(activePane)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    func updateFileSplitRatio(
+        translation: Double,
+        totalWidth: CGFloat,
+        dividerWidth: CGFloat
+    ) {
+        let availableWidth = max(0, totalWidth - dividerWidth)
+        guard availableWidth > TerminalFileManagerLayout.minimumFilePaneWidth * 2 else { return }
+
+        let start = fileSplitDragStart ?? FileSplitDragStart(
+            availableWidth: availableWidth,
+            ratio: PaneLayoutResolver.fileSplit(
+                totalWidth: totalWidth,
+                dividerWidth: dividerWidth,
+                ratio: fileSplitRatio
+            ).effectiveRatio
+        )
+        if fileSplitDragStart == nil {
+            fileSplitDragStart = start
+        }
+
+        let minimum = TerminalFileManagerLayout.minimumFilePaneWidth
+        let proposedLeftWidth = start.availableWidth * start.ratio + CGFloat(translation)
+        let clampedLeftWidth = min(max(proposedLeftWidth, minimum), availableWidth - minimum)
+        fileSplitRatio = clampedLeftWidth / availableWidth
+    }
+
+    func reconcileFileSplitRatioAfterWidthChange(
+        oldWidth: CGFloat,
+        newWidth: CGFloat,
+        dividerWidth: CGFloat
+    ) {
+        let oldLayout = PaneLayoutResolver.fileSplit(
+            totalWidth: max(0, oldWidth),
+            dividerWidth: dividerWidth,
+            ratio: fileSplitRatio
+        )
+        let newLayout = PaneLayoutResolver.fileSplit(
+            totalWidth: max(0, newWidth),
+            dividerWidth: dividerWidth,
+            ratio: oldLayout.effectiveRatio
+        )
+        guard abs(newLayout.effectiveRatio - fileSplitRatio) > 0.0001 else { return }
+        fileSplitRatio = newLayout.effectiveRatio
     }
 
     func filePane(_ paneID: BrowserPaneID) -> some View {

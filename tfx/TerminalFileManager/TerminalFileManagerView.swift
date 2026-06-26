@@ -30,6 +30,8 @@ struct TerminalFileManagerView: View {
     @State private var folderDragStartWidth: Double?
     @State private var previewDragStartWidth: Double?
     @State private var terminalDragStartHeight: Double?
+    @State var fileSplitRatio: CGFloat = 0.5
+    @State var fileSplitDragStart: FileSplitDragStart?
     @State var isFileListSettingsPresented = false
     @State var hoverHelpText = ""
     @State private var hasAppliedStartupFocus = false
@@ -167,13 +169,11 @@ struct TerminalFileManagerView: View {
                 name: "TerminalFileManagerWindow",
                 allowsTransparency: design.opacity.background < 1
             ))
-            // `NSWindow.contentMinSize` and the toggle-driven
-            // window resize are owned by
-            // `MainPaneSplitView.Coordinator` — see
-            // `applyContentMinSize` / `resizeWindowForToggleIfNeeded`
-            // in that file. Adding another writer here would split
-            // ownership again, which is exactly what the previous
-            // round of layout bugs traced back to.
+            // `NSWindow.contentMinSize` is owned by
+            // `MainPaneSplitView.Coordinator`. Pane toggles reallocate
+            // the existing window content instead of resizing the
+            // window directly, so this view must not add a second
+            // content-minimum writer.
             .background(KeyboardEventHandler(isEnabled: keyboardHandlerEnabled) { event in
                 handleKeyEvent(event)
             })
@@ -371,15 +371,9 @@ struct TerminalFileManagerView: View {
             previewContent: AnyView(PreviewPane(urls: activeModel.previewURLs)),
             isFolderVisible: isFolderTreeVisible,
             isPreviewVisible: isPreviewVisible,
-            // Folder tree is intentionally width-locked: there are
-            // only two valid states, hidden (0) and shown
-            // (`defaultFolderTreeWidth`). Any "drag the folder
-            // divider" gesture would just snap back. The setter
-            // is a no-op so NSSplitView's transient frame widths
-            // during toggles can't corrupt the stored value.
             folderWidth: Binding(
-                get: { TerminalFileManagerLayout.defaultFolderTreeWidth },
-                set: { _ in }
+                get: { folderTreeWidth },
+                set: { setStoredWidth(.folderTree, $0) }
             ),
             previewWidth: Binding(
                 get: { previewWidth },
@@ -389,7 +383,9 @@ struct TerminalFileManagerView: View {
             fileAreaMinimumWidth: TerminalFileManagerLayout.minimumFileAreaWidth(
                 isSplitViewVisible: isSplitViewVisible
             ),
-            minimumWindowHeight: TerminalFileManagerLayout.minimumWindowHeight
+            minimumWindowHeight: TerminalFileManagerLayout.minimumWindowHeight(
+                isTerminalPaneVisible: isTerminalPaneVisible
+            )
         )
     }
 

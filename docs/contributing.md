@@ -124,48 +124,18 @@ When changing user-facing behavior, update both `README.md` and `README.ja.md` t
 
 Releases are built from a clean working tree after bumping `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`, `README.md`, `README.ja.md`, and `CHANGELOG.md`.
 
-Before building a signed release, confirm that both Developer ID identities are available in the login keychain:
+Build the release app. This step only compiles the app and writes
+release metadata to `artifacts/release-info.env`; it does not sign,
+package, or notarize anything.
 
 ```sh
-security find-identity -v -p codesigning
+./scripts/build_release_app.sh
 ```
 
-The release script defaults to the current project team and identities:
-
-- `TFX_DEVELOPMENT_TEAM=Q6GG27UYG5`
-- `TFX_APP_SIGN_IDENTITY="Developer ID Application: Noriaki Fukuyori (Q6GG27UYG5)"`
-- `TFX_PKG_SIGN_IDENTITY="Developer ID Installer: Noriaki Fukuyori (Q6GG27UYG5)"`
-- `TFX_NOTARY_PROFILE=notarytool`
-
-Override those environment variables when building with another Apple Developer account. If the signing identities are stored outside the default keychain search path, set `TFX_SIGNING_KEYCHAIN` to that keychain path.
-
-For notarized direct-distribution builds, store a notarytool keychain profile once on the release machine:
+Unsigned local release app builds remain available for debugging:
 
 ```sh
-xcrun notarytool store-credentials notarytool \
-    --apple-id "APPLE_ID" \
-    --team-id "Q6GG27UYG5" \
-    --password "APP_SPECIFIC_PASSWORD"
-```
-
-Build a signed package without notarization:
-
-```sh
-TFX_SKIP_NOTARIZATION=1 ./scripts/build_release_pkg.sh
-```
-
-Build, submit for notarization, staple the ticket, and run Gatekeeper install assessment:
-
-```sh
-./scripts/build_release_pkg.sh
-```
-
-The output package is written to `artifacts/tfx-<version>.pkg`. The script verifies the app signature with `codesign`, verifies the package signature with `pkgutil`, validates the stapled ticket with `stapler`, and checks install assessment with `spctl`.
-
-Unsigned local release builds remain available for debugging:
-
-```sh
-TFX_SKIP_SIGNING=1 ./scripts/build_release_pkg.sh
+./scripts/build_release_app.sh
 ```
 
 Sparkle appcast signing and channel layout will be added here when §2.7 lands.
