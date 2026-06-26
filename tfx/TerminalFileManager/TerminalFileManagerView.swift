@@ -21,6 +21,7 @@ struct TerminalFileManagerView: View {
     @AppStorage("TerminalFileManager.folderTreeWidth") var folderTreeWidth = TerminalFileManagerLayout.defaultFolderTreeWidth
     @AppStorage("TerminalFileManager.previewWidth") var previewWidth = TerminalFileManagerLayout.defaultPreviewPaneWidth
     @AppStorage("TerminalFileManager.fileNameColumnWidth") var fileNameColumnWidth = TerminalFileManagerLayout.defaultFileNameColumnWidth
+    @AppStorage("TerminalFileManager.fileColumnWidths") var fileColumnWidthsRaw = ""
     @AppStorage("TerminalFileManager.fileColumnConfiguration") var fileColumnConfigurationRaw = FileListColumnConfiguration.defaultRawValue
     @StateObject private var openDirectoryRouter = AppOpenDirectoryRouter.shared
     @State var leftTabs: [FilePaneTab]
@@ -30,6 +31,8 @@ struct TerminalFileManagerView: View {
     @State private var folderDragStartWidth: Double?
     @State private var previewDragStartWidth: Double?
     @State private var terminalDragStartHeight: Double?
+    @State private var terminalDisplayHeight: Double?
+    @State var rightFileColumnWidths = FileListColumnWidths()
     @State var fileSplitRatio: CGFloat = 0.5
     @State var fileSplitDragStart: FileSplitDragStart?
     @State var isFileListSettingsPresented = false
@@ -214,6 +217,7 @@ struct TerminalFileManagerView: View {
                 onPaneDirectoryChange(.right)
             }
             .onChange(of: isTerminalPaneVisible) { _, isVisible in
+                terminalDisplayHeight = nil
                 onTerminalPaneVisibilityChange(isVisible: isVisible)
             }
             .onChange(of: terminalModel.isRunning) { _, isRunning in
@@ -336,8 +340,15 @@ struct TerminalFileManagerView: View {
         // remains so the `Σ = geometry.size.width` invariant still
         // holds exactly.
         let totalWidth = geometry.size.width
-        let terminalHeight = isTerminalPaneVisible ? clampedTerminalHeight(totalHeight: geometry.size.height) : 0
-        let mainHeight = max(TerminalFileManagerLayout.minimumMainAreaHeight, geometry.size.height - terminalHeight - (isTerminalPaneVisible ? 1 : 0))
+        let dividerHeight = isTerminalPaneVisible ? TerminalFileManagerLayout.dividerWidth : 0
+        let verticalLayout = PaneLayoutResolver.verticalPanes(
+            totalHeight: geometry.size.height,
+            dividerHeight: dividerHeight,
+            isTerminalVisible: isTerminalPaneVisible,
+            displayedTerminalHeight: terminalDisplayHeight ?? terminalPaneHeight
+        )
+        let terminalHeight = verticalLayout.terminalHeight
+        let mainHeight = verticalLayout.mainHeight
 
         return VStack(spacing: 0) {
             mainPaneSplit
@@ -346,12 +357,15 @@ struct TerminalFileManagerView: View {
 
             if isTerminalPaneVisible {
                 terminalArea(totalHeight: geometry.size.height, terminalHeight: terminalHeight)
-                    .frame(width: totalWidth, height: terminalHeight + 1)
+                    .frame(width: totalWidth, height: terminalHeight + dividerHeight)
                     .clipped()
             }
         }
         .frame(width: totalWidth, height: geometry.size.height, alignment: .top)
         .clipped()
+        .onChange(of: geometry.size.height) { oldHeight, newHeight in
+            updateTerminalDisplayHeight(from: oldHeight, to: newHeight)
+        }
     }
 
     /// Folder | file area | preview, backed by an `NSSplitView` so
@@ -467,7 +481,7 @@ struct TerminalFileManagerView: View {
                 terminalDragStartHeight = terminalPaneHeight
             } onChanged: { translation in
                 let baseHeight = terminalDragStartHeight ?? terminalPaneHeight
-                terminalPaneHeight = clamp(
+                let newHeight = clamp(
                     baseHeight - translation,
                     min: Double(TerminalFileManagerLayout.minimumTerminalPaneHeight),
                     max: max(
@@ -475,6 +489,8 @@ struct TerminalFileManagerView: View {
                         Double(totalHeight - TerminalFileManagerLayout.minimumMainAreaHeight)
                     )
                 )
+                terminalPaneHeight = newHeight
+                terminalDisplayHeight = newHeight
             } onEnded: {
                 terminalDragStartHeight = nil
             }
@@ -490,6 +506,32 @@ struct TerminalFileManagerView: View {
             )
             .frame(height: terminalHeight)
         }
+    }
+
+    private func updateTerminalDisplayHeight(from oldTotalHeight: CGFloat, to newTotalHeight: CGFloat) {
+        guard isTerminalPaneVisible else {
+            terminalDisplayHeight = nil
+            return
+        }
+        guard oldTotalHeight > 0, newTotalHeight > 0 else { return }
+
+        let dividerHeight = TerminalFileManagerLayout.dividerWidth
+        let oldLayout = PaneLayoutResolver.verticalPanes(
+            totalHeight: oldTotalHeight,
+            dividerHeight: dividerHeight,
+            isTerminalVisible: true,
+            displayedTerminalHeight: terminalDisplayHeight ?? terminalPaneHeight
+        )
+        let proposedTerminalHeight = Double(
+            oldLayout.terminalHeight + (newTotalHeight - oldTotalHeight)
+        )
+        let newLayout = PaneLayoutResolver.verticalPanes(
+            totalHeight: newTotalHeight,
+            dividerHeight: dividerHeight,
+            isTerminalVisible: true,
+            displayedTerminalHeight: proposedTerminalHeight
+        )
+        terminalDisplayHeight = Double(newLayout.terminalHeight)
     }
 
     private func onPaneDirectoryChange(_ paneID: BrowserPaneID) {

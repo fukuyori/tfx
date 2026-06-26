@@ -198,6 +198,17 @@ struct MainPaneSplitView: NSViewRepresentable {
         /// view tree, so it is an authoritative header-driven floor.
         private var lastWrittenMinWidth: CGFloat = -1
 
+        /// Preview width produced by window resizing. This is a
+        /// continuity value for the current session layout, not a
+        /// preference: direct preview-divider drags still write
+        /// `parent.previewWidth`, while window resize only updates
+        /// this transient display width.
+        private var displayedPreviewWidth: Double?
+
+        /// Last split-view width we laid out. Used to route window
+        /// width deltas into the preview pane while it is visible.
+        private var lastAppliedTotalWidth: CGFloat?
+
         init(parent: MainPaneSplitView) {
             self.parent = parent
         }
@@ -323,13 +334,29 @@ struct MainPaneSplitView: NSViewRepresentable {
             let folderVisible = parent.isFolderVisible
             let previewVisible = parent.isPreviewVisible
 
-            let isDividerDrag = splitView.inLiveResize && !(splitView.window?.inLiveResize ?? false)
+            let windowLive = splitView.window?.inLiveResize ?? false
+            let isDividerDrag = splitView.inLiveResize && !windowLive
+            if !previewVisible {
+                displayedPreviewWidth = nil
+            }
             let preferredFolderWidth = isDividerDrag && folder.frame.width >= LayoutPane.folderTree.minimumWidth
                 ? Double(folder.frame.width)
                 : parent.folderWidth
-            let preferredPreviewWidth = isDividerDrag && preview.frame.width >= LayoutPane.preview.minimumWidth
-                ? Double(preview.frame.width)
-                : parent.previewWidth
+            let preferredPreviewWidth: Double?
+            if isDividerDrag && preview.frame.width >= LayoutPane.preview.minimumWidth {
+                preferredPreviewWidth = Double(preview.frame.width)
+                displayedPreviewWidth = nil
+            } else if previewVisible,
+                      windowLive,
+                      let lastAppliedTotalWidth {
+                let basePreviewWidth = displayedPreviewWidth
+                    ?? (preview.frame.width >= LayoutPane.preview.minimumWidth
+                        ? Double(preview.frame.width)
+                        : parent.previewWidth)
+                preferredPreviewWidth = basePreviewWidth + Double(totalWidth - lastAppliedTotalWidth)
+            } else {
+                preferredPreviewWidth = displayedPreviewWidth
+            }
 
             let layout = PaneLayoutResolver.mainPanes(
                 totalWidth: totalWidth,
@@ -338,7 +365,8 @@ struct MainPaneSplitView: NSViewRepresentable {
                 isPreviewVisible: previewVisible,
                 isSplitViewVisible: parent.isSplitViewVisible,
                 storedFolderWidth: preferredFolderWidth,
-                storedPreviewWidth: preferredPreviewWidth
+                storedPreviewWidth: parent.previewWidth,
+                displayedPreviewWidth: preferredPreviewWidth
             )
 
             var dividersShown: CGFloat = 0
@@ -356,6 +384,10 @@ struct MainPaneSplitView: NSViewRepresentable {
             x += fileAreaWidth
             if previewVisible { x += divider }
             preview.frame = NSRect(x: x, y: 0, width: previewWidth, height: totalHeight)
+            if previewVisible, windowLive {
+                displayedPreviewWidth = Double(previewWidth)
+            }
+            lastAppliedTotalWidth = totalWidth
             paneLog("  frames folder=\(folderWidth) file=\(fileAreaWidth) preview=\(previewWidth) dividers=\(dividersShown)")
         }
 

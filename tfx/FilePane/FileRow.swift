@@ -8,7 +8,7 @@ struct FileRow: View {
     let isSelected: Bool
     let isDropTarget: Bool
     let columns: [FileListColumn]
-    let fileNameColumnWidth: Double
+    let columnWidths: FileListColumnWidths
     /// Git status for this row, looked up by the file pane before the
     /// view is constructed. Nil when the directory is not in a Git work
     /// tree, when the file is clean, or while the first status fetch
@@ -52,20 +52,28 @@ struct FileRow: View {
                 .frame(width: columnWidth(column), alignment: column.alignment)
         case .mode:
             Text(item.mode)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
                 .foregroundStyle(item.isDirectory ? theme.directoryForeground : theme.secondaryForeground)
         case .name:
             nameCell
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
         case .size:
             Text(item.sizeText)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
                 .foregroundStyle(theme.secondaryForeground)
         case .kind:
             Text(item.kindText)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
                 .foregroundStyle(theme.secondaryForeground)
         case .tags:
             tagsCell
@@ -75,21 +83,30 @@ struct FileRow: View {
                 .frame(width: columnWidth(column), alignment: column.alignment)
         case .modified:
             Text(item.modifiedText)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
                 .foregroundStyle(theme.secondaryForeground)
         case .created:
             Text(item.createdText)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
                 .foregroundStyle(theme.secondaryForeground)
         case .permissions:
             Text(item.permissionsText)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(width: columnWidth(column), alignment: column.alignment)
+                .clipped()
                 .foregroundStyle(theme.secondaryForeground)
         }
     }
 
     private func columnWidth(_ column: FileListColumn) -> CGFloat {
-        column == .name ? CGFloat(fileNameColumnWidth) : column.defaultWidth
+        CGFloat(columnWidths.width(for: column))
     }
 
     @ViewBuilder
@@ -142,7 +159,8 @@ struct FileRow: View {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(theme.fileListRowDropTarget.opacity(isDropTarget ? 1 : 0))
             )
-            .fixedSize(horizontal: true, vertical: false)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipped()
         // Attach the folder drop delegate only when this is a
         // directory row AND a delegate was provided. SwiftUI's
         // hit testing routes drops to the closest `.onDrop` —

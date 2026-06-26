@@ -8,7 +8,7 @@ struct FilePaneFileList: View {
     @ObservedObject var model: FileBrowserModel
     let isKeyboardTarget: Bool
     let visibleColumns: [FileListColumn]
-    @Binding var fileNameColumnWidth: Double
+    @Binding var columnWidths: FileListColumnWidths
     let activate: () -> Void
     let executeUserCommand: (UserCommand, [FileItem]) -> Void
     @State private var blankSelectionStartY: CGFloat?
@@ -21,7 +21,7 @@ struct FilePaneFileList: View {
             FilePaneHeaderRow(
                 model: model,
                 visibleColumns: visibleColumns,
-                fileNameColumnWidth: $fileNameColumnWidth
+                columnWidths: $columnWidths
             )
 
             ScrollViewReader { proxy in
@@ -102,7 +102,7 @@ struct FilePaneFileList: View {
             isEnabled: model.canGoUp,
             isSelected: model.isParentDirectorySelected,
             columns: visibleColumns,
-            fileNameColumnWidth: fileNameColumnWidth
+            columnWidths: columnWidths
         )
         .id(FileListRowID.parentDirectory)
         .contentShape(Rectangle())
@@ -142,7 +142,7 @@ struct FilePaneFileList: View {
                 // and executables.
                 isDropTarget: model.isDropTargetDirectory(item.url),
                 columns: visibleColumns,
-                fileNameColumnWidth: fileNameColumnWidth,
+                columnWidths: columnWidths,
                 gitStatus: model.gitStatus(for: item),
                 isEditingName: isEditingName,
                 commitNameEdit: { model.commitInlineNameEdit(text: $0) },

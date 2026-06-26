@@ -8,7 +8,7 @@ struct FilePane: View {
     let paneID: BrowserPaneID
     let isActivePane: Bool
     let isKeyboardTarget: Bool
-    @Binding var fileNameColumnWidth: Double
+    @Binding var columnWidths: FileListColumnWidths
     let columnConfiguration: FileListColumnConfiguration
     let activate: () -> Void
     let executeUserCommand: (UserCommand, [FileItem]) -> Void
@@ -59,7 +59,7 @@ struct FilePane: View {
                         model: model,
                         isKeyboardTarget: isKeyboardTarget,
                         visibleColumns: visibleColumns,
-                        fileNameColumnWidth: $fileNameColumnWidth,
+                        columnWidths: $columnWidths,
                         activate: activate,
                         executeUserCommand: executeUserCommand
                     )
@@ -167,7 +167,7 @@ struct FilePane: View {
     }
 
     private func columnWidth(_ column: FileListColumn) -> CGFloat {
-        column == .name ? CGFloat(fileNameColumnWidth) : column.defaultWidth
+        CGFloat(columnWidths.width(for: column))
     }
 }
 

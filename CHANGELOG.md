@@ -4,6 +4,31 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.1] - 2026-06-26
+
+Pane resize priority refinements, file-list column resizing, and license documentation.
+
+### Added
+
+- Added Apache License 2.0 licensing for tfx, plus `NOTICE` and `THIRD_PARTY_NOTICES.md` for bundled third-party software.
+- File-list columns can now be resized by dragging their headers. Left-pane column widths are persisted, while right-pane column widths remain temporary and are not restored after relaunch.
+
+### Changed
+
+- Window-width changes now resize the preview pane first while preview is visible; further narrowing reaches the file area only after preview reaches its minimum width.
+- Window-height changes now resize the built-in terminal pane first while the terminal is visible; further narrowing reaches the main file area only after the terminal reaches its minimum height.
+- Window-resize-driven preview widths and terminal heights are transient and are not persisted as explicit user divider choices.
+- Removed the toolbar sort menu button next to search. Sorting remains available through file-list column headers.
+
+### Fixed
+
+- File names and other text columns are clipped within their column widths so long file names no longer draw over neighboring columns.
+
+### Documentation
+
+- Updated README, Japanese README, and detailed design notes for column resizing, resize priority behavior, and licensing.
+- Version bumped to `0.9.1`, build `70`.
+
 ## [0.9.0] - 2026-06-26
 
 Pane layout refactor for window-size-stable side panes and adjustable split file lists.

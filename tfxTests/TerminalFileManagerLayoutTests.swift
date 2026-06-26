@@ -46,6 +46,25 @@ struct TerminalFileManagerLayoutTests {
     }
 
     @Test
+    func mainPaneLayoutUsesTransientPreviewWidthDuringWindowResize() {
+        let layout = PaneLayoutResolver.mainPanes(
+            totalWidth: 1_400,
+            dividerWidth: 1,
+            isFolderVisible: true,
+            isPreviewVisible: true,
+            isSplitViewVisible: true,
+            storedFolderWidth: 220,
+            storedPreviewWidth: 320,
+            displayedPreviewWidth: 520
+        )
+
+        #expect(layout.folderWidth == 220)
+        #expect(layout.previewWidth == 520)
+        #expect(layout.fileAreaWidth == 658)
+        #expect(layout.folderWidth + layout.fileAreaWidth + layout.previewWidth + 2 == 1_400)
+    }
+
+    @Test
     func mainPaneLayoutShrinksPreviewBeforeFolderTree() {
         let layout = PaneLayoutResolver.mainPanes(
             totalWidth: 930,
@@ -82,6 +101,25 @@ struct TerminalFileManagerLayoutTests {
     }
 
     @Test
+    func mainPaneLayoutClampsTransientPreviewBeforeShrinkingFolderTree() {
+        let layout = PaneLayoutResolver.mainPanes(
+            totalWidth: 823,
+            dividerWidth: 1,
+            isFolderVisible: true,
+            isPreviewVisible: true,
+            isSplitViewVisible: true,
+            storedFolderWidth: 260,
+            storedPreviewWidth: 360,
+            displayedPreviewWidth: 100
+        )
+
+        #expect(layout.previewWidth == TerminalFileManagerLayout.minimumPreviewPaneWidth)
+        #expect(layout.folderWidth == TerminalFileManagerLayout.minimumFolderTreeWidth)
+        #expect(layout.fileAreaWidth == TerminalFileManagerLayout.minimumFilePaneWidth * 2 + 1)
+        #expect(layout.folderWidth + layout.fileAreaWidth + layout.previewWidth + 2 == 823)
+    }
+
+    @Test
     func fileSplitStartsAtEqualWidths() {
         let split = PaneLayoutResolver.fileSplit(
             totalWidth: 801,
@@ -93,6 +131,29 @@ struct TerminalFileManagerLayoutTests {
         #expect(split.rightWidth == 400)
         #expect(split.effectiveRatio == 0.5)
         #expect(split.canResize)
+    }
+
+    @Test
+    func columnWidthsUseLegacyNameWidthFallback() {
+        let widths = FileListColumnWidths(rawValue: "", fallbackNameWidth: 480)
+
+        #expect(widths.width(for: .name) == 480)
+        #expect(widths.width(for: .size) == Double(FileListColumn.size.defaultWidth))
+    }
+
+    @Test
+    func columnWidthsClampAndSerializeAllColumns() {
+        var widths = FileListColumnWidths(rawValue: "name:40,size:999", fallbackNameWidth: 320)
+
+        #expect(widths.width(for: .name) == Double(FileListColumn.name.minimumWidth))
+        #expect(widths.width(for: .size) == Double(FileListColumn.size.maximumWidth))
+
+        widths.setWidth(72, for: .kind)
+        let restored = FileListColumnWidths(rawValue: widths.rawValue, fallbackNameWidth: 320)
+
+        #expect(restored.width(for: .kind) == 72)
+        #expect(restored.width(for: .name) == Double(FileListColumn.name.minimumWidth))
+        #expect(restored.width(for: .size) == Double(FileListColumn.size.maximumWidth))
     }
 
     @Test
@@ -172,6 +233,47 @@ struct TerminalFileManagerLayoutTests {
                     + TerminalFileManagerLayout.minimumTerminalPaneHeight
                     + TerminalFileManagerLayout.dividerWidth
         )
+    }
+
+    @Test
+    func verticalPaneLayoutUsesDisplayedTerminalHeight() {
+        let layout = PaneLayoutResolver.verticalPanes(
+            totalHeight: 700,
+            dividerHeight: 1,
+            isTerminalVisible: true,
+            displayedTerminalHeight: 320
+        )
+
+        #expect(layout.terminalHeight == 320)
+        #expect(layout.mainHeight == 379)
+        #expect(layout.mainHeight + layout.terminalHeight + 1 == 700)
+    }
+
+    @Test
+    func verticalPaneLayoutClampsTerminalAtMinimumBeforeMainShrinks() {
+        let layout = PaneLayoutResolver.verticalPanes(
+            totalHeight: 321,
+            dividerHeight: 1,
+            isTerminalVisible: true,
+            displayedTerminalHeight: 20
+        )
+
+        #expect(layout.terminalHeight == TerminalFileManagerLayout.minimumTerminalPaneHeight)
+        #expect(layout.mainHeight == TerminalFileManagerLayout.minimumMainAreaHeight)
+        #expect(layout.mainHeight + layout.terminalHeight + 1 == 321)
+    }
+
+    @Test
+    func verticalPaneLayoutGivesAllHeightToMainWhenTerminalHidden() {
+        let layout = PaneLayoutResolver.verticalPanes(
+            totalHeight: 700,
+            dividerHeight: 0,
+            isTerminalVisible: false,
+            displayedTerminalHeight: 320
+        )
+
+        #expect(layout.terminalHeight == 0)
+        #expect(layout.mainHeight == 700)
     }
 }
 #endif

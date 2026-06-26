@@ -56,27 +56,6 @@ extension TerminalFileManagerView {
 
     var sortAndVisibilityControls: some View {
         Group {
-            Menu {
-                Picker("Sort", selection: Binding(
-                    get: { model.sortKey },
-                    set: { model.sortKey = $0 }
-                )) {
-                    ForEach(FileSortKey.allCases) { key in
-                        Text(key.title).tag(key)
-                    }
-                }
-
-                Divider()
-
-                Button(model.sortAscending ? "Descending" : "Ascending") {
-                    model.sortAscending.toggle()
-                }
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-            }
-            .menuStyle(.borderlessButton)
-            .quickHelp("Sort", text: $hoverHelpText)
-
             Toggle(isOn: Binding(
                 get: { model.showHiddenFiles },
                 set: { model.showHiddenFiles = $0 }

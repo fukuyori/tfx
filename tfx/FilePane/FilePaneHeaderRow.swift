@@ -4,8 +4,8 @@ import SwiftUI
 struct FilePaneHeaderRow: View {
     @ObservedObject var model: FileBrowserModel
     let visibleColumns: [FileListColumn]
-    @Binding var fileNameColumnWidth: Double
-    @State private var nameColumnDragStartWidth: Double?
+    @Binding var columnWidths: FileListColumnWidths
+    @State private var columnDragStart: (column: FileListColumn, width: Double)?
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
@@ -24,48 +24,40 @@ struct FilePaneHeaderRow: View {
 
     @ViewBuilder
     private func headerCell(for column: FileListColumn) -> some View {
-        if column == .name {
-            HStack(spacing: 4) {
-                sortLabel(for: column)
-                Spacer(minLength: 4)
-                Image(systemName: "arrow.left.and.right")
-                    .font(design.fonts.swiftUIFont(for: .caption, weight: .semibold))
-                    .foregroundStyle(theme.headerForeground.opacity(design.opacity.headerSecondary))
-            }
-            .frame(width: columnWidth(column), alignment: column.alignment)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 1)
-                    .onChanged { value in
-                        if nameColumnDragStartWidth == nil {
-                            nameColumnDragStartWidth = fileNameColumnWidth
-                        }
+        resizableHeaderCell(for: column)
+    }
 
-                        let baseWidth = nameColumnDragStartWidth ?? fileNameColumnWidth
-                        fileNameColumnWidth = clampFileNameColumnWidth(baseWidth + Double(value.translation.width))
-                    }
-                    .onEnded { _ in
-                        nameColumnDragStartWidth = nil
-                    }
-            )
-            .simultaneousGesture(
-                // Tap fires only when the drag gesture above did NOT
-                // engage (mouse released within the minimumDistance
-                // threshold), so resize and click-to-sort coexist on
-                // the same cell.
-                TapGesture().onEnded { toggleSort(for: column) }
-            )
-            .help("Drag to resize file name column · Click to sort")
-        } else if column.sortKey != nil {
+    private func resizableHeaderCell(for column: FileListColumn) -> some View {
+        HStack(spacing: 4) {
             sortLabel(for: column)
-                .frame(width: columnWidth(column), alignment: column.alignment)
-                .contentShape(Rectangle())
-                .onTapGesture { toggleSort(for: column) }
-                .help("Click to sort")
-        } else {
-            Text(column.headerTitle)
-                .frame(width: columnWidth(column), alignment: column.alignment)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 4)
+            Image(systemName: "arrow.left.and.right")
+                .font(design.fonts.swiftUIFont(for: .caption, weight: .semibold))
+                .foregroundStyle(theme.headerForeground.opacity(design.opacity.headerSecondary))
         }
+        .frame(width: columnWidth(column), alignment: column.alignment)
+        .clipped()
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 1)
+                .onChanged { value in
+                    if columnDragStart?.column != column {
+                        columnDragStart = (column, columnWidths.width(for: column))
+                    }
+
+                    let baseWidth = columnDragStart?.width ?? columnWidths.width(for: column)
+                    columnWidths.setWidth(baseWidth + Double(value.translation.width), for: column)
+                }
+                .onEnded { _ in
+                    columnDragStart = nil
+                }
+        )
+        .simultaneousGesture(
+            TapGesture().onEnded { toggleSort(for: column) }
+        )
+        .help(column.sortKey == nil ? "Drag to resize column" : "Drag to resize column · Click to sort")
     }
 
     /// Column-title label that also shows a `↑` / `↓` indicator
@@ -95,11 +87,7 @@ struct FilePaneHeaderRow: View {
     }
 
     private func columnWidth(_ column: FileListColumn) -> CGFloat {
-        column == .name ? CGFloat(fileNameColumnWidth) : column.defaultWidth
-    }
-
-    private func clampFileNameColumnWidth(_ width: Double) -> Double {
-        min(max(width, 160), 720)
+        CGFloat(columnWidths.width(for: column))
     }
 }
 #endif

@@ -119,7 +119,7 @@ extension TerminalFileManagerView {
                 paneID: paneID,
                 isActivePane: activePane == paneID,
                 isKeyboardTarget: activePane == paneID && activeArea == .files,
-                fileNameColumnWidth: $fileNameColumnWidth,
+                columnWidths: fileColumnWidthsBinding(for: paneID),
                 columnConfiguration: FileListColumnConfiguration(rawValue: fileColumnConfigurationRaw),
                 activate: {
                     activePane = paneID
@@ -133,6 +133,28 @@ extension TerminalFileManagerView {
                 reloadRelatedPanes: reloadAllPanes
             )
         }
+    }
+
+    func fileColumnWidthsBinding(for paneID: BrowserPaneID) -> Binding<FileListColumnWidths> {
+        if paneID == .left {
+            return Binding(
+                get: {
+                    FileListColumnWidths(
+                        rawValue: fileColumnWidthsRaw,
+                        fallbackNameWidth: fileNameColumnWidth
+                    )
+                },
+                set: { newValue in
+                    fileColumnWidthsRaw = newValue.rawValue
+                    fileNameColumnWidth = newValue.width(for: .name)
+                }
+            )
+        }
+
+        return Binding(
+            get: { rightFileColumnWidths },
+            set: { rightFileColumnWidths = $0 }
+        )
     }
 
     func filePaneTabStrip(_ paneID: BrowserPaneID) -> some View {

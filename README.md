@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.9.0**
+Version: **0.9.1**
 
 English | [日本語](README.ja.md)
 
@@ -53,7 +53,7 @@ English | [日本語](README.ja.md)
 - Configurable file-list columns: visibility and order
 - User-editable `config.toml` for design settings and shortcut overrides
 - Finder-compatible tags: tag column, standard color tags, and custom tag names from the file-row context menu
-- Resizable file-name column by dragging the `NAME` header
+- Resizable file-list columns by dragging column headers. Left-pane column widths are restored; right-pane column widths are temporary.
 - Restores window size, visible panes, pane widths, active pane, and open folders
 
 ## Keyboard
@@ -234,6 +234,12 @@ Supporting directories:
 ## Documentation
 
 See `docs/README.md` for the documentation index, maintenance rules, source layout guide, detailed design, implementation history, and roadmap.
+
+## License
+
+tfx is licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+Third-party notices are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Notes
 

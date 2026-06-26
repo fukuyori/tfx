@@ -312,7 +312,7 @@ Verify manually:
 - Folder tree does not grow when the window grows.
 - Folder tree shrinks only as the last fallback when narrowing the window.
 
-### Phase 8: Window-Resize Priority for Preview and Terminal
+### Phase 8: Window-Resize Priority for Preview and Terminal (completed)
 
 - Extend the horizontal pane allocation so preview is the first resize target while visible.
 - Preserve folder-tree behavior: no automatic growth, user-resizable by divider, last fallback during narrowing.

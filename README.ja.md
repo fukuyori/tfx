@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.9.0**
+Version: **0.9.1**
 
 [English](README.md) | 日本語
 
@@ -53,7 +53,7 @@ Version: **0.9.0**
 - ファイル一覧カラムの表示 / 非表示、順番変更
 - `config.toml` でデザイン設定とショートカット上書きが可能
 - Finder 互換タグ: タグ列、標準色タグ、ファイル行コンテキストメニューからのカスタムタグ名追加
-- `NAME` ヘッダーのドラッグによるファイル名カラム幅変更
+- カラムヘッダーのドラッグによるファイル一覧カラム幅変更。左ペインのカラム幅は復元され、右ペインのカラム幅は一時的に扱われます
 - ウィンドウサイズ、表示状態、ペイン幅、アクティブペイン、開いているフォルダの復元
 
 ## キーボード操作
@@ -233,6 +233,12 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 ## ドキュメント
 
 ドキュメント索引、保守ルール、ソース配置、詳細設計、実装履歴、ロードマップは `docs/README.md` を参照してください。
+
+## ライセンス
+
+tfx は Apache License, Version 2.0 でライセンスされています。[`LICENSE`](LICENSE) と [`NOTICE`](NOTICE) を参照してください。
+
+第三者ソフトウェアのライセンス表記は [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) に記載しています。
 
 ## 注意事項
 

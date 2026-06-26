@@ -14,6 +14,11 @@ struct FileSplitLayoutResult: Equatable {
     let canResize: Bool
 }
 
+struct VerticalPaneLayoutResult: Equatable {
+    let mainHeight: CGFloat
+    let terminalHeight: CGFloat
+}
+
 enum PaneLayoutResolver {
     static func mainPanes(
         totalWidth: CGFloat,
@@ -23,6 +28,7 @@ enum PaneLayoutResolver {
         isSplitViewVisible: Bool,
         storedFolderWidth: Double,
         storedPreviewWidth: Double,
+        displayedPreviewWidth: Double? = nil,
         minimumFolderWidth: CGFloat = TerminalFileManagerLayout.minimumFolderTreeWidth,
         minimumPreviewWidth: CGFloat = TerminalFileManagerLayout.minimumPreviewPaneWidth,
         minimumFilePaneWidth: CGFloat = TerminalFileManagerLayout.minimumFilePaneWidth
@@ -39,8 +45,9 @@ enum PaneLayoutResolver {
         var folderWidth = isFolderVisible
             ? max(minimumFolderWidth, CGFloat(storedFolderWidth))
             : 0
+        let previewPreference = displayedPreviewWidth ?? storedPreviewWidth
         var previewWidth = isPreviewVisible
-            ? max(minimumPreviewWidth, CGFloat(storedPreviewWidth))
+            ? max(minimumPreviewWidth, CGFloat(previewPreference))
             : 0
 
         var fileAreaWidth = safeTotal - visibleDividerWidth - folderWidth - previewWidth
@@ -109,6 +116,39 @@ enum PaneLayoutResolver {
             rightWidth: roundedPoint(rightWidth),
             effectiveRatio: effectiveRatio,
             canResize: true
+        )
+    }
+
+    static func verticalPanes(
+        totalHeight: CGFloat,
+        dividerHeight: CGFloat,
+        isTerminalVisible: Bool,
+        displayedTerminalHeight: Double,
+        minimumMainHeight: CGFloat = TerminalFileManagerLayout.minimumMainAreaHeight,
+        minimumTerminalHeight: CGFloat = TerminalFileManagerLayout.minimumTerminalPaneHeight
+    ) -> VerticalPaneLayoutResult {
+        let safeTotal = max(0, totalHeight)
+        guard isTerminalVisible else {
+            return VerticalPaneLayoutResult(
+                mainHeight: roundedPoint(safeTotal),
+                terminalHeight: 0
+            )
+        }
+
+        let availableHeight = max(0, safeTotal - dividerHeight)
+        let maximumTerminalHeight = max(
+            minimumTerminalHeight,
+            availableHeight - minimumMainHeight
+        )
+        let terminalHeight = min(
+            max(minimumTerminalHeight, CGFloat(displayedTerminalHeight)),
+            maximumTerminalHeight
+        )
+        let mainHeight = max(0, availableHeight - terminalHeight)
+
+        return VerticalPaneLayoutResult(
+            mainHeight: roundedPoint(mainHeight),
+            terminalHeight: roundedPoint(terminalHeight)
         )
     }
 

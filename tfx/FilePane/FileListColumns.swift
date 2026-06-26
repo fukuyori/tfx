@@ -99,6 +99,52 @@ enum FileListColumn: String, CaseIterable, Identifiable {
         }
     }
 
+    var minimumWidth: CGFloat {
+        switch self {
+        case .icon:
+            return 24
+        case .mode:
+            return 44
+        case .name:
+            return 160
+        case .size:
+            return 64
+        case .kind:
+            return 64
+        case .tags:
+            return 16
+        case .gitStatus:
+            return 10
+        case .modified, .created:
+            return 120
+        case .permissions:
+            return 48
+        }
+    }
+
+    var maximumWidth: CGFloat {
+        switch self {
+        case .icon:
+            return 48
+        case .mode:
+            return 100
+        case .name:
+            return 720
+        case .size:
+            return 180
+        case .kind:
+            return 280
+        case .tags:
+            return 96
+        case .gitStatus:
+            return 64
+        case .modified, .created:
+            return 280
+        case .permissions:
+            return 140
+        }
+    }
+
     var alignment: Alignment {
         switch self {
         case .size:
@@ -126,6 +172,49 @@ enum FileListColumn: String, CaseIterable, Identifiable {
         case .icon, .mode, .tags, .gitStatus, .permissions:
             return nil
         }
+    }
+}
+
+struct FileListColumnWidths: Equatable {
+    private var widths: [FileListColumn: Double]
+
+    init(rawValue: String = "", fallbackNameWidth: Double = TerminalFileManagerLayout.defaultFileNameColumnWidth) {
+        var parsed: [FileListColumn: Double] = [.name: fallbackNameWidth]
+
+        for component in rawValue.split(separator: ",") {
+            let parts = component.split(separator: ":", maxSplits: 1).map(String.init)
+            guard parts.count == 2,
+                  let column = FileListColumn(rawValue: parts[0]),
+                  let width = Double(parts[1]) else {
+                continue
+            }
+            parsed[column] = width
+        }
+
+        widths = parsed
+        for column in FileListColumn.allCases {
+            widths[column] = Self.clamped(widths[column] ?? Double(column.defaultWidth), for: column)
+        }
+    }
+
+    var rawValue: String {
+        FileListColumn.allCases
+            .map { column in
+                "\(column.rawValue):\(Int(width(for: column).rounded()))"
+            }
+            .joined(separator: ",")
+    }
+
+    func width(for column: FileListColumn) -> Double {
+        widths[column] ?? Double(column.defaultWidth)
+    }
+
+    mutating func setWidth(_ width: Double, for column: FileListColumn) {
+        widths[column] = Self.clamped(width, for: column)
+    }
+
+    static func clamped(_ width: Double, for column: FileListColumn) -> Double {
+        min(max(width, Double(column.minimumWidth)), Double(column.maximumWidth))
     }
 }
 
