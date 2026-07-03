@@ -98,6 +98,12 @@ final class FileBrowserModel: ObservableObject {
         }
     }
 
+    /// Reentrancy guard for the background zip compress /
+    /// extract path: a second ⌘⌥Z / ⌘⌥E while `ditto` is still
+    /// running is ignored instead of spawning a parallel archive
+    /// run. Main-thread only.
+    var isArchiveOperationInProgress = false
+
     var allItems: [FileItem] = []
     var allItemLookup: [FileItem.ID: FileItem] = [:]
     var visibleItemIndexLookup: [FileItem.ID: Int] = [:]

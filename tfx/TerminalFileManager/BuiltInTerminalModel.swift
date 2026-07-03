@@ -16,9 +16,17 @@ final class BuiltInTerminalModel: ObservableObject {
     }
 
     @Published var currentDirectory: URL
-    @Published var transcript: String
-    @Published var displayTranscript: String
     @Published private(set) var rawTerminalTranscript = ""
+
+    /// Rendered plain-text views of the decoder state, computed
+    /// on demand. These used to be `@Published` strings rebuilt
+    /// (full `lines.joined()`, twice) on every 4 KB output chunk
+    /// — O(n²) main-thread work that saturated the app during
+    /// `find /`-style floods. Nothing subscribes to them as
+    /// publishers: the pane renders through xterm.js fed by
+    /// `outputEvent`, and tests read the property directly.
+    var transcript: String { outputDecoder.renderedText() }
+    var displayTranscript: String { outputDecoder.renderedTextWithCursor() }
     @Published var commandOutputTranscript = ""
     @Published var activeTab: Tab = .shell
     @Published var outputEvent: OutputEvent?
@@ -40,12 +48,10 @@ final class BuiltInTerminalModel: ObservableObject {
         let initialDirectory = currentDirectory.standardizedFileURL
         self.currentDirectory = initialDirectory
         self.shellPath = shellPath.isEmpty ? "/bin/zsh" : shellPath
-        let initialTranscript = "tfx built-in terminal\n"
-        transcript = initialTranscript
-        displayTranscript = initialTranscript
-        outputDecoder.reset(with: initialTranscript)
-        displayTranscript = outputDecoder.renderedTextWithCursor()
+        outputDecoder.reset(with: Self.initialTranscript)
     }
+
+    private static let initialTranscript = "tfx built-in terminal\n"
 
     deinit {
         session?.terminate()
@@ -250,9 +256,7 @@ final class BuiltInTerminalModel: ObservableObject {
             session = terminalSession
             terminalSession.start()
         } catch {
-            transcript += "Failed to start terminal: \(error.localizedDescription)\n"
-            outputDecoder.reset(with: transcript)
-            displayTranscript = outputDecoder.renderedTextWithCursor()
+            appendTerminalOutput("Failed to start terminal: \(error.localizedDescription)\n")
             isRunning = false
         }
     }
@@ -264,22 +268,49 @@ final class BuiltInTerminalModel: ObservableObject {
     /// non-explicitly so the next `open()` paints a clean pane
     /// instead of resurrecting the dead shell's output.
     private func resetTranscript() {
-        let initialTranscript = "tfx built-in terminal\n"
-        transcript = initialTranscript
         rawTerminalTranscript = ""
         commandOutputTranscript = ""
         interactiveCommandBuffer = ""
         isIgnoringEscapeSequence = false
         activeTab = .shell
-        outputDecoder.reset(with: initialTranscript)
-        displayTranscript = outputDecoder.renderedTextWithCursor()
+        outputDecoder.reset(with: Self.initialTranscript)
     }
 
     private func appendTerminalOutput(_ output: String) {
         rawTerminalTranscript += output
+        trimRawTranscriptIfNeeded()
         outputEvent = OutputEvent(id: UUID(), text: output)
-        transcript = outputDecoder.renderedText(appending: output)
-        displayTranscript = outputDecoder.renderedTextWithCursor()
+        outputDecoder.consume(output)
+    }
+
+    /// Upper bound for the raw byte replay buffer (used to
+    /// repaint xterm.js when the pane's web view is recreated).
+    /// xterm keeps a 5 000-line scrollback anyway, so replaying
+    /// more than this is wasted memory — and without a cap the
+    /// buffer grows without limit for as long as the shell keeps
+    /// producing output.
+    private static let maxRawTranscriptUTF8Bytes = 512 * 1024
+
+    private func trimRawTranscriptIfNeeded() {
+        let utf8View = rawTerminalTranscript.utf8
+        guard utf8View.count > Self.maxRawTranscriptUTF8Bytes else { return }
+        // Cut down to ~3/4 of the cap (amortizes the trim) and
+        // land on a line boundary so the replay doesn't start
+        // mid-escape-sequence.
+        let keepTarget = Self.maxRawTranscriptUTF8Bytes * 3 / 4
+        var rawCut = utf8View.index(utf8View.startIndex, offsetBy: utf8View.count - keepTarget)
+        // A byte offset can land mid-character; walk forward to
+        // the next Character boundary.
+        var characterCut = String.Index(rawCut, within: rawTerminalTranscript)
+        while characterCut == nil, rawCut < utf8View.endIndex {
+            rawCut = utf8View.index(after: rawCut)
+            characterCut = String.Index(rawCut, within: rawTerminalTranscript)
+        }
+        var cutIndex = characterCut ?? rawTerminalTranscript.startIndex
+        if let newline = rawTerminalTranscript[cutIndex...].firstIndex(of: "\n") {
+            cutIndex = rawTerminalTranscript.index(after: newline)
+        }
+        rawTerminalTranscript = String(rawTerminalTranscript[cutIndex...])
     }
 
     func resize(columns: Int, rows: Int) {
@@ -383,6 +414,12 @@ private struct TerminalOutputDecoder {
     private var cursorRow = 0
     private var cursorColumn = 0
 
+    /// Matches xterm.js's `scrollback: 5000`. Without a cap the
+    /// decoder's line buffer grows for as long as the shell
+    /// produces output — `yes` or a long build log would push
+    /// memory (and every subsequent render) without bound.
+    private static let maxLines = 5_000
+
     mutating func reset(with text: String) {
         lines = text.components(separatedBy: "\n")
         if lines.isEmpty {
@@ -394,11 +431,22 @@ private struct TerminalOutputDecoder {
         csiBuffer = ""
     }
 
-    mutating func renderedText(appending rawOutput: String) -> String {
+    mutating func consume(_ rawOutput: String) {
         for scalar in rawOutput.unicodeScalars {
             append(scalar)
         }
-        return lines.joined(separator: "\n")
+        trimExcessLines()
+    }
+
+    func renderedText() -> String {
+        lines.joined(separator: "\n")
+    }
+
+    private mutating func trimExcessLines() {
+        let excess = lines.count - Self.maxLines
+        guard excess > 0 else { return }
+        lines.removeFirst(excess)
+        cursorRow = max(0, cursorRow - excess)
     }
 
     func renderedTextWithCursor() -> String {

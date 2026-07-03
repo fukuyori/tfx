@@ -21,13 +21,17 @@ extension FileBrowserModel {
         destination: URL,
         completion: @escaping (_ added: [URL], _ removedFromSource: [URL]) -> Void
     ) {
+        var claimedDestinations = Set<String>()
         let requests = items.map { source in
-            FileOperationRequest(
+            let destinationURL = FileConflictResolver.uniqueDestination(
+                for: source.lastPathComponent,
+                in: destination,
+                excluding: claimedDestinations
+            )
+            claimedDestinations.insert(FileConflictResolver.claimKey(destinationURL))
+            return FileOperationRequest(
                 sourceURL: source,
-                destinationURL: FileConflictResolver.uniqueDestination(
-                    for: source.lastPathComponent,
-                    in: destination
-                ),
+                destinationURL: destinationURL,
                 shouldReplaceDestination: false
             )
         }
@@ -83,10 +87,26 @@ extension FileBrowserModel {
                     }
 
                     if request.shouldReplaceDestination {
-                        try FileManager.default.removeItem(at: destURL)
+                        // "Replace" must never destroy the old
+                        // version before the new one is fully
+                        // written: copy into a hidden sibling
+                        // temp name first, then swap atomically.
+                        // A mid-copy failure (disk full, source
+                        // unreadable, cancel) leaves the existing
+                        // destination untouched.
+                        let temporaryURL = destURL
+                            .deletingLastPathComponent()
+                            .appendingPathComponent(".\(destURL.lastPathComponent).tfx-replace-\(UUID().uuidString)")
+                        do {
+                            try SafeFileCopier.copy(from: source, to: temporaryURL, progress: progress)
+                            _ = try FileManager.default.replaceItemAt(destURL, withItemAt: temporaryURL)
+                        } catch {
+                            try? FileManager.default.removeItem(at: temporaryURL)
+                            throw error
+                        }
+                    } else {
+                        try SafeFileCopier.copy(from: source, to: destURL, progress: progress)
                     }
-
-                    try SafeFileCopier.copy(from: source, to: destURL, progress: progress)
                     added.append(destURL)
                     if shouldRemoveSource {
                         // Source-side cleanup only after the
@@ -99,14 +119,29 @@ extension FileBrowserModel {
                     }
                 } catch SafeFileCopierError.cancelled {
                     // `SafeFileCopier` already removed the
-                    // partially-written destination file. Stop
-                    // touching anything else.
+                    // partially-written destination *file*, but a
+                    // cancelled directory copy leaves a partial
+                    // tree under its final name — indistinguishable
+                    // from a completed copy. Remove it so the user
+                    // can't mistake it for the real thing. (Replace
+                    // requests copied into a temp name that the
+                    // inner catch already cleaned up; the existing
+                    // destination must stay.)
+                    if !request.shouldReplaceDestination {
+                        try? FileManager.default.removeItem(at: destURL)
+                    }
                     break
                 } catch {
                     // Per-item failure: leave the source where
                     // it is, drop whatever partial destination
                     // may exist, and move on to the next item.
-                    try? FileManager.default.removeItem(at: destURL)
+                    // Never remove the destination of a replace
+                    // request — that is the user's pre-existing
+                    // file, still intact because the swap above
+                    // didn't happen.
+                    if !request.shouldReplaceDestination {
+                        try? FileManager.default.removeItem(at: destURL)
+                    }
                     DispatchQueue.main.async { [weak self] in
                         self?.show(error)
                     }

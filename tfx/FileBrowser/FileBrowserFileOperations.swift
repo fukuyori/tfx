@@ -293,15 +293,13 @@ enum FileBrowserFileOperations {
             case .skip:
                 continue
             case let .use(destinationURL, shouldReplace):
-                if shouldReplace {
-                    try FileManager.default.removeItem(at: destinationURL)
-                }
-
-                switch clipboard.operation {
-                case .copy:
-                    try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-                case .move:
-                    try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+                try transferItem(
+                    from: sourceURL,
+                    to: destinationURL,
+                    operation: clipboard.operation,
+                    replacingExisting: shouldReplace
+                )
+                if clipboard.operation == .move {
                     removedURLs.append(sourceURL)
                     affectedDirectories.insert(sourceURL.deletingLastPathComponent().standardizedFileURL)
                 }
@@ -327,13 +325,15 @@ enum FileBrowserFileOperations {
         var requests: [FileOperationRequest] = []
         var affectedDirectories: Set<URL> = [targetDirectory.standardizedFileURL]
         var batchConflictResolution: ConflictResolution?
+        var claimedDestinations = Set<String>()
 
         for sourceURL in clipboard.urls {
             let decision = FileConflictResolver.destinationDecision(
                 for: sourceURL,
                 in: targetDirectory,
                 operation: clipboard.operation,
-                batchResolution: &batchConflictResolution
+                batchResolution: &batchConflictResolution,
+                claimedDestinations: &claimedDestinations
             )
 
             switch decision {
@@ -381,17 +381,13 @@ enum FileBrowserFileOperations {
         case .cancel, .skip:
             return nil
         case let .use(resolvedDestinationURL, shouldReplace):
-            if shouldReplace {
-                try FileManager.default.removeItem(at: resolvedDestinationURL)
-            }
             destinationURL = resolvedDestinationURL
-        }
-
-        switch operation {
-        case .copy:
-            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-        case .move:
-            try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+            try transferItem(
+                from: sourceURL,
+                to: destinationURL,
+                operation: operation,
+                replacingExisting: shouldReplace
+            )
         }
 
         var affectedDirectories: Set<URL> = [targetDirectory.standardizedFileURL]
@@ -404,6 +400,58 @@ enum FileBrowserFileOperations {
             removedSourceURL: operation == .move ? sourceURL : nil,
             affectedDirectories: affectedDirectories
         )
+    }
+
+    /// Copy or move `sourceURL` to `destinationURL`. When
+    /// `replacingExisting` is true, the existing destination is
+    /// never deleted before the new content has fully arrived:
+    /// the item is first transferred to a hidden sibling temp
+    /// name and then swapped in atomically with
+    /// `replaceItemAt(_:withItemAt:)`. A failure mid-transfer
+    /// (disk full, unreadable cloud placeholder, …) leaves the
+    /// old destination untouched instead of destroying both the
+    /// old and the new version.
+    private static func transferItem(
+        from sourceURL: URL,
+        to destinationURL: URL,
+        operation: FileClipboard.Operation,
+        replacingExisting: Bool
+    ) throws {
+        guard replacingExisting else {
+            switch operation {
+            case .copy:
+                try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+            case .move:
+                try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+            }
+            return
+        }
+
+        let temporaryURL = destinationURL
+            .deletingLastPathComponent()
+            .appendingPathComponent(".\(destinationURL.lastPathComponent).tfx-replace-\(UUID().uuidString)")
+
+        switch operation {
+        case .copy:
+            do {
+                try FileManager.default.copyItem(at: sourceURL, to: temporaryURL)
+                _ = try FileManager.default.replaceItemAt(destinationURL, withItemAt: temporaryURL)
+            } catch {
+                try? FileManager.default.removeItem(at: temporaryURL)
+                throw error
+            }
+        case .move:
+            try FileManager.default.moveItem(at: sourceURL, to: temporaryURL)
+            do {
+                _ = try FileManager.default.replaceItemAt(destinationURL, withItemAt: temporaryURL)
+            } catch {
+                // The source already lives at the temp name; put
+                // it back so a failed replace doesn't strand the
+                // user's file under a hidden random name.
+                try? FileManager.default.moveItem(at: temporaryURL, to: sourceURL)
+                throw error
+            }
+        }
     }
 
     private static func zipArchiveName(for items: [FileItem]) -> String {
@@ -430,10 +478,15 @@ enum FileBrowserFileOperations {
             throw FileArchiveOperationError.commandFailed(error.localizedDescription)
         }
 
+        // Drain stderr BEFORE waiting: `ditto` writing more than
+        // the ~64 KB kernel pipe buffer of warnings would block
+        // forever while we sit in `waitUntilExit()`, deadlocking
+        // the operation. `readDataToEndOfFile` returns at EOF,
+        // i.e. when the process exits and the write end closes.
+        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
 
         guard process.terminationStatus == 0 else {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
             let message = String(data: errorData, encoding: .utf8) ?? ""
             throw FileArchiveOperationError.commandFailed(message.trimmingCharacters(in: .whitespacesAndNewlines))
         }

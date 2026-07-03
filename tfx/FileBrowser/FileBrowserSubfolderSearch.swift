@@ -25,6 +25,7 @@ enum FileBrowserSubfolderSearch {
             let resourceKeys: [URLResourceKey] = [
                 .isDirectoryKey,
                 .isHiddenKey,
+                .isSymbolicLinkKey,
                 .fileSizeKey,
                 .contentModificationDateKey,
                 .creationDateKey
@@ -40,7 +41,12 @@ enum FileBrowserSubfolderSearch {
             var lastBatchPublishTime = CFAbsoluteTimeGetCurrent()
             var lastProgressPublishTime = lastBatchPublishTime
 
-            while !currentDepthDirectories.isEmpty {
+            // Hard depth bound as a second line of defense
+            // against traversal loops the symlink check can't
+            // see (e.g. mount-point oddities). Real directory
+            // trees stay well under this.
+            let maxSearchDepth = 128
+            while !currentDepthDirectories.isEmpty, depth < maxSearchDepth {
                 guard !cancellation.isCancelled else {
                     publishCompletion(false)
                     return
@@ -78,7 +84,19 @@ enum FileBrowserSubfolderSearch {
                             }
 
                             let item = FileItem(url: url)
-                            if item.isDirectory, showsHiddenFiles || !item.isHidden {
+                            // Never descend through symlinks:
+                            // `item.isDirectory` resolves the
+                            // link, so a `ln -s .. loop` (or the
+                            // circular links under `/`) would
+                            // otherwise make this BFS grow the
+                            // queue exponentially until the app
+                            // runs out of memory. Symlinks still
+                            // match as search *results*; Finder
+                            // skips descending them too.
+                            let isSymbolicLink = (try? url.resourceValues(
+                                forKeys: [.isSymbolicLinkKey]
+                            ))?.isSymbolicLink == true
+                            if item.isDirectory, !isSymbolicLink, showsHiddenFiles || !item.isHidden {
                                 nextDepthDirectories.append(url.standardizedFileURL)
                             }
 

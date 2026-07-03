@@ -4,6 +4,27 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.2] - 2026-07-03
+
+Data-safety hardening for file operations and stability fixes for hangs and unbounded memory growth.
+
+### Fixed
+
+- Copying or moving a folder into itself or one of its own descendants is now refused with an error dialog (matching Finder). Previously a move implemented as copy-then-delete could permanently delete the entire source tree, copy included.
+- "Replace" during paste/drop no longer deletes the existing destination before copying. The new content is written to a hidden temporary name and swapped in atomically, so a mid-copy failure (disk full, unreadable source) leaves the old file intact instead of losing both versions.
+- Symbolic links are now copied as links instead of being materialized (link-to-directory became an empty real directory, link-to-file became a full copy of its target). Moving `.app` bundles and frameworks no longer breaks their internal link structure. FIFOs and sockets are skipped instead of hanging the copy forever.
+- Pasting multiple same-named files from different folders no longer silently overwrites earlier items with later ones: batch planning tracks claimed destination names (case-insensitively) and assigns `name 2`-style suffixes. The low-level copier additionally refuses to overwrite a destination that appeared after planning (`O_EXCL`).
+- A cancelled directory copy now removes the partially copied tree from the destination instead of leaving it under its final name, indistinguishable from a completed copy.
+- Write errors reported at close time (common on network volumes) now fail the copy instead of being silently ignored — a move no longer deletes its source after a corrupt copy.
+- Browsing or extracting zip archives whose listing/entry output exceeds the 64 KB pipe buffer no longer deadlocks the loader thread (`unzip` output is drained before waiting for exit; stderr is drained concurrently).
+- Subfolder search no longer descends through symbolic links, preventing runaway CPU/memory growth on link cycles (e.g. `ln -s .. loop`); a depth bound of 128 guards remaining traversal loops. Symlinks still appear in search results.
+
+### Changed
+
+- Zip compression (⌘⌥Z) and extraction (⌘⌥E) now run on a background queue instead of blocking the main thread for the duration of `ditto`; repeat invocations while a run is in flight are ignored.
+- The built-in terminal transcript is now bounded: the decoder keeps the last 5,000 lines (matching xterm.js scrollback) and the raw replay buffer is capped at 512 KB, trimmed at line boundaries. Rendered transcripts are computed on demand instead of being rebuilt twice per output chunk, removing O(n²) main-thread work during output floods.
+- Version bumped to `0.9.2`, build `71`.
+
 ## [0.9.1] - 2026-06-26
 
 Pane resize priority refinements, file-list column resizing, and license documentation.

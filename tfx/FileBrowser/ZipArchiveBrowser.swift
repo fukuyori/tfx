@@ -226,12 +226,25 @@ enum ZipArchiveBrowser {
             throw ZipArchiveBrowserError.invalidArchive(URL(fileURLWithPath: arguments.dropFirst().first ?? ""))
         }
 
-        process.waitUntilExit()
+        // Drain BOTH pipes before waiting on the process. A
+        // 64 KB kernel pipe buffer filling up while we sit in
+        // `waitUntilExit()` blocks `unzip`'s writes forever —
+        // a guaranteed deadlock for archives whose listing or
+        // extracted entry exceeds the buffer. stderr is drained
+        // concurrently so a chatty-warnings run can't wedge the
+        // stdout read either.
+        let errorBuffer = PipeDrainBuffer()
+        let errorHandle = errorPipe.fileHandleForReading
+        let drainGroup = DispatchGroup()
+        DispatchQueue.global(qos: .utility).async(group: drainGroup) {
+            errorBuffer.data = errorHandle.readDataToEndOfFile()
+        }
         let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+        drainGroup.wait()
+        process.waitUntilExit()
 
         guard process.terminationStatus == 0 else {
-            let message = String(data: errorData, encoding: .utf8) ?? ""
+            let message = String(data: errorBuffer.data, encoding: .utf8) ?? ""
             throw ZipArchiveBrowserError.commandFailed(message.trimmingCharacters(in: .whitespacesAndNewlines))
         }
 
@@ -291,5 +304,13 @@ enum ZipArchiveBrowser {
             index += 1
         }
     }
+}
+
+/// Reference box for collecting pipe output on a background
+/// drain queue — closures can't capture `var Data` inout, and
+/// the `DispatchGroup.wait()` before any read provides the
+/// happens-before edge that makes the single write visible.
+private final class PipeDrainBuffer: @unchecked Sendable {
+    var data = Data()
 }
 #endif

@@ -172,16 +172,33 @@ extension FileBrowserModel {
             show(ZipArchiveBrowserError.unsupportedWrite)
             return
         }
+        guard !isArchiveOperationInProgress else { return }
+        isArchiveOperationInProgress = true
 
-        do {
-            guard let result = try FileBrowserFileOperations.createZipArchive(from: itemsToArchive, in: currentDirectory) else { return }
-            updateCurrentDirectoryItems(
-                adding: [result.archiveURL],
-                selecting: [result.archiveURL]
-            )
-            notifyDirectoriesChanged([result.affectedDirectory])
-        } catch {
-            show(error)
+        // `ditto` runs until the whole tree is compressed —
+        // seconds to minutes for large folders. Run it off the
+        // main thread so the app doesn't beachball, then hop
+        // back for the item-list bookkeeping.
+        let directory = currentDirectory
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let outcome = Result {
+                try FileBrowserFileOperations.createZipArchive(from: itemsToArchive, in: directory)
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isArchiveOperationInProgress = false
+                switch outcome {
+                case let .success(result):
+                    guard let result else { return }
+                    self.updateCurrentDirectoryItems(
+                        adding: [result.archiveURL],
+                        selecting: [result.archiveURL]
+                    )
+                    self.notifyDirectoriesChanged([result.affectedDirectory])
+                case let .failure(error):
+                    self.show(error)
+                }
+            }
         }
     }
 
@@ -191,17 +208,30 @@ extension FileBrowserModel {
             show(ZipArchiveBrowserError.unsupportedWrite)
             return
         }
+        guard !isArchiveOperationInProgress else { return }
+        isArchiveOperationInProgress = true
 
-        do {
-            guard let result = try FileBrowserFileOperations.extractZipArchive(item.url, into: currentDirectory) else { return }
-            refreshFolderChildren(currentDirectory)
-            updateCurrentDirectoryItems(
-                adding: [result.extractedURL],
-                selecting: [result.extractedURL]
-            )
-            notifyDirectoriesChanged([result.affectedDirectory])
-        } catch {
-            show(error)
+        let directory = currentDirectory
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let outcome = Result {
+                try FileBrowserFileOperations.extractZipArchive(item.url, into: directory)
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isArchiveOperationInProgress = false
+                switch outcome {
+                case let .success(result):
+                    guard let result else { return }
+                    self.refreshFolderChildren(directory)
+                    self.updateCurrentDirectoryItems(
+                        adding: [result.extractedURL],
+                        selecting: [result.extractedURL]
+                    )
+                    self.notifyDirectoriesChanged([result.affectedDirectory])
+                case let .failure(error):
+                    self.show(error)
+                }
+            }
         }
     }
 }

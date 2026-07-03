@@ -1,4 +1,5 @@
 #if os(macOS)
+import Darwin
 import Foundation
 
 /// Errors that the safe copier can throw in addition to whatever
@@ -36,12 +37,15 @@ enum SafeFileCopier {
     /// to seed `Progress.totalUnitCount` so the UI can render a
     /// meaningful percentage.
     static func totalSize(of url: URL) -> Int64 {
-        let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-        if !isDirectory {
+        let rootValues = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        // Symlinks are recreated as links (no payload bytes) and
+        // never followed, so they contribute nothing to the total.
+        if rootValues?.isSymbolicLink == true { return 0 }
+        if rootValues?.isDirectory != true {
             return Int64((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
         }
         var total: Int64 = 0
-        let keys: [URLResourceKey] = [.fileSizeKey, .isDirectoryKey]
+        let keys: [URLResourceKey] = [.fileSizeKey, .isDirectoryKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
             at: url,
             includingPropertiesForKeys: keys,
@@ -50,6 +54,7 @@ enum SafeFileCopier {
 
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: Set(keys))
+            if values?.isSymbolicLink == true { continue }
             if values?.isDirectory == false {
                 total += Int64(values?.fileSize ?? 0)
             }
@@ -67,12 +72,27 @@ enum SafeFileCopier {
         to destination: URL,
         progress: Progress
     ) throws {
-        let isDirectory = (try? source.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-        if isDirectory {
+        let values = try? source.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        // Recreate symlinks as symlinks. `.isDirectoryKey`
+        // resolves through the link, so without this check a
+        // link-to-directory becomes an empty real directory and a
+        // link-to-file becomes a full copy of its target —
+        // silently breaking bundles (`Foo.framework/Versions/
+        // Current`) and, on a move, destroying the link forever.
+        if values?.isSymbolicLink == true {
+            try copySymbolicLink(from: source, to: destination)
+            return
+        }
+        if values?.isDirectory == true {
             try copyDirectory(from: source, to: destination, progress: progress)
         } else {
             try copyFile(from: source, to: destination, progress: progress)
         }
+    }
+
+    private static func copySymbolicLink(from source: URL, to destination: URL) throws {
+        let target = try FileManager.default.destinationOfSymbolicLink(atPath: source.path)
+        try FileManager.default.createSymbolicLink(atPath: destination.path, withDestinationPath: target)
     }
 
     private static func copyDirectory(
@@ -85,7 +105,7 @@ enum SafeFileCopier {
             withIntermediateDirectories: true
         )
 
-        let keys: [URLResourceKey] = [.isDirectoryKey]
+        let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
             at: source,
             includingPropertiesForKeys: keys,
@@ -104,7 +124,9 @@ enum SafeFileCopier {
             let target = destination.appendingPathComponent(relative)
 
             let values = try item.resourceValues(forKeys: Set(keys))
-            if values.isDirectory == true {
+            if values.isSymbolicLink == true {
+                try copySymbolicLink(from: item, to: target)
+            } else if values.isDirectory == true {
                 try FileManager.default.createDirectory(
                     at: target,
                     withIntermediateDirectories: true
@@ -151,14 +173,31 @@ enum SafeFileCopier {
         to destination: URL,
         progress: Progress
     ) throws {
+        // FIFOs, sockets and device nodes cannot be chunk-copied:
+        // reading a FIFO with no writer blocks forever, hanging
+        // the whole operation with no way to cancel. Skip them
+        // (Finder refuses them too).
+        let sourceValues = try? source.resourceValues(forKeys: [.isRegularFileKey])
+        guard sourceValues?.isRegularFile == true else { return }
+
         let input = try FileHandle(forReadingFrom: source)
         defer { try? input.close() }
 
-        // `createFile` succeeds even when the file already
-        // exists — overwriting is fine because the coordinator
-        // gave us an `.forReplacing` window.
-        FileManager.default.createFile(atPath: destination.path, contents: nil)
-        let output = try FileHandle(forWritingTo: destination)
+        // `O_EXCL` makes creation fail if the destination already
+        // exists instead of truncating it. Upstream planning
+        // guarantees a unique (or explicitly replace-via-temp)
+        // destination, so an existing file here means something
+        // else claimed the name after planning — surfacing an
+        // error beats silently destroying it.
+        let fd = Darwin.open(destination.path, O_WRONLY | O_CREAT | O_EXCL, 0o644)
+        guard fd >= 0 else {
+            throw NSError(
+                domain: NSPOSIXErrorDomain,
+                code: Int(errno),
+                userInfo: [NSFilePathErrorKey: destination.path]
+            )
+        }
+        let output = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         defer { try? output.close() }
 
         while true {
@@ -176,6 +215,13 @@ enum SafeFileCopier {
             try output.write(contentsOf: data)
             progress.completedUnitCount += Int64(data.count)
         }
+
+        // Close explicitly on the success path so a deferred
+        // flush error (network volumes often report I/O failures
+        // only at close time) fails the copy instead of being
+        // swallowed by the `try?` in the defer — a move would
+        // otherwise delete the source of a corrupt copy.
+        try output.close()
     }
 }
 
