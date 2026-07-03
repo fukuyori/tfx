@@ -22,13 +22,15 @@ enum FileBrowserSubfolderSearch {
         DispatchQueue.global(qos: .userInitiated).async {
             let searchStart = PerformanceTrace.now()
             let fileManager = FileManager.default
+            // Only the keys the walk itself needs. Everything a
+            // matched row's `FileItem` requires is fetched lazily
+            // in its init — and matches are rare relative to the
+            // number of files visited, so prefetching the full
+            // metadata set for every file just slowed the walk.
             let resourceKeys: [URLResourceKey] = [
                 .isDirectoryKey,
                 .isHiddenKey,
-                .isSymbolicLinkKey,
-                .fileSizeKey,
-                .contentModificationDateKey,
-                .creationDateKey
+                .isSymbolicLinkKey
             ]
             var currentDepthDirectories = [rootDirectory.standardizedFileURL]
             var nextDepthDirectories: [URL] = []
@@ -83,27 +85,43 @@ enum FileBrowserSubfolderSearch {
                                 return
                             }
 
-                            let item = FileItem(url: url)
-                            // Never descend through symlinks:
-                            // `item.isDirectory` resolves the
-                            // link, so a `ln -s .. loop` (or the
-                            // circular links under `/`) would
-                            // otherwise make this BFS grow the
-                            // queue exponentially until the app
-                            // runs out of memory. Symlinks still
-                            // match as search *results*; Finder
-                            // skips descending them too.
-                            let isSymbolicLink = (try? url.resourceValues(
-                                forKeys: [.isSymbolicLinkKey]
-                            ))?.isSymbolicLink == true
-                            if item.isDirectory, !isSymbolicLink, showsHiddenFiles || !item.isHidden {
+                            // Classify from the prefetched resource
+                            // values — building a full `FileItem`
+                            // (size/date text formatting, cache
+                            // lookups, localized names) for every
+                            // visited file made the walk several
+                            // times slower than the disk I/O.
+                            let values = try? url.resourceValues(
+                                forKeys: [.isDirectoryKey, .isHiddenKey, .isSymbolicLinkKey]
+                            )
+                            let isHidden = values?.isHidden == true
+                                || url.lastPathComponent.hasPrefix(".")
+                            guard showsHiddenFiles || !isHidden else { continue }
+
+                            let isDirectory = values?.isDirectory == true
+                            // Never descend through symlinks: a
+                            // `ln -s .. loop` (or the circular
+                            // links under `/`) would otherwise
+                            // make this BFS grow the queue
+                            // exponentially until the app runs
+                            // out of memory. Symlinks still match
+                            // as search *results*; Finder skips
+                            // descending them too.
+                            if isDirectory, values?.isSymbolicLink != true {
                                 nextDepthDirectories.append(url.standardizedFileURL)
                             }
 
-                            guard showsHiddenFiles || !item.isHidden else { continue }
-                            guard item.searchName.contains(query) else { continue }
+                            // Cheap name gate first; the full
+                            // `FileItem` is built only for hits.
+                            // Directories match on their localized
+                            // display name (Documents → 書類), the
+                            // same name `FileItem` would surface.
+                            let matchName = isDirectory
+                                ? FolderDisplayNameCache.shared.displayName(for: url).localizedLowercase
+                                : url.lastPathComponent.localizedLowercase
+                            guard matchName.contains(query) else { continue }
 
-                            pendingItems.append(item)
+                            pendingItems.append(FileItem(url: url))
                             hitCount += 1
 
                             let now = CFAbsoluteTimeGetCurrent()

@@ -18,6 +18,35 @@ extension FileBrowserModel {
         refreshFolderChildren(url)
     }
 
+    /// Expand a folder WITHOUT scheduling a `loadChildren`
+    /// enumeration. Used by navigation paths where a `reload()`
+    /// of the same directory is about to run anyway — the reload
+    /// seeds the folder-tree cache from its own listing (see
+    /// `seedFolderChildrenCache`), so the extra enumeration
+    /// would just read the directory from disk twice.
+    func markFolderExpanded(_ url: URL) {
+        expandedFolders.insert(url.standardizedFileURL)
+    }
+
+    /// Reuse the just-completed pane listing as the folder tree's
+    /// children for `directory` instead of re-enumerating it.
+    /// `FileItem` already resolved directory-ness (including
+    /// symlinks and Finder aliases) and the localized display
+    /// name, so this is pure in-memory work.
+    func seedFolderChildrenCache(for directory: URL) {
+        guard ZipArchiveBrowser.location(for: directory) == nil else { return }
+        let key = directory.standardizedFileURL
+        // Bump the generation so an in-flight background load
+        // for the same key can't overwrite this fresher listing.
+        folderChildrenLoadGenerations[key] = (folderChildrenLoadGenerations[key] ?? 0) + 1
+        let children = allItems
+            .filter { $0.isDirectory && (showHiddenFiles || !$0.isHidden) }
+            .map { (url: $0.url, sortName: $0.searchName) }
+            .sorted { $0.sortName < $1.sortName }
+            .map(\.url)
+        folderChildrenCache[key] = children
+    }
+
     /// Collapse every expanded folder in the tree. The root row
     /// stays visible because the tree renders roots independently
     /// of the `expandedFolders` set.

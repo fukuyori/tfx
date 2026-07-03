@@ -65,7 +65,10 @@ extension TerminalFileManagerView {
     func reloadAllPanes() {
         leftModel.reload()
         rightModel.reload()
-        activeModel.expandFolder(activeModel.currentDirectory)
+        // Expand only — each `reload()` seeds its own folder-tree
+        // cache from the listing it just read, so an extra
+        // `loadChildren` enumeration here would be redundant.
+        activeModel.markFolderExpanded(activeModel.currentDirectory)
     }
 
     func setSplitViewVisible(_ isVisible: Bool) {

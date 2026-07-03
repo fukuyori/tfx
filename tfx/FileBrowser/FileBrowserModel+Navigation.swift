@@ -50,7 +50,11 @@ extension FileBrowserModel {
         if ZipArchiveBrowser.location(for: target) == nil {
             expandAncestors(of: target)
             if expandsTarget {
-                expandFolder(target)
+                // Expand only — the `reload()` below scans the
+                // same directory and seeds the folder-tree cache
+                // from its results, so a separate `loadChildren`
+                // enumeration would hit the disk twice.
+                markFolderExpanded(target)
             }
         }
         reload()

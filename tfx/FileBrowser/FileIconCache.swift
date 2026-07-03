@@ -8,12 +8,17 @@ final class FileIconCache: @unchecked Sendable {
 
     nonisolated(unsafe) private let cache = NSCache<NSString, NSImage>()
 
-    private init() {}
+    private init() {
+        // Path-keyed entries would otherwise accumulate one
+        // NSImage per visited file for the whole session.
+        // Generous enough that a big visible working set never
+        // thrashes, small enough to bound long-session memory.
+        cache.countLimit = 4_096
+    }
 
-    nonisolated func icon(for url: URL, cacheKey _: String?, size: CGFloat = 18) -> NSImage {
+    nonisolated func icon(for url: URL, cacheKey: String?, size: CGFloat = 18) -> NSImage {
         let resolvedSize = max(size, 1)
-        let pathCacheKey = "path:\(url.standardizedFileURL.path)"
-        let key = NSString(string: "\(pathCacheKey):\(Int(resolvedSize))")
+        let key = NSString(string: "\(baseKey(for: url, cacheKey: cacheKey)):\(Int(resolvedSize))")
         if let cachedIcon = cache.object(forKey: key) {
             return cachedIcon
         }
@@ -23,6 +28,26 @@ final class FileIconCache: @unchecked Sendable {
         icon.size = NSSize(width: resolvedSize, height: resolvedSize)
         cache.setObject(icon, forKey: key)
         return icon
+    }
+
+    /// Plain files with an extension share one cached image per
+    /// extension (`FileItem.iconCacheKey` = "file.<ext>"): their
+    /// `NSWorkspace` icon is the file-type icon, identical for
+    /// every `.swift` / `.png` / … file, so 10k same-type files
+    /// cost one LaunchServices query instead of 10k — which is
+    /// what caused per-row main-thread hitches when scrolling
+    /// past the 1,000-item prefetch horizon. Directories (and
+    /// bundles, whose `iconCacheKey` is "directory") stay
+    /// path-keyed: Desktop / Documents / `.app` icons genuinely
+    /// differ per path. Extensionless files ("file") also stay
+    /// path-keyed — executables get a distinct icon from plain
+    /// documents. Callers without a `FileItem` pass nil and get
+    /// the conservative path key.
+    nonisolated private func baseKey(for url: URL, cacheKey: String?) -> String {
+        if let cacheKey, cacheKey.hasPrefix("file."), !cacheKey.hasSuffix(".") {
+            return "ext:\(cacheKey)"
+        }
+        return "path:\(url.standardizedFileURL.path)"
     }
 
     /// Background-friendly bulk prefetch. Warms the cache for the given

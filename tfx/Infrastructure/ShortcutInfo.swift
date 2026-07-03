@@ -264,7 +264,11 @@ enum Shortcuts {
     ]
 
     static func info(_ action: ShortcutAction) -> ShortcutInfo {
-        defaults[action]!
+        // A `ShortcutAction` case added without a matching
+        // `defaults` entry must not crash at first menu render —
+        // degrade to a placeholder binding so the action still
+        // appears.
+        defaults[action] ?? ShortcutInfo(key: KeyEquivalent("\0"), modifiers: [])
     }
 }
 

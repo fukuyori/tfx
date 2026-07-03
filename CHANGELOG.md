@@ -4,6 +4,24 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.4] - 2026-07-03
+
+Icon-cache and preview performance, folder-tree loading reuse, and small robustness fixes.
+
+### Changed
+
+- File icons for plain files are now cached per extension instead of per path, collapsing thousands of identical LaunchServices lookups into one per file type — scrolling past the prefetch horizon in huge directories no longer hitches per row. Folders, bundles, and extensionless files keep per-path icons; the cache is bounded (4,096 entries).
+- CSV/TSV preview parses the file as a character stream instead of materializing the whole text as a `Character` array (which peaked at ~16× the file size), stops parsing at the preview limit, and renders at most the first 1,000 rows × 100 columns with a truncation footer.
+- Navigation no longer enumerates the same directory twice: the completed pane listing now seeds the folder tree's children, replacing the separate `loadChildren` scan. The folder tree also stays in sync with watcher-driven reloads as a result.
+- Subfolder search classifies entries from prefetched resource values and matches names before constructing row items, building the full `FileItem` only for hits; the directory walk requests only the three keys it needs.
+
+### Fixed
+
+- Renaming a file to a name differing only in letter case (`foo` → `Foo`) now performs the case change directly instead of producing `Foo 2` on case-insensitive volumes.
+- Multibyte characters (Japanese output, emoji) split across the built-in terminal's 4 KB read boundary no longer decode as "�"; incomplete UTF-8 sequences carry over to the next read.
+- Removed two force-unwraps that could crash at startup or on preview: a missing shortcut definition for a new action now degrades to "no shortcut", and an unavailable QuickLook service falls back to an inert preview view.
+- Version bumped to `0.9.4`, build `73`.
+
 ## [0.9.3] - 2026-07-03
 
 Performance work on directory loading, Git status, and subfolder search, plus reliability fixes for background work.

@@ -10,7 +10,13 @@ struct QuickLookPreview: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> QLPreviewView {
-        let view = QLPreviewView(frame: .zero, style: .normal)!
+        // The initializer is failable (QuickLook service
+        // unavailable / misbehaving). Fall back to an inert
+        // plain-initialized view instead of crashing the app
+        // over a preview.
+        guard let view = QLPreviewView(frame: .zero, style: .normal) else {
+            return QLPreviewView()
+        }
         view.autostarts = true
         return view
     }

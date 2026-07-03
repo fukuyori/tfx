@@ -12,12 +12,21 @@ struct CSVPreview: View {
     let url: URL
 
     @State private var rows: [[String]] = []
+    @State private var isTruncated = false
     @State private var loadedURL: URL?
     @State private var isLoading = false
     @State private var loadFailed = false
     @State private var tooLargeMessage: String?
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
+
+    /// Rendering bounds for the preview table. A preview doesn't
+    /// need every row of a huge dump, and each rendered cell is a
+    /// bordered `Text` — without a cap a million-row CSV builds
+    /// an unscrollable wall of views. Rows beyond the cap are
+    /// reported via a footer instead.
+    private static let maxPreviewRows = 1_000
+    private static let maxPreviewColumns = 100
 
     var body: some View {
         Group {
@@ -45,7 +54,7 @@ struct CSVPreview: View {
     }
 
     private var tableView: some View {
-        let columnCount = rows.map(\.count).max() ?? 0
+        let columnCount = min(rows.map(\.count).max() ?? 0, Self.maxPreviewColumns)
         return ScrollView([.horizontal, .vertical]) {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
@@ -71,6 +80,12 @@ struct CSVPreview: View {
                         }
                     }
                 }
+                if isTruncated {
+                    Text("Preview limited to the first \(Self.maxPreviewRows) rows.")
+                        .font(design.fonts.swiftUIFont(for: .previewCode))
+                        .foregroundStyle(theme.secondaryForeground)
+                        .padding(8)
+                }
             }
         }
     }
@@ -82,6 +97,7 @@ struct CSVPreview: View {
         loadFailed = false
         tooLargeMessage = nil
         rows = []
+        isTruncated = false
 
         let delimiter: Character = newURL.pathExtension.lowercased() == "tsv" ? "\t" : ","
         let target = newURL
@@ -98,10 +114,17 @@ struct CSVPreview: View {
                 }
                 return
             case let .success(text):
-                let parsed = CSVParser.parse(text, delimiter: delimiter)
+                // Parse one row past the render cap so a footer
+                // can say the preview is truncated.
+                var parsed = CSVParser.parse(text, delimiter: delimiter, maxRows: Self.maxPreviewRows + 1)
+                let truncated = parsed.count > Self.maxPreviewRows
+                if truncated {
+                    parsed.removeLast(parsed.count - Self.maxPreviewRows)
+                }
                 DispatchQueue.main.async {
                     guard loadedURL == newURL else { return }
                     rows = parsed
+                    isTruncated = truncated
                     isLoading = false
                 }
             }
@@ -118,26 +141,42 @@ struct CSVPreview: View {
 /// Streaming and locale-specific delimiter detection are intentionally out of
 /// scope for this preview. The whole file is loaded into memory first.
 enum CSVParser {
-    static func parse(_ text: String, delimiter: Character) -> [[String]] {
+    /// `maxRows` stops the parse once that many rows are
+    /// complete — the preview renders a bounded table, so
+    /// parsing every row of a 50 MB dump is wasted work.
+    /// Pass nil for a full parse.
+    static func parse(_ text: String, delimiter: Character, maxRows: Int? = nil) -> [[String]] {
         var rows: [[String]] = []
         var current: [String] = []
         var field = ""
         var inQuotes = false
 
-        let characters = Array(text)
-        var i = 0
-        while i < characters.count {
-            let c = characters[i]
+        // Iterate the string directly instead of materializing
+        // `Array(text)` first: one Character costs 16 bytes, so
+        // the array peaked at ~16× the file size (≈800 MB for a
+        // 50 MB CSV) before parsing even began. `pending` holds
+        // the single character of lookahead the `""` escape
+        // needs.
+        var iterator = text.makeIterator()
+        var pending: Character?
+        func nextCharacter() -> Character? {
+            if let held = pending {
+                pending = nil
+                return held
+            }
+            return iterator.next()
+        }
 
+        while let c = nextCharacter() {
             if inQuotes {
                 if c == "\"" {
-                    if i + 1 < characters.count, characters[i + 1] == "\"" {
+                    let lookahead = nextCharacter()
+                    if lookahead == "\"" {
                         field.append("\"")
-                        i += 2
                         continue
-                    } else {
-                        inQuotes = false
                     }
+                    inQuotes = false
+                    pending = lookahead
                 } else {
                     field.append(c)
                 }
@@ -157,11 +196,13 @@ enum CSVParser {
                     rows.append(current)
                     current = []
                     field = ""
+                    if let maxRows, rows.count >= maxRows {
+                        return rows
+                    }
                 default:
                     field.append(c)
                 }
             }
-            i += 1
         }
 
         if !field.isEmpty || !current.isEmpty {

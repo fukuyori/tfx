@@ -641,6 +641,12 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
     private var childPID: pid_t = -1
     private var readSource: DispatchSourceRead?
     private var didExit = false
+    /// Trailing bytes of an incomplete UTF-8 sequence from the
+    /// previous read, carried over so multibyte characters
+    /// (Japanese output, emoji) split across the 4096-byte read
+    /// boundary don't decode as "�". Only touched from the read
+    /// source's serialized event handler.
+    private var pendingUTF8Bytes: [UInt8] = []
 
     init(
         shellPath: String,
@@ -948,7 +954,14 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         while true {
             let count = Darwin.read(fd, &buffer, buffer.count)
             if count > 0 {
-                onOutput(String(decoding: buffer.prefix(count), as: UTF8.self))
+                var bytes = pendingUTF8Bytes
+                bytes.append(contentsOf: buffer.prefix(count))
+                let incompleteSuffix = Self.incompleteUTF8SuffixLength(of: bytes)
+                pendingUTF8Bytes = Array(bytes.suffix(incompleteSuffix))
+                bytes.removeLast(incompleteSuffix)
+                if !bytes.isEmpty {
+                    onOutput(String(decoding: bytes, as: UTF8.self))
+                }
             } else if count == 0 {
                 finish()
                 return
@@ -961,6 +974,41 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
                 return
             }
         }
+    }
+
+    /// Number of trailing bytes that form the START of a UTF-8
+    /// sequence whose continuation bytes haven't arrived yet.
+    /// Returns 0 when the buffer ends on a complete (or
+    /// irreparably invalid — let the decoder emit "�") sequence.
+    private static func incompleteUTF8SuffixLength(of bytes: [UInt8]) -> Int {
+        // Walk back over up to 3 continuation bytes (10xxxxxx)
+        // to find the lead byte.
+        var continuations = 0
+        var index = bytes.count - 1
+        while index >= 0, continuations < 3, bytes[index] & 0xC0 == 0x80 {
+            continuations += 1
+            index -= 1
+        }
+        guard index >= 0 else { return 0 }
+
+        let lead = bytes[index]
+        let sequenceLength: Int
+        if lead & 0x80 == 0x00 {
+            sequenceLength = 1
+        } else if lead & 0xE0 == 0xC0 {
+            sequenceLength = 2
+        } else if lead & 0xF0 == 0xE0 {
+            sequenceLength = 3
+        } else if lead & 0xF8 == 0xF0 {
+            sequenceLength = 4
+        } else {
+            // Stray continuation or invalid lead — nothing more
+            // to wait for.
+            return 0
+        }
+
+        let available = continuations + 1
+        return available < sequenceLength ? available : 0
     }
 
     private func finish() {

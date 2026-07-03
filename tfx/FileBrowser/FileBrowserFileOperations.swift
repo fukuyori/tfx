@@ -162,7 +162,22 @@ enum FileBrowserFileOperations {
         guard !trimmed.isEmpty, trimmed != item.name else { return nil }
 
         let affectedDirectory = item.url.deletingLastPathComponent()
-        let destination = FileConflictResolver.uniqueDestination(for: trimmed, in: affectedDirectory)
+        // Case-only renames (`foo` → `Foo`) need special care on
+        // the default case-insensitive APFS volume: the naive
+        // `fileExists` probe inside `uniqueDestination` matches
+        // the item itself, so the rename silently landed on
+        // "Foo 2". When the "occupied" destination is the very
+        // file being renamed, use it directly — a same-directory
+        // `moveItem` performs the case change fine.
+        let directCandidate = affectedDirectory.appendingPathComponent(trimmed)
+        let destination: URL
+        if let candidateID = (try? directCandidate.resourceValues(forKeys: [.fileResourceIdentifierKey]))?.fileResourceIdentifier,
+           let sourceID = (try? item.url.resourceValues(forKeys: [.fileResourceIdentifierKey]))?.fileResourceIdentifier,
+           candidateID.isEqual(sourceID) {
+            destination = directCandidate
+        } else {
+            destination = FileConflictResolver.uniqueDestination(for: trimmed, in: affectedDirectory)
+        }
         try FileManager.default.moveItem(at: item.url, to: destination)
         return FileRenameResult(
             sourceURL: item.url,

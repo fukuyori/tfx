@@ -164,6 +164,12 @@ extension FileBrowserModel {
                     self.lastLoadedDirectory = directory
                 }
             }
+            if isFinalBatch {
+                // Feed the completed listing to the folder tree so
+                // navigation doesn't enumerate the same directory
+                // a second time through `loadChildren`.
+                self.seedFolderChildrenCache(for: directory)
+            }
         }
     }
 
