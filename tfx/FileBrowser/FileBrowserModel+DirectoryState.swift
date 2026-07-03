@@ -101,9 +101,22 @@ extension FileBrowserModel {
     }
 
     func updateAvailableCapacity() {
-        let nextText = FileBrowserDirectoryReader.availableCapacityText(for: currentDirectory)
-        if availableCapacityText != nextText {
-            availableCapacityText = nextText
+        // `availableCapacityText` boils down to a `statvfs`,
+        // which can block for seconds (or minutes on a dead
+        // mount) against network volumes — the reload path
+        // already fetches it off the main thread for exactly
+        // that reason. Do the same here.
+        let directory = currentDirectory
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let nextText = FileBrowserDirectoryReader.availableCapacityText(for: directory)
+            DispatchQueue.main.async { [weak self] in
+                guard
+                    let self,
+                    self.currentDirectory.standardizedFileURL == directory.standardizedFileURL,
+                    self.availableCapacityText != nextText
+                else { return }
+                self.availableCapacityText = nextText
+            }
         }
     }
 }

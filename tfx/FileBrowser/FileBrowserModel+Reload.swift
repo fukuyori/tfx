@@ -170,7 +170,13 @@ extension FileBrowserModel {
     private func appendLoadedDirectoryItems(_ loadedItems: [FileItem], pruneAfterUpdate: Bool) {
         if !loadedItems.isEmpty {
             allItems.append(contentsOf: loadedItems)
-            allItemLookup = FileBrowserDirectoryState.itemLookup(for: allItems)
+            // Insert only the new batch instead of rebuilding the
+            // whole lookup: a full rebuild per chunk is O(n²) over
+            // the load and visibly stalls the main thread on
+            // directories with tens of thousands of entries.
+            for item in loadedItems {
+                allItemLookup[item.id] = item
+            }
             refreshPreviewURLs()
         }
 

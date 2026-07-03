@@ -17,8 +17,15 @@ extension FileBrowserFolderSupport {
 
             for child in children {
                 let values = try? child.resourceValues(forKeys: [.isDirectoryKey, .isAliasFileKey])
+                // Only aliases need the `directoryURLForNavigation`
+                // rescue (it resolves the alias and stats the
+                // target). Running it for every plain file adds one
+                // wasted stat per child — thousands of extra
+                // syscalls per expansion in large folders, painful
+                // on network volumes.
                 let isDirectory = values?.isDirectory == true
-                    || FileBrowserExternalActions.directoryURLForNavigation(child) != nil
+                    || (values?.isAliasFile == true
+                        && FileBrowserExternalActions.directoryURLForNavigation(child) != nil)
                 guard isDirectory else {
                     continue
                 }

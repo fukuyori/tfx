@@ -10,7 +10,7 @@ import Foundation
 /// SwiftUI cannot observe it natively because it predates
 /// `ObservableObject`. We mirror its observable properties into
 /// `@Published` ones here via KVO.
-final class FileOperationProgressViewModel: ObservableObject {
+final class FileOperationProgressViewModel: ObservableObject, Identifiable {
     enum Kind {
         case copying
         case moving

@@ -981,7 +981,25 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         lock.unlock()
         if pid > 0 {
             var status: Int32 = 0
-            waitpid(pid, &status, WNOHANG)
+            if waitpid(pid, &status, WNOHANG) == 0 {
+                // The child hasn't exited yet — `terminate()`
+                // calls us immediately after sending SIGHUP, so
+                // this is the common path when closing the pane.
+                // A one-shot WNOHANG here leaked the child as a
+                // zombie for the rest of the app's lifetime
+                // (`didExit` guarantees no second waitpid).
+                // Reap on a background queue instead: grace
+                // period, SIGKILL if it ignored SIGHUP, then a
+                // blocking waitpid — which is safe because an
+                // unreaped child's PID cannot be reused.
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2) {
+                    var lateStatus: Int32 = 0
+                    if waitpid(pid, &lateStatus, WNOHANG) == 0 {
+                        kill(pid, SIGKILL)
+                        waitpid(pid, &lateStatus, 0)
+                    }
+                }
+            }
         }
 
         onExit()

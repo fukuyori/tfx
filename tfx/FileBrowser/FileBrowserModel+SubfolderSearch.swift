@@ -153,7 +153,14 @@ extension FileBrowserModel {
     private func appendSubfolderSearchItems(_ loadedItems: [FileItem]) {
         guard !loadedItems.isEmpty else { return }
         allItems.append(contentsOf: loadedItems)
-        allItemLookup = FileBrowserDirectoryState.itemLookup(for: allItems)
+        // Differential inserts: rebuilding both lookups from
+        // scratch per batch made long searches O(n²) on the main
+        // thread. `pendingVisibleIndexAppendStart` tells the
+        // `items` didSet to extend the index lookup in place.
+        for item in loadedItems {
+            allItemLookup[item.id] = item
+        }
+        pendingVisibleIndexAppendStart = items.count
         items.append(contentsOf: loadedItems)
         refreshPreviewURLs()
     }

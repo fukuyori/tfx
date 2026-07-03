@@ -18,6 +18,35 @@ extension FileBrowserModel {
     ///    cancellation token and a re-check that `currentDirectory`
     ///    still belongs to the same work tree.
     func refreshGitStatus() {
+        // Throttle with a trailing run: `reload()` calls this on
+        // every navigation AND on every directory-watcher event
+        // (builds, terminal work, log writers), and each call
+        // spawns a `git status` process. During write storms that
+        // kept a status process running near-continuously. The
+        // trailing work item guarantees the *final* state is
+        // always fetched, so badges never go permanently stale.
+        let minimumInterval: TimeInterval = 1.0
+        let now = CFAbsoluteTimeGetCurrent()
+        let elapsed = now - lastGitStatusFetchTime
+        if elapsed < minimumInterval {
+            guard pendingGitStatusWorkItem == nil else { return }
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                self.pendingGitStatusWorkItem = nil
+                self.performGitStatusFetch()
+            }
+            pendingGitStatusWorkItem = workItem
+            DispatchQueue.main.asyncAfter(
+                deadline: .now() + (minimumInterval - elapsed),
+                execute: workItem
+            )
+            return
+        }
+        performGitStatusFetch()
+    }
+
+    private func performGitStatusFetch() {
+        lastGitStatusFetchTime = CFAbsoluteTimeGetCurrent()
         let directory = currentDirectory.standardizedFileURL
 
         // Cancel any prior fetch *before* spawning the next one so the
@@ -60,7 +89,10 @@ extension FileBrowserModel {
             }
 
             if cancellation.isCancelled { return }
-            let status = GitStatusReader.readStatus(root: root, cancellation: cancellation)
+            // Scope the walk to the pane's directory — row badges
+            // only need entries under it, and this lets git skip
+            // the rest of a large work tree.
+            let status = GitStatusReader.readStatus(root: root, scope: directory, cancellation: cancellation)
             if cancellation.isCancelled { return }
 
             DispatchQueue.main.async { [weak self] in

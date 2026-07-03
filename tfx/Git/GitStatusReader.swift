@@ -44,19 +44,32 @@ enum GitStatusReader {
         return URL(fileURLWithPath: trimmed).standardizedFileURL
     }
 
-    /// Read full repository status for the work tree rooted at `root`.
+    /// Read repository status for the work tree rooted at `root`.
     /// Returns nil if `git` is not installed, the directory is no longer
     /// a Git working copy, or the read was cancelled.
+    ///
+    /// `scope` limits the status walk to one subtree via a pathspec.
+    /// Row badges only ever need entries under the pane's current
+    /// directory, and scoping lets git skip scanning the rest of the
+    /// work tree — the difference between milliseconds and seconds on
+    /// large monorepos. The `# branch.*` headers are emitted regardless
+    /// of pathspec, so the branch indicator is unaffected. Pass nil for
+    /// a full-tree status.
     ///
     /// Note: ignored entries are *not* requested (`--ignored=no`) to
     /// keep the call cheap on large repos. The current product decision
     /// is to not surface ignored badges; revisit this when adding that.
-    nonisolated static func readStatus(root: URL, cancellation: GitStatusCancellation? = nil) -> GitRepositoryStatus? {
+    nonisolated static func readStatus(
+        root: URL,
+        scope: URL? = nil,
+        cancellation: GitStatusCancellation? = nil
+    ) -> GitRepositoryStatus? {
         if cancellation?.isCancelled == true { return nil }
-        guard let data = runGitData(
-            arguments: ["status", "--porcelain=v2", "-b", "-z", "--untracked-files=normal", "--ignored=no"],
-            in: root
-        ) else {
+        var arguments = ["status", "--porcelain=v2", "-b", "-z", "--untracked-files=normal", "--ignored=no"]
+        if let scope, scope.standardizedFileURL.path != root.standardizedFileURL.path {
+            arguments += ["--", scope.standardizedFileURL.path]
+        }
+        guard let data = runGitData(arguments: arguments, in: root) else {
             return nil
         }
         if cancellation?.isCancelled == true { return nil }
@@ -294,13 +307,39 @@ enum GitStatusReader {
             return nil
         }
 
-        // Drain stdout asynchronously while the process runs to avoid
-        // deadlocking on the pipe buffer for large status output.
+        // Drain stderr CONCURRENTLY with stdout, then discard
+        // (surfacing git stderr would clutter the UI). Reading it
+        // only after stdout hit EOF could deadlock: git blocking
+        // on a full 64 KB stderr pipe never closes stdout.
+        let stderrHandle = stderrPipe.fileHandleForReading
+        DispatchQueue.global(qos: .utility).async {
+            _ = stderrHandle.readDataToEndOfFile()
+        }
+
+        // Watchdog: a git that never returns (repository on a dead
+        // NFS/SMB mount, broken fsmonitor hook) would otherwise
+        // pin this worker thread forever — and each navigation
+        // spawns a fresh worker, so hung mounts leak threads until
+        // the GCD pool (~64) is exhausted and every background
+        // task in the app stalls. SIGTERM first, SIGKILL if git
+        // ignores it.
+        let timeout: TimeInterval = 30
+        let watchdog = DispatchWorkItem {
+            guard process.isRunning else { return }
+            process.terminate()
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2) {
+                if process.isRunning {
+                    kill(process.processIdentifier, SIGKILL)
+                }
+            }
+        }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout, execute: watchdog)
+
+        // Drain stdout while the process runs to avoid deadlocking
+        // on the pipe buffer for large status output.
         let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-        // Drain stderr to prevent the writer side from blocking, then
-        // discard. Surfacing git stderr would clutter the UI.
-        _ = stderrPipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
+        watchdog.cancel()
 
         guard process.terminationStatus == 0 else { return nil }
         return data

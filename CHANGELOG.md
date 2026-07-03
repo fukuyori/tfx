@@ -4,6 +4,26 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.3] - 2026-07-03
+
+Performance work on directory loading, Git status, and subfolder search, plus reliability fixes for background work.
+
+### Changed
+
+- Directory loading and subfolder search now insert each arriving batch into the item lookups incrementally instead of rebuilding them from scratch per batch, removing O(n²) main-thread work in directories with tens of thousands of entries.
+- `git status` is now scoped to the pane's current directory via a pathspec, letting git skip the rest of a large work tree, and refreshes are throttled to at most one per second with a guaranteed trailing run — file-system event storms (builds, terminal work) no longer keep a status process running continuously.
+- Expanding a folder in the folder tree no longer stats every non-directory child; only aliases go through the resolution fallback.
+- Free-space lookups triggered by file operations and subfolder search now run off the main thread, matching the reload path — no more UI freeze against slow or dead network mounts.
+- The pre-copy byte tally for paste/drop progress now runs on the background queue; pasting very large trees no longer beachballs before the copy starts.
+- Markdown preview now uses the shared 50 MB size-capped text loader like all other text previews.
+- Version bumped to `0.9.3`, build `72`.
+
+### Fixed
+
+- Concurrent copy/move operations each keep their own progress card and quit-guard registration; previously a second operation evicted the first's card and the app could quit silently mid-copy.
+- `git` invocations now have a 30-second watchdog (SIGTERM, then SIGKILL) and drain stderr concurrently — a repository on a dead network mount no longer leaks a worker thread per navigation until background work stalls app-wide.
+- Closing the built-in terminal no longer leaves the shell behind as a zombie process: reaping now escalates to SIGKILL after a grace period and always collects the child.
+
 ## [0.9.2] - 2026-07-03
 
 Data-safety hardening for file operations and stability fixes for hangs and unbounded memory growth.

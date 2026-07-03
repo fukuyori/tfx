@@ -52,8 +52,17 @@ struct MarkdownPreview: NSViewRepresentable {
 
         DispatchQueue.global(qos: .userInitiated).async {
             guard !cancellation.isCancelled else { return }
-            let markdown = (try? String(contentsOf: targetURL, encoding: .utf8))
-                ?? String(decoding: ((try? Data(contentsOf: targetURL)) ?? Data()), as: UTF8.self)
+            // Route through the shared size-capped loader like
+            // every other text preview: an unbounded read of a
+            // multi-GB file (plus the HTML expansion on top)
+            // could exhaust the process just by selecting it.
+            let markdown: String
+            switch PreviewTextLoader.load(at: targetURL) {
+            case let .success(text):
+                markdown = text
+            case let .tooLarge(actualBytes):
+                markdown = PreviewTextLoader.tooLargeMessage(actualBytes: actualBytes)
+            }
             guard !cancellation.isCancelled else { return }
             guard let html = MarkdownHTMLRenderer.htmlDocument(
                 for: markdown,

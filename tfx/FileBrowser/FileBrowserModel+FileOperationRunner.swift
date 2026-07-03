@@ -44,19 +44,14 @@ extension FileBrowserModel {
         requests: [FileOperationRequest],
         completion: @escaping (_ added: [URL], _ removedFromSource: [URL]) -> Void
     ) {
-        // Pre-flight: tally the total byte size so the progress
-        // bar reflects actual work rather than item count.
-        let totalBytes = requests.reduce(Int64(0)) { total, request in
-            let source = request.sourceURL
-            let scoped = source.startAccessingSecurityScopedResource()
-            defer {
-                if scoped {
-                    source.stopAccessingSecurityScopedResource()
-                }
-            }
-            return total + SafeFileCopier.totalSize(of: source)
-        }
-        let progress = Progress(totalUnitCount: max(totalBytes, 1))
+        // The byte tally happens on the background queue below —
+        // it walks every source tree, which for a 100k-file
+        // folder or a slow network volume takes long enough to
+        // beachball the main thread. Start with a placeholder
+        // total; `Progress` is KVO-safe to update from any
+        // thread and the card simply shows a fuller picture once
+        // the tally lands.
+        let progress = Progress(totalUnitCount: 1)
         progress.kind = .file
         // `Progress.FileOperationKind` defines `.copying` and
         // `.downloading` but not `.moving`; pick the closest
@@ -66,9 +61,24 @@ extension FileBrowserModel {
         // The current file URL is updated per-item below.
         let viewModel = FileOperationProgressViewModel(kind: kind, progress: progress)
         let shouldRemoveSource = kind == .moving
-        activeOperation = viewModel
+        activeOperations.append(viewModel)
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            // Pre-flight: tally the total byte size so the
+            // progress bar reflects actual work rather than item
+            // count.
+            let totalBytes = requests.reduce(Int64(0)) { total, request in
+                let source = request.sourceURL
+                let scoped = source.startAccessingSecurityScopedResource()
+                defer {
+                    if scoped {
+                        source.stopAccessingSecurityScopedResource()
+                    }
+                }
+                return total + SafeFileCopier.totalSize(of: source)
+            }
+            progress.totalUnitCount = max(totalBytes, 1)
+
             var added: [URL] = []
             var removed: [URL] = []
 
@@ -149,7 +159,9 @@ extension FileBrowserModel {
             }
 
             DispatchQueue.main.async { [weak self] in
-                self?.activeOperation = nil
+                // Remove only this operation's card — another
+                // operation started meanwhile keeps its own.
+                self?.activeOperations.removeAll { $0 === viewModel }
                 completion(added, removed)
             }
         }

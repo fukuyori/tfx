@@ -144,15 +144,20 @@ struct FilePane: View {
                     lineWidth: model.isPaneDropTarget ? 3 : 0
                 )
         )
-        // Inline progress card for long-running copy / move
+        // Inline progress cards for long-running copy / move
         // operations. Pinned to the bottom of the pane (above the
-        // status line) so it doesn't fight with the file list for
-        // vertical real estate, and only renders while
-        // `activeOperation` is non-nil.
+        // status line) so they don't fight with the file list for
+        // vertical real estate, and only render while
+        // `activeOperations` is non-empty. One card per
+        // concurrent operation, each with its own Cancel.
         .overlay(alignment: .bottom) {
-            if let op = model.activeOperation {
-                FileOperationProgressCard(operation: op)
-                    .padding(10)
+            if !model.activeOperations.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(model.activeOperations) { op in
+                        FileOperationProgressCard(operation: op)
+                    }
+                }
+                .padding(10)
             }
         }
         .onAppear {

@@ -8,9 +8,34 @@ final class FileBrowserModel: ObservableObject {
     @Published var currentDirectory = URL(fileURLWithPath: NSHomeDirectory())
     @Published var items: [FileItem] = [] {
         didSet {
-            rebuildVisibleItemIndexes()
+            // Append-only mutations (subfolder-search batches)
+            // declare their start index up front so the index
+            // lookup can be extended incrementally instead of
+            // rehashed from scratch — a full rebuild per batch is
+            // O(n²) over a long-running search.
+            if let appendStart = pendingVisibleIndexAppendStart,
+               appendStart <= items.count,
+               items.count - appendStart >= 0 {
+                for index in appendStart..<items.count {
+                    visibleItemIndexLookup[items[index].id] = index
+                }
+            } else {
+                rebuildVisibleItemIndexes()
+            }
+            pendingVisibleIndexAppendStart = nil
         }
     }
+
+    /// Set immediately before an append-only assignment to
+    /// `items`; consumed (reset to nil) by its `didSet`.
+    var pendingVisibleIndexAppendStart: Int?
+
+    /// Throttle state for `refreshGitStatus()` — timestamp of
+    /// the last spawned `git status` and the trailing coalesced
+    /// run scheduled while inside the minimum interval. Main
+    /// thread only.
+    var lastGitStatusFetchTime: CFAbsoluteTime = 0
+    var pendingGitStatusWorkItem: DispatchWorkItem?
     @Published var selectedItemIDs: Set<FileItem.ID> = []
     @Published var primarySelectedItemID: FileItem.ID?
     @Published var isParentDirectorySelected = false
@@ -80,20 +105,24 @@ final class FileBrowserModel: ObservableObject {
     /// render the branch indicator in the status line.
     @Published var gitRepositoryStatus: GitRepositoryStatus?
     @Published var inlineNameEdit: InlineNameEdit?
-    /// Live progress reporter for a long-running file operation
-    /// (paste / drop). When non-nil the file pane shows an
-    /// inline card with the OS-localized progress string and a
-    /// Cancel button. Set/cleared by `runFileOperation(...)`.
+    /// Live progress reporters for long-running file operations
+    /// (paste / drop). While non-empty the file pane shows an
+    /// inline card per operation with the OS-localized progress
+    /// string and a Cancel button. Appended/removed by
+    /// `runFileOperation(...)`. A list rather than a single slot:
+    /// a second operation started mid-copy must not evict the
+    /// first one's card or its `FileOperationRegistry`
+    /// registration (which is what lets the app refuse to quit
+    /// silently while any pane is mid-copy).
     /// The didSet hook keeps `FileOperationRegistry.shared` in
-    /// sync so the app-delegate can refuse to quit silently
-    /// while any pane is mid-copy.
-    @Published var activeOperation: FileOperationProgressViewModel? {
+    /// sync.
+    @Published var activeOperations: [FileOperationProgressViewModel] = [] {
         didSet {
-            if let oldValue, oldValue !== activeOperation {
-                FileOperationRegistry.shared.unregister(oldValue)
+            for operation in oldValue where !activeOperations.contains(where: { $0 === operation }) {
+                FileOperationRegistry.shared.unregister(operation)
             }
-            if let activeOperation, activeOperation !== oldValue {
-                FileOperationRegistry.shared.register(activeOperation)
+            for operation in activeOperations where !oldValue.contains(where: { $0 === operation }) {
+                FileOperationRegistry.shared.register(operation)
             }
         }
     }
