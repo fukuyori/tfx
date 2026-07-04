@@ -39,13 +39,14 @@ enum FileOperationPrompt {
         )
     }
 
-    /// Error alert shown when a copy / move would place a folder
-    /// inside itself (or one of its own descendants). Mirrors
-    /// Finder's refusal dialog for the same gesture.
-    static func showCannotTransferIntoItself(itemName: String) {
+    /// Error alert shown when a move would place a folder inside
+    /// itself (or one of its own descendants). Mirrors Finder's
+    /// refusal dialog for the same gesture. Copies are allowed —
+    /// they produce a nested copy, like Finder.
+    static func showCannotMoveIntoItself(itemName: String) {
         let alert = NSAlert()
         alert.messageText = String(localized: "Operation Not Permitted")
-        alert.informativeText = String(localized: "\"\(itemName)\" can't be copied or moved into itself.")
+        alert.informativeText = String(localized: "\"\(itemName)\" can't be moved into itself.")
         alert.alertStyle = .warning
         alert.addButton(withTitle: String(localized: "OK"))
         alert.runModal()

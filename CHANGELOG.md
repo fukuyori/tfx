@@ -4,6 +4,17 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.5] - 2026-07-05
+
+Relaxes the 0.9.2 copy/move-into-itself guard: only moves are refused now.
+
+### Fixed
+
+- Copying a folder into itself or one of its own subfolders works again, matching Finder by producing a nested copy. The 0.9.2 guard refused both copies and moves; only moves are genuinely unsafe (the copy-then-delete-source sequence would destroy the tree) and only they are blocked now.
+- The underlying copier snapshots the source listing before writing, so a copy whose destination lives inside the source can no longer recurse into the half-written destination. `FileManager.copyItem` (used by the direct paste path) nested `a/a/a/…` until the path-length limit in that situation; those transfers now route through the snapshotting copier.
+- Added regression tests covering copy-into-itself, symlink preservation, and overwrite refusal (`SafeFileCopierTests`).
+- Version bumped to `0.9.5`, build `74`.
+
 ## [0.9.4] - 2026-07-03
 
 Icon-cache and preview performance, folder-tree loading reuse, and small robustness fixes.

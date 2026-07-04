@@ -50,19 +50,24 @@ enum FileConflictResolver {
     ) -> FileConflictDecision {
         let destinationURL = directory.appendingPathComponent(sourceURL.lastPathComponent)
 
-        // Refuse to copy or move a folder into itself or any of
-        // its descendants. The batch runner implements `move` as
-        // "copy the tree, then removeItem(source)" — without this
-        // guard, `/a` moved into `/a/b` copies into `/a/b/a` and
-        // the trailing removal deletes the entire tree, copy
-        // included. Compare symlink-resolved paths so a
-        // destination reached through a link to the source (or a
-        // `/tmp` vs `/private/tmp` spelling) is caught too.
+        // Refuse to MOVE a folder into itself or any of its
+        // descendants (Finder refuses the same gesture). The
+        // batch runner implements `move` as "copy the tree, then
+        // removeItem(source)" — without this guard, `/a` moved
+        // into `/a/b` copies into `/a/b/a` and the trailing
+        // removal deletes the entire tree, copy included.
+        // COPY into itself is legal, matching Finder: it creates
+        // a nested copy. `SafeFileCopier` snapshots the source
+        // listing before writing so the copy can't recurse into
+        // itself. Compare symlink-resolved paths so a destination
+        // reached through a link to the source (or a `/tmp` vs
+        // `/private/tmp` spelling) is caught too.
         let resolvedSourcePath = sourceURL.resolvingSymlinksInPath().path
         let resolvedDirectoryPath = directory.resolvingSymlinksInPath().path
-        if resolvedDirectoryPath == resolvedSourcePath
+        if operation == .move,
+           resolvedDirectoryPath == resolvedSourcePath
             || resolvedDirectoryPath.hasPrefix(resolvedSourcePath + "/") {
-            FileOperationPrompt.showCannotTransferIntoItself(itemName: sourceURL.lastPathComponent)
+            FileOperationPrompt.showCannotMoveIntoItself(itemName: sourceURL.lastPathComponent)
             return .cancel
         }
 

@@ -426,6 +426,23 @@ enum FileBrowserFileOperations {
     /// (disk full, unreadable cloud placeholder, …) leaves the
     /// old destination untouched instead of destroying both the
     /// old and the new version.
+    /// `FileManager.copyItem` recurses forever when the
+    /// destination lives inside the source (it descends into the
+    /// half-written copy, nesting `a/a/a/…` until PATH_MAX).
+    /// Finder supports that gesture — pasting a folder into
+    /// itself yields a nested copy — so route it through
+    /// `SafeFileCopier`, which snapshots the source listing
+    /// before writing.
+    private static func copyItemSafely(from sourceURL: URL, to destinationURL: URL) throws {
+        let sourcePath = sourceURL.resolvingSymlinksInPath().path
+        let destinationPath = destinationURL.resolvingSymlinksInPath().path
+        if destinationPath == sourcePath || destinationPath.hasPrefix(sourcePath + "/") {
+            try SafeFileCopier.copy(from: sourceURL, to: destinationURL, progress: Progress())
+        } else {
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        }
+    }
+
     private static func transferItem(
         from sourceURL: URL,
         to destinationURL: URL,
@@ -435,7 +452,7 @@ enum FileBrowserFileOperations {
         guard replacingExisting else {
             switch operation {
             case .copy:
-                try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+                try copyItemSafely(from: sourceURL, to: destinationURL)
             case .move:
                 try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
             }
@@ -449,7 +466,7 @@ enum FileBrowserFileOperations {
         switch operation {
         case .copy:
             do {
-                try FileManager.default.copyItem(at: sourceURL, to: temporaryURL)
+                try copyItemSafely(from: sourceURL, to: temporaryURL)
                 _ = try FileManager.default.replaceItemAt(destinationURL, withItemAt: temporaryURL)
             } catch {
                 try? FileManager.default.removeItem(at: temporaryURL)

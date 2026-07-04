@@ -100,39 +100,61 @@ enum SafeFileCopier {
         to destination: URL,
         progress: Progress
     ) throws {
+        // Snapshot the source tree BEFORE creating the
+        // destination. Copying a folder into itself (a
+        // Finder-legal gesture that produces a nested copy) would
+        // otherwise let the live enumerator descend into the
+        // half-written destination and recurse until PATH_MAX.
+        // The destination-prefix check also drops entries another
+        // writer sneaks under the destination mid-walk.
+        let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
+        let destinationPath = destination.standardizedFileURL.path
+        var entries: [(url: URL, isDirectory: Bool, isSymbolicLink: Bool)] = []
+        if let enumerator = FileManager.default.enumerator(
+            at: source,
+            includingPropertiesForKeys: keys,
+            options: []
+        ) {
+            for case let item as URL in enumerator {
+                if progress.isCancelled { throw SafeFileCopierError.cancelled }
+                let standardized = item.standardizedFileURL.path
+                if standardized == destinationPath || standardized.hasPrefix(destinationPath + "/") {
+                    continue
+                }
+                let values = try item.resourceValues(forKeys: Set(keys))
+                entries.append((
+                    url: item,
+                    isDirectory: values.isDirectory == true && values.isSymbolicLink != true,
+                    isSymbolicLink: values.isSymbolicLink == true
+                ))
+            }
+        }
+
         try FileManager.default.createDirectory(
             at: destination,
             withIntermediateDirectories: true
         )
 
-        let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
-        guard let enumerator = FileManager.default.enumerator(
-            at: source,
-            includingPropertiesForKeys: keys,
-            options: []
-        ) else { return }
-
         let sourcePrefix = source.standardizedFileURL.path
-        for case let item as URL in enumerator {
+        for entry in entries {
             if progress.isCancelled { throw SafeFileCopierError.cancelled }
 
-            let standardized = item.standardizedFileURL.path
+            let standardized = entry.url.standardizedFileURL.path
             // Compute the path relative to `source`, then graft
             // it onto `destination`.
             let relative = String(standardized.dropFirst(sourcePrefix.count))
                 .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let target = destination.appendingPathComponent(relative)
 
-            let values = try item.resourceValues(forKeys: Set(keys))
-            if values.isSymbolicLink == true {
-                try copySymbolicLink(from: item, to: target)
-            } else if values.isDirectory == true {
+            if entry.isSymbolicLink {
+                try copySymbolicLink(from: entry.url, to: target)
+            } else if entry.isDirectory {
                 try FileManager.default.createDirectory(
                     at: target,
                     withIntermediateDirectories: true
                 )
             } else {
-                try copyFile(from: item, to: target, progress: progress)
+                try copyFile(from: entry.url, to: target, progress: progress)
             }
         }
     }
