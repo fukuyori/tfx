@@ -67,6 +67,28 @@ struct SafeFileCopierTests {
     }
 
     @Test
+    func preservesPermissionsAndDates() throws {
+        let root = try makeFixtureDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("script.sh")
+        try Data("#!/bin/sh\n".utf8).write(to: source)
+        let modified = Date(timeIntervalSince1970: 1_000_000_000)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755, .modificationDate: modified],
+            ofItemAtPath: source.path
+        )
+
+        let destination = root.appendingPathComponent("script-copy.sh")
+        try SafeFileCopier.copy(from: source, to: destination, progress: Progress())
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: destination.path)
+        #expect((attributes[.posixPermissions] as? Int) == 0o755)
+        let copiedModified = attributes[.modificationDate] as? Date
+        #expect(copiedModified.map { abs($0.timeIntervalSince(modified)) < 1 } == true)
+    }
+
+    @Test
     func refusesToOverwriteExistingDestinationFile() throws {
         let root = try makeFixtureDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

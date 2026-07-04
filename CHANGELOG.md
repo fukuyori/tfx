@@ -4,6 +4,20 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.6] - 2026-07-05
+
+Metadata-preserving moves, bounded caches, reduced row re-rendering, and large-directory benchmarks.
+
+### Changed
+
+- Moves within the same volume now use an atomic `rename(2)` instead of copying every byte and deleting the source — they complete instantly and keep permissions, extended attributes, Finder tags, and creation dates intact. Cross-volume moves still use the chunked copy with byte-level progress.
+- Cross-volume copies (and therefore cross-volume moves) now carry POSIX permissions and creation/modification dates over to the destination; moved shell scripts stay executable.
+- The Git work-tree root cache and the folder-tree children cache are now bounded, so a long session no longer grows them without limit. Entries the folder tree may still be showing (expanded folders, the current directory and its ancestors, pinned folders) are never evicted.
+- File rows now skip SwiftUI body re-evaluation when nothing they render changed. Previously every model publish — drag-hover highlights, subfolder-search progress ticks, free-space updates — re-evaluated all visible rows.
+- Added performance benchmarks for the large-directory hot paths: 10k-item batch lookup accumulation (incremental vs. the pre-0.9.3 full rebuild), 10k-item natural-order name sort, and 100k-row CSV parsing (full vs. capped).
+- Added a regression test asserting the copier preserves permissions and dates.
+- Version bumped to `0.9.6`, build `75`.
+
 ## [0.9.5] - 2026-07-05
 
 Relaxes the 0.9.2 copy/move-into-itself guard: only moves are refused now.

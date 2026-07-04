@@ -45,6 +45,29 @@ extension FileBrowserModel {
             .sorted { $0.sortName < $1.sortName }
             .map(\.url)
         folderChildrenCache[key] = children
+        pruneFolderChildrenCacheIfNeeded()
+    }
+
+    /// Keep the folder-children cache from growing without bound
+    /// over a long session (every visited directory used to stay
+    /// forever). Entries the tree can still be showing — expanded
+    /// folders, the current directory and its ancestors, pinned
+    /// folders, and the root — are never evicted; everything else
+    /// just re-loads on the next expansion.
+    private func pruneFolderChildrenCacheIfNeeded() {
+        let limit = 1_024
+        guard folderChildrenCache.count > limit else { return }
+
+        var retained = expandedFolders
+        retained.insert(currentDirectory.standardizedFileURL)
+        retained.formUnion(FileBrowserFolderSupport.ancestors(of: currentDirectory))
+        retained.formUnion(pinnedFolders.map { $0.standardizedFileURL })
+        retained.insert(URL(fileURLWithPath: "/").standardizedFileURL)
+
+        for key in folderChildrenCache.keys where !retained.contains(key) {
+            folderChildrenCache.removeValue(forKey: key)
+            folderChildrenLoadGenerations.removeValue(forKey: key)
+        }
     }
 
     /// Collapse every expanded folder in the tree. The root row
@@ -101,6 +124,7 @@ extension FileBrowserModel {
 
                     if self.folderChildrenLoadGenerations[key] == generation {
                         self.folderChildrenCache[key] = children
+                        self.pruneFolderChildrenCacheIfNeeded()
                     }
 
                     self.processFolderChildrenLoadQueue()

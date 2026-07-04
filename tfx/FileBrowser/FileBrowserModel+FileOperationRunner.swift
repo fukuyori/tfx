@@ -64,10 +64,11 @@ extension FileBrowserModel {
         activeOperations.append(viewModel)
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            // Pre-flight: tally the total byte size so the
+            // Pre-flight: tally per-request byte sizes so the
             // progress bar reflects actual work rather than item
-            // count.
-            let totalBytes = requests.reduce(Int64(0)) { total, request in
+            // count, and so the same-volume move fast path can
+            // credit its bytes without re-walking the tree.
+            let requestSizes = requests.map { request -> Int64 in
                 let source = request.sourceURL
                 let scoped = source.startAccessingSecurityScopedResource()
                 defer {
@@ -75,14 +76,14 @@ extension FileBrowserModel {
                         source.stopAccessingSecurityScopedResource()
                     }
                 }
-                return total + SafeFileCopier.totalSize(of: source)
+                return SafeFileCopier.totalSize(of: source)
             }
-            progress.totalUnitCount = max(totalBytes, 1)
+            progress.totalUnitCount = max(requestSizes.reduce(0, +), 1)
 
             var added: [URL] = []
             var removed: [URL] = []
 
-            for request in requests {
+            for (requestIndex, request) in requests.enumerated() {
                 if progress.isCancelled { break }
                 let source = request.sourceURL
                 let destURL = request.destinationURL
@@ -94,6 +95,27 @@ extension FileBrowserModel {
                         if scoped {
                             source.stopAccessingSecurityScopedResource()
                         }
+                    }
+
+                    // Same-volume moves go through `moveItem` — an
+                    // atomic `rename(2)` that keeps permissions,
+                    // xattrs, Finder tags, and dates, where the
+                    // byte-copy fallback below loses all of them
+                    // AND permanently deletes the source they
+                    // lived on. Cross-volume moves fall through to
+                    // copy-then-delete for byte-level progress.
+                    if shouldRemoveSource,
+                       FileBrowserFileOperations.urlsShareVolume(source, destURL) {
+                        try FileBrowserFileOperations.transferItem(
+                            from: source,
+                            to: destURL,
+                            operation: .move,
+                            replacingExisting: request.shouldReplaceDestination
+                        )
+                        progress.completedUnitCount += requestSizes[requestIndex]
+                        added.append(destURL)
+                        removed.append(source)
+                        continue
                     }
 
                     if request.shouldReplaceDestination {

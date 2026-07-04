@@ -87,7 +87,32 @@ enum SafeFileCopier {
             try copyDirectory(from: source, to: destination, progress: progress)
         } else {
             try copyFile(from: source, to: destination, progress: progress)
+            transferBasicMetadata(from: source, to: destination)
         }
+    }
+
+    /// Carry POSIX permissions and dates over to the copy. The
+    /// chunk loop writes only the data fork, which turned every
+    /// moved shell script non-executable and stamped everything
+    /// with "now" — irreversibly so for cross-volume moves,
+    /// where the source is deleted afterwards. Best-effort:
+    /// a copy with default attributes beats a failed copy.
+    private static func transferBasicMetadata(from source: URL, to destination: URL) {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: source.path) else {
+            return
+        }
+        var preserved: [FileAttributeKey: Any] = [:]
+        if let permissions = attributes[.posixPermissions] {
+            preserved[.posixPermissions] = permissions
+        }
+        if let created = attributes[.creationDate] {
+            preserved[.creationDate] = created
+        }
+        if let modified = attributes[.modificationDate] {
+            preserved[.modificationDate] = modified
+        }
+        guard !preserved.isEmpty else { return }
+        try? FileManager.default.setAttributes(preserved, ofItemAtPath: destination.path)
     }
 
     private static func copySymbolicLink(from source: URL, to destination: URL) throws {
@@ -155,8 +180,22 @@ enum SafeFileCopier {
                 )
             } else {
                 try copyFile(from: entry.url, to: target, progress: progress)
+                transferBasicMetadata(from: entry.url, to: target)
             }
         }
+
+        // Directory metadata last: setting a directory's dates
+        // before its contents are written would just be clobbered
+        // by the writes. Changing attributes doesn't bump the
+        // parent's mtime, so plain forward order is fine.
+        let sourceRootPrefix = source.standardizedFileURL.path
+        for entry in entries where entry.isDirectory {
+            let standardized = entry.url.standardizedFileURL.path
+            let relative = String(standardized.dropFirst(sourceRootPrefix.count))
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            transferBasicMetadata(from: entry.url, to: destination.appendingPathComponent(relative))
+        }
+        transferBasicMetadata(from: source, to: destination)
     }
 
     private static func copyFile(

@@ -69,7 +69,18 @@ extension FileBrowserModel {
             } else {
                 root = GitStatusReader.workTreeRoot(near: directory)
                 DispatchQueue.main.async { [weak self] in
-                    self?.gitRootCache[directory] = root
+                    guard let self else { return }
+                    // Plain dictionary with no eviction — reset
+                    // wholesale once it grows past any plausible
+                    // working set so a long session can't grow it
+                    // monotonically. Repopulates on demand (one
+                    // `rev-parse` per directory) and the ancestor
+                    // walk in `cachedGitRoot` keeps hit rates high
+                    // right after a reset.
+                    if self.gitRootCache.count > 512 {
+                        self.gitRootCache.removeAll(keepingCapacity: true)
+                    }
+                    self.gitRootCache[directory] = root
                 }
             }
 

@@ -158,6 +158,9 @@ struct FilePaneFileList: View {
                 //    target the current directory.
                 nameCellDropDelegate: nameCellDelegate(for: item)
             )
+            // Skip body re-evaluation when nothing the row renders
+            // changed — see the `FileRow.==` doc comment.
+            .equatable()
             .id(FileListRowID.item(item.id))
             .contentShape(Rectangle())
             .overlay {

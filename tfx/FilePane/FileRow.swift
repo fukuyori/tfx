@@ -3,7 +3,37 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct FileRow: View {
+/// `Equatable` so the list can wrap rows in `.equatable()`:
+/// `FileBrowserModel` publishes frequently during drags (drop
+/// highlight), subfolder searches (progress counters), and
+/// capacity updates, and each publish re-evaluates the list body.
+/// Without the equality gate every visible row's body re-ran on
+/// every publish because the closure/delegate properties defeat
+/// SwiftUI's implicit memcmp diffing. The comparison covers every
+/// value that affects rendering; closures and the drop delegate
+/// are intentionally excluded — they capture only `model` and the
+/// item URL, which the compared values already pin down.
+struct FileRow: View, Equatable {
+    static func == (lhs: FileRow, rhs: FileRow) -> Bool {
+        lhs.item == rhs.item
+            // `FileItem.==` is the intentionally narrow identity
+            // check (url/size/modified/hidden/dir/tags). Rendered
+            // text that can change while those stay equal —
+            // localized kind after a cache warm-up, permissions
+            // after prefetch, localized display name — must be
+            // compared explicitly or rows would show stale text
+            // after a reload.
+            && lhs.item.name == rhs.item.name
+            && lhs.item.kindText == rhs.item.kindText
+            && lhs.item.permissionsText == rhs.item.permissionsText
+            && lhs.isSelected == rhs.isSelected
+            && lhs.isDropTarget == rhs.isDropTarget
+            && lhs.columns == rhs.columns
+            && lhs.columnWidths == rhs.columnWidths
+            && lhs.gitStatus == rhs.gitStatus
+            && lhs.isEditingName == rhs.isEditingName
+    }
+
     let item: FileItem
     let isSelected: Bool
     let isDropTarget: Bool

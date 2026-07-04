@@ -443,7 +443,22 @@ enum FileBrowserFileOperations {
         }
     }
 
-    private static func transferItem(
+    /// True when both URLs sit on the same volume, i.e.
+    /// `FileManager.moveItem` will be an atomic `rename(2)` that
+    /// keeps permissions, xattrs, Finder tags, and dates intact.
+    /// `destinationURL` may not exist yet — its parent decides.
+    static func urlsShareVolume(_ sourceURL: URL, _ destinationURL: URL) -> Bool {
+        let sourceVolume = (try? sourceURL.resourceValues(
+            forKeys: [.volumeIdentifierKey]
+        ))?.volumeIdentifier
+        let destinationVolume = (try? destinationURL.deletingLastPathComponent().resourceValues(
+            forKeys: [.volumeIdentifierKey]
+        ))?.volumeIdentifier
+        guard let sourceVolume, let destinationVolume else { return false }
+        return sourceVolume.isEqual(destinationVolume)
+    }
+
+    static func transferItem(
         from sourceURL: URL,
         to destinationURL: URL,
         operation: FileClipboard.Operation,
