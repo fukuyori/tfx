@@ -2,6 +2,7 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+/tmp/
 
 # Xcode user data
 xcuserdata/
@@ -38,6 +39,10 @@ scripts/sign_notarize_release_pkg.sh
 *.tmp
 *.temp
 .cache/
+
+# Test artifacts
+*.xcresult
+*.profdata
 
 # Local environment
 .env

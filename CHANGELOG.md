@@ -4,6 +4,17 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.7] - 2026-07-08
+
+Fixes a main-thread hang in the built-in terminal on long newline-free output.
+
+### Fixed
+
+- The built-in terminal's output decoder rebuilt the current line from scratch (`String` → scalar array → `String`) for every printable character, making each character cost O(line length). A long line without newlines — a progress bar, minified output, `cat` of a large single-line file — turned into an O(n²) main-thread hang (observed: 98 seconds unresponsive). Lines are now kept as scalar arrays and materialized to `String` only when rendering, so writes are O(1).
+- A single terminal line is now capped at 10,000 scalars; a newline-free stream wraps onto a fresh line instead of growing one line without bound. xterm.js wraps at the pane width anyway, so the on-screen rendering is unchanged.
+- Absurd CSI cursor-move parameters (e.g. `ESC[999999999B`) are clamped so they can no longer allocate that many lines or padding spaces in one go.
+- Version bumped to `0.9.7`, build `76`.
+
 ## [0.9.6] - 2026-07-05
 
 Metadata-preserving moves, bounded caches, reduced row re-rendering, and large-directory benchmarks.

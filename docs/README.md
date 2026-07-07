@@ -10,6 +10,7 @@ Project documentation is written in English by default. `README.ja.md` is the Ja
 | [`README.ja.md`](../README.ja.md) | Japanese user-facing overview. Keep this aligned with `README.md`. |
 | [`docs/configuration.md`](configuration.md) | User-editable configuration file location, supported keys, examples, and error handling. |
 | [`docs/configuration.ja.md`](configuration.ja.md) | Japanese version of the configuration guide. Keep this aligned with `docs/configuration.md`. |
+| [`docs/color-theme-samples.ja.md`](color-theme-samples.ja.md) | Japanese color theme sample collection for `config.toml`, including dark, light, classical, and modern palettes. |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Release history and version changes. |
 
 ## Engineering Documents

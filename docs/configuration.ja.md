@@ -167,6 +167,8 @@ directoryForeground = "#6FFF80"
 
 値はすべて、クォートされた `#RRGGBB` 形式の hex カラーです。各トークンは任意です。省略したトークンは tfx 内蔵のベースカラーを使います。
 
+カラーテーマ例は [`color-theme-samples.ja.md`](color-theme-samples.ja.md) にまとめています。クラシカルな端末風、Vim / Neovim 風、oh-my-posh 風、ライトモード、低刺激系など 40 種類のサンプルがあります。
+
 #### ファイルペイン / 一覧行
 
 | キー | 説明 |

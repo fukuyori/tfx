@@ -410,7 +410,15 @@ private struct TerminalOutputDecoder {
 
     private var state: EscapeState = .normal
     private var csiBuffer = ""
-    private var lines: [String] = [""]
+    /// Lines are kept as scalar arrays, not `String`s: the
+    /// decoder writes one scalar at a time, and round-tripping
+    /// the current line through `Array(…unicodeScalars)` /
+    /// `String(…)` on every write made each character cost
+    /// O(line length) — a single long line (progress bar,
+    /// minified output) turned into an O(n²) main-thread hang.
+    /// Strings are materialized only in `renderedText()` /
+    /// `renderedTextWithCursor()`.
+    private var lines: [[UnicodeScalar]] = [[]]
     private var cursorRow = 0
     private var cursorColumn = 0
 
@@ -420,13 +428,19 @@ private struct TerminalOutputDecoder {
     /// memory (and every subsequent render) without bound.
     private static let maxLines = 5_000
 
+    /// Hard cap on a single line's width. xterm.js wraps at the
+    /// pane width anyway, so past this point extra scalars only
+    /// cost memory and render time; a newline-free output stream
+    /// wraps onto a fresh line instead of growing one forever.
+    private static let maxLineScalars = 10_000
+
     mutating func reset(with text: String) {
-        lines = text.components(separatedBy: "\n")
+        lines = text.components(separatedBy: "\n").map { Array($0.unicodeScalars) }
         if lines.isEmpty {
-            lines = [""]
+            lines = [[]]
         }
         cursorRow = lines.count - 1
-        cursorColumn = lines[cursorRow].unicodeScalars.count
+        cursorColumn = lines[cursorRow].count
         state = .normal
         csiBuffer = ""
     }
@@ -439,7 +453,9 @@ private struct TerminalOutputDecoder {
     }
 
     func renderedText() -> String {
-        lines.joined(separator: "\n")
+        lines.lazy
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: "\n")
     }
 
     private mutating func trimExcessLines() {
@@ -452,11 +468,11 @@ private struct TerminalOutputDecoder {
     func renderedTextWithCursor() -> String {
         var displayLines = lines
         let row = max(0, min(cursorRow, displayLines.count - 1))
-        var scalars = Array(displayLines[row].unicodeScalars)
-        let column = max(0, min(cursorColumn, scalars.count))
-        scalars.insert("▌", at: column)
-        displayLines[row] = String(String.UnicodeScalarView(scalars))
-        return displayLines.joined(separator: "\n")
+        let column = max(0, min(cursorColumn, displayLines[row].count))
+        displayLines[row].insert("▌", at: column)
+        return displayLines.lazy
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: "\n")
     }
 
     private mutating func append(_ scalar: UnicodeScalar) {
@@ -566,13 +582,17 @@ private struct TerminalOutputDecoder {
         guard parameters.indices.contains(index), let value = parameters[index] else {
             return defaultValue
         }
-        return value == 0 ? defaultValue : value
+        // No legitimate cursor move exceeds the scrollback/line
+        // caps; an absurd parameter (`ESC[999999999B`) would
+        // otherwise make ensureCursorPosition() allocate that
+        // many lines or padding spaces in one go.
+        return value == 0 ? defaultValue : min(value, Self.maxLineScalars)
     }
 
     private mutating func clearScreen(mode: Int) {
         switch mode {
         case 2, 3:
-            lines = [""]
+            lines = [[]]
             cursorRow = 0
             cursorColumn = 0
         default:
@@ -585,48 +605,45 @@ private struct TerminalOutputDecoder {
 
     private mutating func clearLine(mode: Int) {
         ensureCursorPosition()
-        var scalars = Array(lines[cursorRow].unicodeScalars)
         switch mode {
         case 1:
-            let end = min(cursorColumn, scalars.count)
+            let end = min(cursorColumn, lines[cursorRow].count)
             for index in 0..<end {
-                scalars[index] = " "
+                lines[cursorRow][index] = " "
             }
         case 2:
-            scalars.removeAll()
+            lines[cursorRow].removeAll(keepingCapacity: true)
             cursorColumn = 0
         default:
-            if cursorColumn < scalars.count {
-                scalars.removeSubrange(cursorColumn..<scalars.count)
+            if cursorColumn < lines[cursorRow].count {
+                lines[cursorRow].removeSubrange(cursorColumn...)
             }
         }
-        lines[cursorRow] = String(String.UnicodeScalarView(scalars))
     }
 
     private mutating func writeVisibleScalar(_ scalar: UnicodeScalar) {
-        ensureCursorPosition()
-        var scalars = Array(lines[cursorRow].unicodeScalars)
-        if cursorColumn < scalars.count {
-            scalars[cursorColumn] = scalar
-        } else {
-            while scalars.count < cursorColumn {
-                scalars.append(" ")
-            }
-            scalars.append(scalar)
+        if cursorColumn >= Self.maxLineScalars {
+            cursorRow += 1
+            cursorColumn = 0
         }
-        lines[cursorRow] = String(String.UnicodeScalarView(scalars))
+        ensureCursorPosition()
+        if cursorColumn < lines[cursorRow].count {
+            lines[cursorRow][cursorColumn] = scalar
+        } else {
+            lines[cursorRow].append(scalar)
+        }
         cursorColumn += 1
     }
 
     private mutating func ensureCursorPosition() {
         while cursorRow >= lines.count {
-            lines.append("")
+            lines.append([])
         }
-        var scalars = Array(lines[cursorRow].unicodeScalars)
-        while cursorColumn > scalars.count {
-            scalars.append(" ")
+        cursorColumn = min(cursorColumn, Self.maxLineScalars)
+        let shortfall = cursorColumn - lines[cursorRow].count
+        if shortfall > 0 {
+            lines[cursorRow].append(contentsOf: repeatElement(" ", count: shortfall))
         }
-        lines[cursorRow] = String(String.UnicodeScalarView(scalars))
     }
 }
 
