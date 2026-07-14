@@ -4,6 +4,16 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.8] - 2026-07-15
+
+New default column order and drag-only column reordering.
+
+### Changed
+
+- The default file-list column order is now Git, Icon, Name, Size, Kind, Tags, Date Modified, Mode, Date Created, Permissions. Existing saved column settings are unaffected; the new order applies on first launch or after pressing Reset in File List Settings.
+- The up/down arrow buttons in File List Settings were removed — columns are reordered by dragging rows instead.
+- Version bumped to `0.9.8`, build `77`.
+
 ## [0.9.7] - 2026-07-08
 
 Fixes a main-thread hang in the built-in terminal on long newline-free output.

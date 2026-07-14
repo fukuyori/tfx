@@ -5,7 +5,7 @@ struct FileListColumnConfiguration {
     private(set) var orderedColumns: [FileListColumn]
     private(set) var visibleColumns: Set<FileListColumn>
 
-    static let defaultColumns: [FileListColumn] = [.mode, .icon, .name, .size, .kind, .tags, .gitStatus, .modified, .created, .permissions]
+    static let defaultColumns: [FileListColumn] = [.gitStatus, .icon, .name, .size, .kind, .tags, .modified, .mode, .created, .permissions]
     static let defaultRawValue = defaultColumns.map { "\($0.rawValue):1" }.joined(separator: ",")
 
     init(rawValue: String) {
@@ -65,18 +65,6 @@ struct FileListColumnConfiguration {
         } else {
             visibleColumns.remove(column)
         }
-    }
-
-    mutating func move(_ column: FileListColumn, direction: Int) {
-        guard let currentIndex = orderedColumns.firstIndex(of: column) else {
-            return
-        }
-
-        let nextIndex = min(max(currentIndex + direction, 0), orderedColumns.count - 1)
-        guard nextIndex != currentIndex else { return }
-
-        orderedColumns.remove(at: currentIndex)
-        orderedColumns.insert(column, at: nextIndex)
     }
 
     /// Move `column` to position `targetIndex`, where

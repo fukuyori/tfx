@@ -102,28 +102,6 @@ struct FileListSettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .disabled(!column.canHide)
-
-            Button {
-                var updated = configuration
-                updated.move(column, direction: -1)
-                configuration = updated
-            } label: {
-                Image(systemName: "chevron.up")
-            }
-            .buttonStyle(.borderless)
-            .disabled(configuration.orderedColumns.first == column)
-            .help("Move up")
-
-            Button {
-                var updated = configuration
-                updated.move(column, direction: 1)
-                configuration = updated
-            } label: {
-                Image(systemName: "chevron.down")
-            }
-            .buttonStyle(.borderless)
-            .disabled(configuration.orderedColumns.last == column)
-            .help("Move down")
         }
         .font(design.fonts.swiftUIFont(for: .fileList))
         .padding(.vertical, 3)
