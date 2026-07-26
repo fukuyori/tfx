@@ -176,6 +176,16 @@ final class FileBrowserModel: ObservableObject {
     /// for selections made inside the tree itself, which must not yank
     /// the row the user just clicked away from under the cursor.
     var folderTreeScrollsToTopOnChange = true
+    /// Accumulated type-ahead prefix for file-pane type-to-select
+    /// (Finder/Explorer style): typing "c","h","a","r" in quick
+    /// succession jumps to the first name starting with "char".
+    var typeSelectBuffer = ""
+    var typeSelectLastKeystrokeAt: Date?
+    /// User-visible mirror of `typeSelectBuffer`, shown in the status
+    /// line while a type-ahead prefix is active and cleared once the
+    /// reset interval elapses without another keystroke.
+    @Published var typeSelectDisplay = ""
+    var typeSelectDisplayClearWork: DispatchWorkItem?
     /// Folder-children enumerations currently holding a concurrency
     /// slot. Tokens are removed either by the load's completion or by
     /// its watchdog timeout, whichever fires first — see

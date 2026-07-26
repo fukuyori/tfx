@@ -69,7 +69,13 @@ struct FilePaneStatusLine: View {
     }
 
     private var statusText: Text {
-        if showsLoadingHint && model.isLoadingDirectory {
+        // The active type-ahead prefix takes precedence: it is
+        // transient (clears after the type-ahead window closes) and
+        // the user needs to see what has been typed to know where the
+        // jump-to-name search currently stands.
+        if !model.typeSelectDisplay.isEmpty {
+            Text("Find: \(model.typeSelectDisplay)")
+        } else if showsLoadingHint && model.isLoadingDirectory {
             Text("Loading…")
         } else if let subfolderSearchStatusText = model.subfolderSearchStatusText {
             Text(subfolderSearchStatusText)

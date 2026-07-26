@@ -4,6 +4,21 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.10] - 2026-07-26
+
+Type-to-select in the file panes: jump to files and folders by typing their name.
+
+### Added
+
+- Finder/Explorer-style type-to-select in the file panes. Typing a printable character jumps the selection to the first row whose name starts with it; typing more characters in quick succession (within 1 second of the previous keystroke) extends the prefix — "c", "h", "a", "r" lands on the first name starting with "char". When the extended prefix matches nothing, the prefix and the selection stay at the last hit, so a mistyped key doesn't lose the position.
+- Pressing the same single character repeatedly cycles through the successive rows with that initial, wrapping at the end (Explorer behavior). Since the listing sorts folders before files, this is what makes "c…" files behind the "c…" folder block reachable with one key.
+- The active type-ahead prefix is shown in the status line as "Find: …" while the 1-second window is open, so it is always visible what has been typed and when the next keystroke starts a fresh search.
+- Consumed type-ahead keystrokes no longer fall through to the system beep; the prefix resets on navigation, and shortcuts with modifiers, arrow keys, and the search field are unaffected.
+
+### Changed
+
+- Version bumped to `0.9.10`, build `79`.
+
 ## [0.9.9] - 2026-07-26
 
 Feature parity with tfx for Windows 0.9.10–0.9.14 (config editing and live reload, DISKS sidebar section, collapsible sidebar, header-driven column controls, Get Info, folder-tree drag-and-drop), plus folder-tree navigation refinements and resilience against unresponsive network volumes.

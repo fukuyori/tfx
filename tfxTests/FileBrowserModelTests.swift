@@ -50,6 +50,88 @@ struct FileBrowserModelTests {
     }
 
     @Test
+    func typeAheadSelectsByAccumulatedPrefix() throws {
+        let dir = try Self.makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let names = ["apple.txt", "banana.txt", "chart.txt", "charlie.txt"]
+        for name in names {
+            FileManager.default.createFile(atPath: dir.appendingPathComponent(name).path, contents: Data())
+        }
+        let model = FileBrowserModel(initialDirectory: dir)
+        let items = names.map { FileItem(url: dir.appendingPathComponent($0)) }
+        model.items = items
+
+        model.selectByTypeAhead("C")
+        #expect(model.primarySelectedItemID == items[2].id)
+
+        for key in ["h", "a", "r"] {
+            model.selectByTypeAhead(key)
+        }
+        #expect(model.primarySelectedItemID == items[2].id)
+
+        model.selectByTypeAhead("l")
+        #expect(model.primarySelectedItemID == items[3].id)
+
+        // No item starts with "charlz" — selection AND prefix stay at
+        // the last hit, so continuing with a valid extension works.
+        model.selectByTypeAhead("z")
+        #expect(model.primarySelectedItemID == items[3].id)
+        model.selectByTypeAhead("i")
+        #expect(model.primarySelectedItemID == items[3].id)
+
+        // After the reset interval the next keystroke starts fresh.
+        model.typeSelectLastKeystrokeAt = Date(timeIntervalSinceNow: -5)
+        model.selectByTypeAhead("a")
+        #expect(model.primarySelectedItemID == items[0].id)
+        // The status line mirrors the active prefix.
+        #expect(model.typeSelectDisplay == "a")
+    }
+
+    @Test
+    func typeAheadRepeatedKeyCyclesPastFolders() throws {
+        let dir = try Self.makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Listing order mirrors the pane sort: folders first, then
+        // files. A repeated "c" must walk folder → files → wrap.
+        let folderURL = dir.appendingPathComponent("chapters", isDirectory: true)
+        try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+        for name in ["chart.txt", "charlie.txt"] {
+            FileManager.default.createFile(atPath: dir.appendingPathComponent(name).path, contents: Data())
+        }
+
+        let model = FileBrowserModel(initialDirectory: dir)
+        let items = [
+            FileItem(url: folderURL),
+            FileItem(url: dir.appendingPathComponent("chart.txt")),
+            FileItem(url: dir.appendingPathComponent("charlie.txt"))
+        ]
+        model.items = items
+
+        model.selectByTypeAhead("c")
+        #expect(model.primarySelectedItemID == items[0].id)
+
+        model.selectByTypeAhead("c")
+        #expect(model.primarySelectedItemID == items[1].id)
+
+        model.selectByTypeAhead("c")
+        #expect(model.primarySelectedItemID == items[2].id)
+
+        // Past the last match the cycle wraps to the first one.
+        model.selectByTypeAhead("c")
+        #expect(model.primarySelectedItemID == items[0].id)
+
+        // Cycling keeps the single-character buffer, so a different
+        // key still extends the prefix from it: "c" + "harl" ...
+        model.selectByTypeAhead("h")
+        model.selectByTypeAhead("a")
+        model.selectByTypeAhead("r")
+        model.selectByTypeAhead("l")
+        #expect(model.primarySelectedItemID == items[2].id)
+    }
+
+    @Test
     func navigationCollapsesFoldersOutsideTargetPath() throws {
         let base = try Self.makeTempDir()
         defer { try? FileManager.default.removeItem(at: base) }

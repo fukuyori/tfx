@@ -50,6 +50,88 @@ extension FileBrowserModel {
         }
     }
 
+    /// Keystrokes typed within this window extend the type-ahead
+    /// prefix; a longer pause starts a fresh prefix. Matches the
+    /// Finder/Explorer feel.
+    static let typeSelectResetInterval: TimeInterval = 1.0
+
+    /// Finder/Explorer-style type-to-select: each printable keystroke
+    /// extends a prefix (until `typeSelectResetInterval` of silence)
+    /// and selection jumps to the first visible item whose name starts
+    /// with it, case-insensitively. When the extended prefix matches
+    /// nothing, both the prefix and the selection stay at the last
+    /// hit.
+    ///
+    /// Pressing the same single character again cycles through the
+    /// successive entries with that initial (Explorer behavior). This
+    /// matters because the listing sorts folders before files: without
+    /// cycling, a lone "c" always lands on the first "c…" folder and
+    /// the "c…" files behind the folder block are unreachable.
+    func selectByTypeAhead(_ input: String) {
+        let now = Date()
+        if let last = typeSelectLastKeystrokeAt,
+           now.timeIntervalSince(last) > Self.typeSelectResetInterval {
+            typeSelectBuffer = ""
+        }
+        typeSelectLastKeystrokeAt = now
+
+        let normalized = input.localizedLowercase
+        if !typeSelectBuffer.isEmpty, typeSelectBuffer == normalized {
+            selectNextTypeAheadMatch(prefix: normalized)
+        } else {
+            let candidate = typeSelectBuffer + normalized
+            if let match = items.first(where: { $0.searchName.hasPrefix(candidate) }) {
+                typeSelectBuffer = candidate
+                select(match)
+            }
+            // No match: prefix and selection stay at the last hit.
+        }
+
+        publishTypeAheadDisplay()
+    }
+
+    /// Mirror the active prefix into the status line and schedule its
+    /// removal for when the type-ahead window closes, so the user can
+    /// always see what has been typed and when a new search starts.
+    private func publishTypeAheadDisplay() {
+        if typeSelectDisplay != typeSelectBuffer {
+            typeSelectDisplay = typeSelectBuffer
+        }
+
+        typeSelectDisplayClearWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.typeSelectDisplayClearWork = nil
+            if !self.typeSelectDisplay.isEmpty {
+                self.typeSelectDisplay = ""
+            }
+        }
+        typeSelectDisplayClearWork = work
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + Self.typeSelectResetInterval,
+            execute: work
+        )
+    }
+
+    /// Advance to the next visible item matching `prefix`, wrapping
+    /// past the end back to the first match. The type-ahead buffer
+    /// stays at the single character so every further press keeps
+    /// cycling.
+    private func selectNextTypeAheadMatch(prefix: String) {
+        let matchIndices = items.indices.filter { items[$0].searchName.hasPrefix(prefix) }
+        guard !matchIndices.isEmpty else { return }
+
+        let currentIndex = primarySelectedItemID.flatMap { id in
+            items.firstIndex { $0.id == id }
+        }
+        if let currentIndex,
+           let nextIndex = matchIndices.first(where: { $0 > currentIndex }) {
+            select(items[nextIndex])
+        } else {
+            select(items[matchIndices[0]])
+        }
+    }
+
     func selectForContextMenu(_ item: FileItem) {
         applySelection(
             FileBrowserSelectionSupport.contextMenuSelection(

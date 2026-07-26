@@ -52,7 +52,29 @@ extension TerminalFileManagerView {
             activeArea == .folderTree ? activeModel.activateFolderTreeSelection() : activeModel.activateFileSelection()
             return true
         default:
-            return false
+            // Any other printable keystroke in the file pane is
+            // type-to-select: jump to the first row whose name starts
+            // with the typed prefix. Consumed even without a match so
+            // the unhandled key doesn't fall through to a system beep.
+            guard activeArea == .files,
+                  let characters = event.charactersIgnoringModifiers,
+                  Self.isTypeAheadInput(characters) else {
+                return false
+            }
+            activeModel.selectByTypeAhead(characters)
+            return true
+        }
+    }
+
+    /// True for characters that should feed type-to-select: printable
+    /// text, excluding control characters and the function-key range
+    /// (arrows, F-keys, …) that NSEvent reports in the 0xF700 private
+    /// use area.
+    private static func isTypeAheadInput(_ characters: String) -> Bool {
+        guard !characters.isEmpty else { return false }
+        return characters.unicodeScalars.allSatisfy { scalar in
+            !(0xF700...0xF8FF).contains(scalar.value) &&
+            !CharacterSet.controlCharacters.contains(scalar)
         }
     }
 

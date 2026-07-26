@@ -51,6 +51,13 @@ extension FileBrowserModel {
         }
         clearDropTargetDirectory(nil)
         clearSelection()
+        // A type-ahead prefix belongs to the listing it was typed in.
+        typeSelectBuffer = ""
+        typeSelectDisplayClearWork?.cancel()
+        typeSelectDisplayClearWork = nil
+        if !typeSelectDisplay.isEmpty {
+            typeSelectDisplay = ""
+        }
         pendingFileSelectionURL = selectionURL?.standardizedFileURL
         if ZipArchiveBrowser.location(for: target) == nil {
             // The folder tree mirrors the file listing: only the
