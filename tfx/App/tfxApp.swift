@@ -21,6 +21,7 @@ struct tfxApp: App {
     @StateObject private var shortcutStore = ShortcutStore()
     @StateObject private var userCommandStore = UserCommandStore()
     @StateObject private var previewConfigurationStore = PreviewConfigurationStore()
+    @StateObject private var configFileWatcher = ConfigFileWatcher()
 #endif
 
     init() {
@@ -72,10 +73,27 @@ struct tfxApp: App {
                     userCommandStore.reload()
                     previewConfigurationStore.reload()
                 }
+                // Live config reload: watch config.toml so shortcut,
+                // color, opacity, font, command, and preview settings
+                // apply as soon as the file is saved — no need to
+                // switch away from and back to the app (the
+                // `didBecomeActive` reload above still covers editors
+                // that bypass the watched path, e.g. saves via SMB).
+                // Startup settings (`[startup]`) intentionally keep
+                // their launch-time semantics.
+                .onAppear {
+                    configFileWatcher.start {
+                        designStore.reload()
+                        shortcutStore.reload()
+                        userCommandStore.reload()
+                        previewConfigurationStore.reload()
+                    }
+                }
 #endif
         }
 #if os(macOS)
         .commands {
+            ConfigMenuCommands(shortcutStore: shortcutStore)
             ViewMenuCommands(shortcutStore: shortcutStore)
             DeveloperMenuCommands()
         }

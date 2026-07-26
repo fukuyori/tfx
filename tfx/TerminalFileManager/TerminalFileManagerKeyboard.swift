@@ -140,6 +140,16 @@ extension TerminalFileManagerView {
             return true
         }
 
+        if shortcutStore.info(.getInfo).matches(event) {
+            activeModel.showGetInfoForSelection()
+            return true
+        }
+
+        if shortcutStore.info(.editConfig).matches(event) {
+            ConfigFileEditor.openConfigFile()
+            return true
+        }
+
         if shortcutStore.info(.copyPath).matches(event) {
             if let item = activeModel.primarySelectedItem {
                 activeModel.copyPath(item.url)

@@ -19,11 +19,16 @@ extension FileBrowserModel {
         recordsHistory: Bool = true,
         expandsTarget: Bool = true,
         selecting selectionURL: URL? = nil,
-        updatesFolderTreeSelection: Bool = true
+        updatesFolderTreeSelection: Bool = true,
+        anchorsFolderTreeToTop: Bool = true
     ) {
         let target = FileBrowserExternalActions.directoryURLForNavigation(directory) ?? directory.standardizedFileURL
 
         guard target != currentDirectory.standardizedFileURL else { return }
+
+        // Set before any @Published write so the folder tree's
+        // `.onChange` observers see the right anchor mode.
+        folderTreeScrollsToTopOnChange = anchorsFolderTreeToTop
 
         if searchesSubfolders {
             searchesSubfolders = false
@@ -48,6 +53,10 @@ extension FileBrowserModel {
         clearSelection()
         pendingFileSelectionURL = selectionURL?.standardizedFileURL
         if ZipArchiveBrowser.location(for: target) == nil {
+            // The folder tree mirrors the file listing: only the
+            // path to the new target stays open, everything the
+            // user expanded while browsing elsewhere collapses.
+            collapseFoldersOutsidePath(to: target)
             expandAncestors(of: target)
             if expandsTarget {
                 // Expand only — the `reload()` below scans the

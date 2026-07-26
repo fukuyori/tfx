@@ -4,6 +4,32 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.9] - 2026-07-26
+
+Feature parity with tfx for Windows 0.9.10–0.9.14 (config editing and live reload, DISKS sidebar section, collapsible sidebar, header-driven column controls, Get Info, folder-tree drag-and-drop), plus folder-tree navigation refinements and resilience against unresponsive network volumes.
+
+### Added
+
+- In-app config editing: the toolbar gear is now a settings menu with "Edit Config File…", "Editor Settings…", and "File List Settings…"; "Edit Config File…" also fills the app menu's Settings slot. A new `editConfig` shortcut (default `cmd+,`) opens `config.toml` directly.
+- Editor Settings: choose which app "Edit Config File…" launches — the OS default handler, any app claiming the file (TextEdit always listed), or an arbitrary app via an open panel. The choice persists; a deleted editor silently falls back to the OS association.
+- Live config reload: `config.toml` is watched (directory-level, so atomic editor saves are caught) and shortcut, color, opacity, font, command, and preview settings apply the moment the file is saved. The reload-on-activate path remains as a fallback; `[startup]` keeps its launch-time semantics.
+- DISKS sidebar section listing every mounted browsable volume with a usage bar, free/total tooltip, click-to-open in the active pane, current-volume highlight, and automatic refresh on mount/unmount/rename.
+- Collapsible sidebar sections: PINNED, DISKS, and FOLDERS headers toggle their sections with a state chevron; collapse state persists.
+- Right-clicking the file-list column header opens a Finder-style column visibility checklist plus a "File List Settings…" popup anchored below the header.
+- Columns can be reordered by dragging the header cells themselves; dropping on the left half of a target column inserts before it, the right half after it. Width resizing moved to the trailing grip on each header cell.
+- "Get Info" in the file context menus (new `getInfo` shortcut, default `cmd+i`) opens Finder's information window for the selection via Apple Events; macOS asks for Automation consent on first use.
+- Folder-tree drag-and-drop: files dragged from a pane (or another app) can be dropped onto FOLDERS-tree rows. Same-volume drags default to Move and cross-volume drags to Copy, with Option forcing Copy and Command forcing Move; hovered rows highlight, collapsed rows spring-expand after a short hover, and dropping items onto themselves or their own descendants is refused.
+
+### Changed
+
+- Navigating the file listing collapses every expanded tree folder that is not on the path to the new directory, so the folder tree mirrors the current location instead of accumulating open subtrees.
+- Navigation arriving from outside the folder tree (file pane, pinned folders, DISKS) scrolls the current folder's row to the top of the FOLDERS viewport; selections made inside the tree keep the minimal keep-visible scrolling so clicked rows don't jump away.
+
+### Fixed
+
+- An unresponsive network volume (for example a Time Machine-only NAS share, or a wedged Google Drive / Dropbox mount) could freeze the UI and permanently stall the folder tree. Volume icons are now captured during the background volume scan instead of per-render, the current-volume highlight uses path matching instead of per-render syscalls, and folder-children enumerations get a 15-second watchdog that releases their concurrency slot so a few hung loads can no longer exhaust the queue for the rest of the session.
+- Version bumped to `0.9.9`, build `78`.
+
 ## [0.9.8] - 2026-07-15
 
 New default column order and drag-only column reordering.

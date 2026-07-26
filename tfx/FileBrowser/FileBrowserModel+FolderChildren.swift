@@ -1,7 +1,22 @@
 #if os(macOS)
 import Foundation
 
+/// Identifies one in-flight folder-children enumeration (same key can
+/// be re-enumerated under a newer generation while an old run is stuck).
+struct FolderChildrenLoadToken: Hashable {
+    let key: URL
+    let generation: Int
+}
+
 extension FileBrowserModel {
+    /// How long a folder-children enumeration may hold one of the
+    /// concurrency slots. An enumeration of a wedged network volume
+    /// (dead SMB mount, unreachable Time Machine share) blocks in the
+    /// kernel and cannot be cancelled — without this watchdog a few
+    /// such loads permanently exhaust `maxConcurrentFolderChildrenLoads`
+    /// and the folder tree stops loading children for the rest of the
+    /// session.
+    static let folderChildrenLoadTimeout: TimeInterval = 15
     func toggleFolderExpansion(_ url: URL) {
         let key = url.standardizedFileURL
 
@@ -78,6 +93,20 @@ extension FileBrowserModel {
         expandedFolders.removeAll()
     }
 
+    /// Collapse every expanded folder that is not on the path from the
+    /// root to `target` (the target itself stays expanded when it
+    /// already was). Called on navigation so the folder tree only keeps
+    /// the current file listing's location open — subtrees left behind
+    /// by earlier browsing fold away instead of accumulating.
+    func collapseFoldersOutsidePath(to target: URL) {
+        var keep = Set(FileBrowserFolderSupport.ancestors(of: target))
+        keep.insert(target.standardizedFileURL)
+
+        let removed = expandedFolders.subtracting(keep)
+        guard !removed.isEmpty else { return }
+        expandedFolders.subtract(removed)
+    }
+
     func childrenForFolder(_ url: URL) -> [URL] {
         folderChildrenCache[url.standardizedFileURL] ?? []
     }
@@ -113,14 +142,30 @@ extension FileBrowserModel {
             queuedFolderChildrenLoads.remove(key)
             activeFolderChildrenLoadCount += 1
             let generation = folderChildrenLoadGenerations[key] ?? 0
+            let token = FolderChildrenLoadToken(key: key, generation: generation)
+            folderChildrenLoadsInFlight.insert(token)
             let showsHiddenFiles = showHiddenFiles
+
+            // Watchdog: free the slot if the enumeration wedges. The
+            // hung worker thread itself can't be cancelled; releasing
+            // the token here just lets the queue keep serving other
+            // folders. If the load completes later anyway, the token
+            // is already gone so the slot isn't double-released, and
+            // its (stale-generation-checked) result still applies.
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.folderChildrenLoadTimeout) { [weak self] in
+                guard let self, self.folderChildrenLoadsInFlight.remove(token) != nil else { return }
+                self.activeFolderChildrenLoadCount = max(0, self.activeFolderChildrenLoadCount - 1)
+                self.processFolderChildrenLoadQueue()
+            }
 
             DispatchQueue.global(qos: .utility).async {
                 let children = FileBrowserFolderSupport.loadChildren(for: key, showsHiddenFiles: showsHiddenFiles)
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
-                    self.activeFolderChildrenLoadCount = max(0, self.activeFolderChildrenLoadCount - 1)
+                    if self.folderChildrenLoadsInFlight.remove(token) != nil {
+                        self.activeFolderChildrenLoadCount = max(0, self.activeFolderChildrenLoadCount - 1)
+                    }
 
                     if self.folderChildrenLoadGenerations[key] == generation {
                         self.folderChildrenCache[key] = children
@@ -160,6 +205,10 @@ extension FileBrowserModel {
         queuedFolderChildrenLoads.removeAll()
         folderChildrenLoadQueue.removeAll()
         activeFolderChildrenLoadCount = 0
+        // Forget in-flight tokens along with the counter reset —
+        // otherwise their completions / watchdogs would decrement the
+        // fresh counter for slots they no longer hold.
+        folderChildrenLoadsInFlight.removeAll()
 
         expandAncestors(of: currentDirectory)
         refreshFolderChildren(URL(fileURLWithPath: "/").standardizedFileURL)

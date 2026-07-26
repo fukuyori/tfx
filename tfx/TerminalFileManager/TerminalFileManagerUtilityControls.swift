@@ -71,13 +71,26 @@ extension TerminalFileManagerView {
             .disabled(!isSplitViewVisible)
             .quickHelp("Swap left and right panes", shortcut: shortcutStore.info(.swapPanes), text: $hoverHelpText)
 
-            Button {
-                isFileListSettingsPresented = true
+            Menu {
+                Button("Edit Config File…") {
+                    ConfigFileEditor.openConfigFile()
+                }
+                .keyboardShortcut(shortcutStore.info(.editConfig))
+
+                Button("Editor Settings…") {
+                    isEditorSettingsPresented = true
+                }
+
+                Button("File List Settings…") {
+                    isFileListSettingsPresented = true
+                }
             } label: {
                 Image(systemName: "gearshape")
             }
-            .buttonStyle(.borderless)
-            .quickHelp("File list settings", text: $hoverHelpText)
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .quickHelp("Settings", text: $hoverHelpText)
         }
     }
 }

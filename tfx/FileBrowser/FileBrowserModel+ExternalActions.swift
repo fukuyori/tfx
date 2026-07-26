@@ -80,6 +80,20 @@ extension FileBrowserModel {
     func copyPath(_ url: URL) {
         FileBrowserExternalActions.copyPath(url)
     }
+
+    /// Finder Get Info for the current selection, falling back to the
+    /// current directory when nothing is selected — mirrors how
+    /// `copyPath` treats an empty selection.
+    func showGetInfoForSelection() {
+        let urls = selectedItems.map(\.url)
+        showGetInfo(for: urls.isEmpty ? [currentDirectory] : urls)
+    }
+
+    func showGetInfo(for urls: [URL]) {
+        FileBrowserExternalActions.showFinderInfo(urls) { [weak self] error in
+            self?.show(error, title: String(localized: "Could not open Get Info"))
+        }
+    }
 }
 
 #endif

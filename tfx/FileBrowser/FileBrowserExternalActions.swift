@@ -184,6 +184,50 @@ enum FileBrowserExternalActions {
         NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 
+    /// Open Finder's Get Info window for every URL. There is no public
+    /// AppKit API for the info panel, so this drives Finder through an
+    /// Apple event — macOS shows a one-time Automation consent prompt
+    /// the first time it runs. Errors (including a denied consent, which
+    /// surfaces as error -1743) are routed to `onError` so the caller
+    /// can show them in the standard alert.
+    static func showFinderInfo(_ urls: [URL], onError: @escaping (Error) -> Void) {
+        guard !urls.isEmpty else { return }
+
+        let pathList = urls
+            .map { "POSIX file \"\(appleScriptStringEscaped($0.path))\"" }
+            .joined(separator: ", ")
+        let source = """
+        tell application "Finder"
+            activate
+            repeat with f in {\(pathList)}
+                open information window of (f as alias)
+            end repeat
+        end tell
+        """
+
+        var errorInfo: NSDictionary?
+        NSAppleScript(source: source)?.executeAndReturnError(&errorInfo)
+        if let errorInfo {
+            let message = (errorInfo[NSAppleScript.errorMessage] as? String)
+                ?? String(localized: "Finder could not open the information window.")
+            let code = (errorInfo[NSAppleScript.errorNumber] as? Int) ?? -1
+            onError(NSError(
+                domain: "tfx.FinderInfo",
+                code: code,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            ))
+        }
+    }
+
+    /// Escape a path for embedding inside an AppleScript string
+    /// literal. Backslash first, then the double quote — file names
+    /// may legally contain both.
+    private static func appleScriptStringEscaped(_ path: String) -> String {
+        path
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
     static func copyPath(_ url: URL) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url.path(percentEncoded: false), forType: .string)

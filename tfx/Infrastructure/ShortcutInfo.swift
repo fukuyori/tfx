@@ -215,6 +215,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case toggleRendered
     case loadExternalImages
     case focusFilePane
+    case editConfig
+    case getInfo
 
     var id: String { rawValue }
 }
@@ -260,7 +262,11 @@ enum Shortcuts {
         // Allow external image loading in the rendered preview.
         .loadExternalImages: ShortcutInfo(key: "i", modifiers: [.command, .shift]),
         // Move keyboard focus to the active file pane.
-        .focusFilePane: ShortcutInfo(key: "j", modifiers: [.command, .option, .shift])
+        .focusFilePane: ShortcutInfo(key: "j", modifiers: [.command, .option, .shift]),
+        // Open config.toml in the configured text editor.
+        .editConfig: ShortcutInfo(key: ",", modifiers: .command),
+        // Open Finder's Get Info window for the selection.
+        .getInfo: ShortcutInfo(key: "i", modifiers: .command)
     ]
 
     static func info(_ action: ShortcutAction) -> ShortcutInfo {
@@ -558,6 +564,8 @@ enum ShortcutConfigurationLoader {
     toggleRendered = "cmd+shift+r"
     loadExternalImages = "cmd+shift+i"
     focusFilePane = "cmd+option+shift+j"
+    editConfig = "cmd+,"
+    getInfo = "cmd+i"
     """
 }
 

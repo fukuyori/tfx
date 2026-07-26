@@ -36,6 +36,7 @@ struct TerminalFileManagerView: View {
     @State var fileSplitRatio: CGFloat = 0.5
     @State var fileSplitDragStart: FileSplitDragStart?
     @State var isFileListSettingsPresented = false
+    @State var isEditorSettingsPresented = false
     @State var hoverHelpText = ""
     @State private var hasAppliedStartupFocus = false
     @FocusState var isSearchFocused: Bool

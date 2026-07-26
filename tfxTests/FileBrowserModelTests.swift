@@ -50,6 +50,33 @@ struct FileBrowserModelTests {
     }
 
     @Test
+    func navigationCollapsesFoldersOutsideTargetPath() throws {
+        let base = try Self.makeTempDir()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let dirA = base.appendingPathComponent("a", isDirectory: true)
+        let dirAB = dirA.appendingPathComponent("b", isDirectory: true)
+        let dirX = base.appendingPathComponent("x", isDirectory: true)
+        let dirXY = dirX.appendingPathComponent("y", isDirectory: true)
+        for dir in [dirAB, dirXY] {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+
+        let model = FileBrowserModel(initialDirectory: base)
+        model.markFolderExpanded(dirA)
+        model.markFolderExpanded(dirAB)
+        model.markFolderExpanded(dirX)
+
+        model.navigate(to: dirXY)
+
+        // Only the path to the new listing stays open; the subtree the
+        // user had open under `a` folds away.
+        #expect(model.isFolderExpanded(dirX))
+        #expect(model.isFolderExpanded(dirXY))
+        #expect(!model.isFolderExpanded(dirA))
+        #expect(!model.isFolderExpanded(dirAB))
+    }
+
+    @Test
     func goBackRestoresPreviousDirectory() throws {
         let dirA = try Self.makeTempDir()
         let dirB = try Self.makeTempDir()

@@ -108,13 +108,18 @@ struct FolderTreeRow: View {
                 activateTree: activateTree
             )
         }
-        // Folder-tree rows (both FOLDERS and PINNED sections) intentionally
-        // do NOT accept file-URL drops. The pinned section has its own
-        // `PinnedFolderExternalDropDelegate` for adding folders to the
-        // pin list, and we want a drag from the file pane onto a tree
-        // row to be ignored rather than silently moving the file into
-        // that directory. Re-enable per-row file drops here if a future
-        // workflow needs "drop file onto folder = move into" again.
+        // FOLDERS-tree rows accept file-URL drops: drop = move/copy into
+        // that folder, with the row highlighted while hovered and
+        // spring-loaded expansion after a short hover (see
+        // `FolderTreeFileDropDelegate` for the Finder-style operation
+        // rules). PINNED rows stay excluded — their drop surface belongs
+        // to `PinnedFolderExternalDropDelegate`, which adds folders to
+        // the pin list instead of moving files.
+        .modifier(FolderTreeRowDropModifier(
+            model: model,
+            url: url,
+            isEnabled: selectionSection == .tree
+        ))
     }
 
     private func displayName(for url: URL) -> String {
@@ -128,7 +133,11 @@ struct FolderTreeRow: View {
         model.navigate(
             to: url,
             expandsTarget: false,
-            updatesFolderTreeSelection: selectionSection == .tree
+            updatesFolderTreeSelection: selectionSection == .tree,
+            // Clicking inside the FOLDERS tree must not move the row
+            // the user just clicked; navigation from the PINNED
+            // section still pins the folder to the top.
+            anchorsFolderTreeToTop: selectionSection != .tree
         )
     }
 
@@ -153,6 +162,26 @@ struct FolderTreeRow: View {
         }
 
         return .clear
+    }
+}
+
+/// Attaches the file-drop delegate to FOLDERS-tree rows only. A plain
+/// conditional `.onDrop` in the row body would change the view's type
+/// between sections; the modifier keeps one code path.
+private struct FolderTreeRowDropModifier: ViewModifier {
+    let model: FileBrowserModel
+    let url: URL
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.onDrop(
+                of: [UTType.fileURL],
+                delegate: FolderTreeFileDropDelegate(model: model, targetDirectory: url)
+            )
+        } else {
+            content
+        }
     }
 }
 #endif

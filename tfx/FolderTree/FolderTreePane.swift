@@ -14,6 +14,12 @@ struct FolderTreePane: View {
     /// root row can end up off-screen above the viewport if the
     /// user was scrolled down inside a deep subtree.
     @State private var collapseAllRequestID = 0
+    @StateObject private var volumeStore = VolumeListStore()
+    // Per-section collapse state, persisted like the other layout
+    // toggles. Defaults keep every section open.
+    @AppStorage("TerminalFileManager.sidebarPinnedCollapsed") private var isPinnedSectionCollapsed = false
+    @AppStorage("TerminalFileManager.sidebarDisksCollapsed") private var isDisksSectionCollapsed = false
+    @AppStorage("TerminalFileManager.sidebarFoldersCollapsed") private var isFoldersSectionCollapsed = false
     @Environment(\.design) private var design
     @Environment(\.theme) private var theme
 
@@ -26,12 +32,31 @@ struct FolderTreePane: View {
             outerHeader
 
             if !model.pinnedFolders.isEmpty {
-                pinnedSection
+                FolderTreeSectionHeader(title: "PINNED", isCollapsed: $isPinnedSectionCollapsed)
+                if !isPinnedSectionCollapsed {
+                    pinnedSection
+                }
                 Divider()
-                foldersSectionHeader
             }
 
-            folderTreeSection
+            FolderTreeSectionHeader(title: "DISKS", isCollapsed: $isDisksSectionCollapsed)
+            if !isDisksSectionCollapsed {
+                DiskListSection(
+                    model: model,
+                    volumeStore: volumeStore,
+                    isTreeActive: isActive,
+                    activateTree: activate
+                )
+            }
+            Divider()
+
+            foldersSectionHeader
+
+            if !isFoldersSectionCollapsed {
+                folderTreeSection
+            } else {
+                Spacer(minLength: 0)
+            }
         }
         .background(theme.folderTreeBackground.opacity(design.opacity.background))
         .overlay(
@@ -45,6 +70,7 @@ struct FolderTreePane: View {
             Text("FOLDERS")
             Spacer()
             Button {
+                volumeStore.refresh()
                 model.reload()
                 model.rebuildFolderTree()
             } label: {
@@ -60,14 +86,9 @@ struct FolderTreePane: View {
         .background((isActive ? theme.titleBarBackgroundActive : theme.folderTreeBackground).opacity(design.opacity.background))
     }
 
-    /// Folders section header with a trailing "collapse all"
-    /// button. Renders the same `FolderTreeSectionHeader`-style
-    /// label inline so styling matches the PINNED header above
-    /// it.
+    /// Folders section header with a trailing "collapse all" button.
     private var foldersSectionHeader: some View {
-        HStack(spacing: 6) {
-            Text("FOLDERS")
-                .frame(maxWidth: .infinity, alignment: .leading)
+        FolderTreeSectionHeader(title: "FOLDERS", isCollapsed: $isFoldersSectionCollapsed) {
             Button {
                 model.collapseAllFolders()
                 collapseAllRequestID &+= 1
@@ -77,70 +98,61 @@ struct FolderTreePane: View {
             .buttonStyle(.borderless)
             .help("Collapse all folders")
         }
-        .font(design.fonts.swiftUIFont(for: .caption, weight: .semibold))
-        .foregroundStyle(theme.folderTreeSectionHeader)
-        .padding(.horizontal, 10)
-        .padding(.top, 9)
-        .padding(.bottom, 4)
     }
 
     private var pinnedSection: some View {
-        VStack(spacing: 0) {
-            FolderTreeSectionHeader(title: "PINNED")
-
-            ScrollViewReader { pinnedProxy in
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(Array(model.pinnedFolders.enumerated()), id: \.element) { index, pinnedFolder in
-                            PinnedFolderInsertionSlot(
-                                isVisible: model.isPinnedFolderInsertionSlotVisible(at: index),
-                                reservesRowSpace: !model.isDraggingPinnedFolder
-                            )
-
-                            PinnedFolderTreeRow(
-                                model: model,
-                                url: pinnedFolder,
-                                isTreeActive: isActive,
-                                activateTree: activate
-                            )
-                        }
-
+        ScrollViewReader { pinnedProxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(model.pinnedFolders.enumerated()), id: \.element) { index, pinnedFolder in
                         PinnedFolderInsertionSlot(
-                            isVisible: model.isPinnedFolderInsertionSlotVisible(at: model.pinnedFolders.count),
+                            isVisible: model.isPinnedFolderInsertionSlotVisible(at: index),
                             reservesRowSpace: !model.isDraggingPinnedFolder
                         )
+
+                        PinnedFolderTreeRow(
+                            model: model,
+                            url: pinnedFolder,
+                            isTreeActive: isActive,
+                            activateTree: activate
+                        )
                     }
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .onAppear {
-                                    updatePinnedContentHeight(geo.size.height)
-                                }
-                                .onChange(of: geo.size.height) { _, newHeight in
-                                    updatePinnedContentHeight(newHeight)
-                                }
-                        }
+
+                    PinnedFolderInsertionSlot(
+                        isVisible: model.isPinnedFolderInsertionSlotVisible(at: model.pinnedFolders.count),
+                        reservesRowSpace: !model.isDraggingPinnedFolder
                     )
-                    // Make the whole rows-VStack hit-testable so the
-                    // drop delegate receives location updates anywhere
-                    // inside the section, not only directly over a row
-                    // (which would miss the inter-row gaps the insertion
-                    // slots open into).
-                    .contentShape(Rectangle())
                 }
-                .frame(height: min(max(pinnedContentHeight, 1), pinnedSectionMaxHeight))
-                .overlay {
-                    PinnedFolderExternalDropOverlay(model: model, rowHeight: 26)
-                }
-                .onChange(of: model.folderTreeSelection) {
-                    if model.folderTreeSelectionSection == .pinned {
-                        scrollToSelection(with: pinnedProxy)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .onAppear {
+                                updatePinnedContentHeight(geo.size.height)
+                            }
+                            .onChange(of: geo.size.height) { _, newHeight in
+                                updatePinnedContentHeight(newHeight)
+                            }
                     }
+                )
+                // Make the whole rows-VStack hit-testable so the
+                // drop delegate receives location updates anywhere
+                // inside the section, not only directly over a row
+                // (which would miss the inter-row gaps the insertion
+                // slots open into).
+                .contentShape(Rectangle())
+            }
+            .frame(height: min(max(pinnedContentHeight, 1), pinnedSectionMaxHeight))
+            .overlay {
+                PinnedFolderExternalDropOverlay(model: model, rowHeight: 26)
+            }
+            .onChange(of: model.folderTreeSelection) {
+                if model.folderTreeSelectionSection == .pinned {
+                    scrollToSelection(with: pinnedProxy)
                 }
-                .onChange(of: model.folderTreeSelectionSection) {
-                    if model.folderTreeSelectionSection == .pinned {
-                        scrollToSelection(with: pinnedProxy)
-                    }
+            }
+            .onChange(of: model.folderTreeSelectionSection) {
+                if model.folderTreeSelectionSection == .pinned {
+                    scrollToSelection(with: pinnedProxy)
                 }
             }
         }
@@ -177,20 +189,42 @@ struct FolderTreePane: View {
             // out-of-bounds offset after content shrinks from
             // hundreds of rows to one.
             .id(collapseAllRequestID)
+            // Anchor mode comes from the model: navigation arriving
+            // from outside the tree (file pane, pinned folders, DISKS)
+            // pins the current folder's row to the top of the FOLDERS
+            // viewport; selections made inside the tree itself only
+            // scroll the minimum needed to stay visible, so the row
+            // the user clicked doesn't jump away from under the
+            // cursor.
             .onChange(of: model.folderTreeSelection) {
                 if model.folderTreeSelectionSection == .tree {
-                    scrollToSelection(with: proxy)
+                    scrollToSelection(with: proxy, anchor: autoScrollAnchor)
                 }
             }
             .onChange(of: model.folderTreeSelectionSection) {
                 if model.folderTreeSelectionSection == .tree {
-                    scrollToSelection(with: proxy)
+                    scrollToSelection(with: proxy, anchor: autoScrollAnchor)
                 }
             }
             .onChange(of: isActive) {
                 if isActive && model.folderTreeSelectionSection == .tree {
-                    scrollToSelection(with: proxy)
+                    scrollToSelection(with: proxy, anchor: autoScrollAnchor)
                 }
+            }
+            // Navigation that doesn't move the tree selection — a
+            // pinned-folder click keeps the selection in the PINNED
+            // section — must still bring the file listing's folder to
+            // the top of the FOLDERS viewport, so track the current
+            // directory itself as well.
+            .onChange(of: model.currentDirectory) {
+                scrollToRow(
+                    FolderTreeRowID(
+                        url: model.currentDirectory.standardizedFileURL,
+                        section: .tree
+                    ),
+                    with: proxy,
+                    anchor: autoScrollAnchor
+                )
             }
         }
         .contentShape(Rectangle())
@@ -200,8 +234,17 @@ struct FolderTreePane: View {
         }
     }
 
-    private func scrollToSelection(with proxy: ScrollViewProxy) {
-        let rowID = model.selectedFolderTreeRowID
+    /// `.top` when the last navigation came from outside the tree,
+    /// nil (scroll the minimum to stay visible) for in-tree selection.
+    private var autoScrollAnchor: UnitPoint? {
+        model.folderTreeScrollsToTopOnChange ? .top : nil
+    }
+
+    private func scrollToSelection(with proxy: ScrollViewProxy, anchor: UnitPoint? = nil) {
+        scrollToRow(model.selectedFolderTreeRowID, with: proxy, anchor: anchor)
+    }
+
+    private func scrollToRow(_ rowID: FolderTreeRowID, with proxy: ScrollViewProxy, anchor: UnitPoint?) {
         // See `FilePaneFileList.scrollToSelection` — `ScrollViewProxy`
         // rejects access during view updates, and `Task.yield()`
         // can still resume inside the same update transaction.
@@ -209,7 +252,7 @@ struct FolderTreePane: View {
         // runloop tick, safely after the current update completes.
         DispatchQueue.main.async {
             withAnimation(.easeOut(duration: 0.08)) {
-                proxy.scrollTo(rowID)
+                proxy.scrollTo(rowID, anchor: anchor)
             }
         }
     }

@@ -35,7 +35,11 @@ enum DesignConfigurationLoader {
             .appendingPathComponent(fileName, isDirectory: false)
     }
 
-    private static func ensureConfigFile(fileManager: FileManager) throws -> URL {
+    /// Create the config directory and default `config.toml` when missing,
+    /// returning the file URL. Internal (not `private`) so the in-app
+    /// "Edit Config File…" action can guarantee the file exists before
+    /// handing it to an editor.
+    static func ensureConfigFile(fileManager: FileManager = .default) throws -> URL {
         let configURL = try configFileURL(fileManager: fileManager)
         let directoryURL = configURL.deletingLastPathComponent()
 
@@ -370,6 +374,8 @@ enum DesignConfigurationLoader {
     toggleTerminalPane = "cmd+option+t"
     focusTerminalPane = "cmd+option+shift+t"
     toggleFolderTree = "cmd+option+f"
+    editConfig = "cmd+,"
+    getInfo = "cmd+i"
 
     # Optional application launch overrides.
     #

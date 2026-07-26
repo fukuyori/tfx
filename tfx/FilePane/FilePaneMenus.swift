@@ -163,6 +163,11 @@ struct FileItemContextMenu: View {
 
         Divider()
 
+        Button("Get Info") {
+            model.showGetInfoForSelection()
+        }
+        .keyboardShortcut(shortcutStore.info(.getInfo))
+
         Button("Reveal in Finder") {
             model.revealSelectedItemsInFinder()
         }
@@ -251,6 +256,12 @@ struct EmptyFileAreaContextMenu: View {
         .disabled(model.items.isEmpty)
 
         Divider()
+
+        Button("Get Info") {
+            activate()
+            model.showGetInfo(for: [model.currentDirectory])
+        }
+        .keyboardShortcut(shortcutStore.info(.getInfo))
 
         Button("Reveal in Finder") {
             activate()

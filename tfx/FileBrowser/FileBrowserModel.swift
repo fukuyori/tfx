@@ -166,6 +166,25 @@ final class FileBrowserModel: ObservableObject {
     var fileListDropCompletedDirectory: URL?
     var fileListDropCompletedAt: Date?
     static let fileListDropSuppressionWindow: TimeInterval = 0.6
+    /// Pending spring-loaded expansion of the folder-tree row currently
+    /// hovered during a file drag. Cancelled when the drag leaves the
+    /// row or the drop completes.
+    var folderTreeSpringExpansionWork: DispatchWorkItem?
+    /// Whether the folder tree's next auto-scroll should pin the current
+    /// row to the top of the viewport. True for navigation that arrives
+    /// from outside the tree (file pane, pinned folders, DISKS); false
+    /// for selections made inside the tree itself, which must not yank
+    /// the row the user just clicked away from under the cursor.
+    var folderTreeScrollsToTopOnChange = true
+    /// Folder-children enumerations currently holding a concurrency
+    /// slot. Tokens are removed either by the load's completion or by
+    /// its watchdog timeout, whichever fires first — see
+    /// `processFolderChildrenLoadQueue`.
+    var folderChildrenLoadsInFlight: Set<FolderChildrenLoadToken> = []
+    /// Per-drag cache for the folder-tree drop delegate: dragged URLs
+    /// are read from the drag pasteboard once per hovered row instead
+    /// of on every `dropUpdated` mouse-move tick.
+    var folderTreeDropContext: FolderTreeDropContext?
     /// Caches per-directory Git root resolution so re-entering a
     /// previously visited folder skips the `git rev-parse` cost. The
     /// optional value distinguishes "outside any work tree" (`.some(nil)`)

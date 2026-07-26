@@ -144,6 +144,30 @@ struct ShortcutConfigurationTests {
     }
 
     @Test
+    func everyActionHasADefaultShortcut() {
+        // A `ShortcutAction` case added without a `Shortcuts.defaults`
+        // entry silently degrades to the null placeholder binding —
+        // catch it here instead of in the UI.
+        for action in ShortcutAction.allCases {
+            #expect(Shortcuts.defaults[action] != nil, "missing default for \(action.rawValue)")
+        }
+    }
+
+    @Test
+    func parsesEditConfigAndGetInfoOverrides() throws {
+        let shortcuts = try ShortcutConfigurationLoader.parse("""
+        version = 1
+
+        [shortcuts]
+        editConfig = "cmd+shift+,"
+        getInfo = "cmd+option+i"
+        """)
+
+        #expect(shortcuts[.editConfig] == ShortcutInfo(key: ",", modifiers: [.command, .shift]))
+        #expect(shortcuts[.getInfo] == ShortcutInfo(key: "i", modifiers: [.command, .option]))
+    }
+
+    @Test
     func deleteShortcutMatchesForwardDeleteEvent() throws {
         let shortcut = ShortcutInfo(key: .delete, modifiers: .command)
         let event = try #require(NSEvent.keyEvent(

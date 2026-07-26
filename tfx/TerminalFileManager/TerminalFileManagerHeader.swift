@@ -32,6 +32,9 @@ extension TerminalFileManagerView {
                 configurationRaw: $fileColumnConfigurationRaw
             )
         }
+        .sheet(isPresented: $isEditorSettingsPresented) {
+            EditorSettingsView()
+        }
         .overlay(alignment: .bottomTrailing) {
             hoverHelpOverlay
         }

@@ -2,6 +2,10 @@
 import Foundation
 
 extension FileBrowserModel {
+    /// Hover time before a collapsed tree row spring-expands during a
+    /// file drag. Finder uses a similar sub-second delay.
+    static let folderTreeSpringExpansionDelay: TimeInterval = 0.7
+
     var selectedFolderTreeURL: URL {
         folderTreeSelection ?? currentDirectory
     }
@@ -28,6 +32,10 @@ extension FileBrowserModel {
     }
 
     func selectFolderTree(_ url: URL, in section: FolderTreeSelectionSection) {
+        // In-tree selections keep the viewport where it is; a
+        // `navigate()` that follows (pinned click, DISKS click) flips
+        // this back to true for the external-navigation top-anchor.
+        folderTreeScrollsToTopOnChange = false
         folderTreeSelection = url.standardizedFileURL
         folderTreeSelectionSection = section
         clearDropTargetDirectory(nil)
@@ -59,7 +67,8 @@ extension FileBrowserModel {
             navigate(
                 to: target.url,
                 expandsTarget: false,
-                updatesFolderTreeSelection: target.section == .tree
+                updatesFolderTreeSelection: target.section == .tree,
+                anchorsFolderTreeToTop: target.section != .tree
             )
         }
     }
@@ -100,7 +109,8 @@ extension FileBrowserModel {
         navigate(
             to: selectedURL,
             expandsTarget: false,
-            updatesFolderTreeSelection: folderTreeSelectionSection == .tree
+            updatesFolderTreeSelection: folderTreeSelectionSection == .tree,
+            anchorsFolderTreeToTop: folderTreeSelectionSection != .tree
         )
         if folderTreeSelectionSection == .tree {
             toggleFolderExpansion(selectedURL)
@@ -120,6 +130,34 @@ extension FileBrowserModel {
         for ancestor in FileBrowserFolderSupport.ancestors(of: url) {
             expandFolder(ancestor)
         }
+    }
+
+    /// Spring-loaded expansion while dragging files over a collapsed
+    /// tree row: after hovering for a beat the row expands so the drag
+    /// can continue into subfolders, like Finder's spring-loaded
+    /// folders. The expansion only fires if the row is still the
+    /// active drop target when the delay elapses.
+    func scheduleFolderTreeSpringExpansion(of url: URL) {
+        cancelFolderTreeSpringExpansion()
+        let key = url.standardizedFileURL
+        guard !isFolderExpanded(key) else { return }
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.folderTreeSpringExpansionWork = nil
+            guard self.isDropTargetDirectory(key) else { return }
+            self.expandFolder(key)
+        }
+        folderTreeSpringExpansionWork = work
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + Self.folderTreeSpringExpansionDelay,
+            execute: work
+        )
+    }
+
+    func cancelFolderTreeSpringExpansion() {
+        folderTreeSpringExpansionWork?.cancel()
+        folderTreeSpringExpansionWork = nil
     }
 
     private func visibleDefaultTreeFolders() -> [URL] {
