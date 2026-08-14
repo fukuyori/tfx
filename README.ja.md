@@ -56,37 +56,29 @@ Version: **0.9.10**
 - カラムヘッダーのドラッグによるファイル一覧カラム幅変更。左ペインのカラム幅は復元され、右ペインのカラム幅は一時的に扱われます
 - ウィンドウサイズ、表示状態、ペイン幅、アクティブペイン、開いているフォルダの復元
 
-## キーボード操作
+## インストール
 
-- `↑ / ↓`: アクティブなファイルビューまたはフォルダツリーの選択移動
-- `Shift + ↑ / ↓`: ファイルビューの範囲選択
-- `← / →`: ファイル一覧を左右にスクロール
-- `Tab` / `Shift + Tab`: 左ファイル一覧 → 右ファイル一覧 → 内蔵ターミナル (表示時) のフォーカス循環。フォルダツリーはクリックでフォーカスできますが Tab 循環には含まれません
-- `Enter`: ファイルを開く、またはフォルダへ移動
-- `Command + O`: 選択項目を開く
-- `Command + [` / `Command + ]`: 戻る / 進む
-- `Command + ↑`: 親フォルダへ移動
-- `Backspace`: 親フォルダへ移動
-- `Command + F`: 検索
-- `Command + N`: 新規フォルダ
-- `Command + Shift + N`: 新規ファイル
-- `Command + Return`: インラインで名前を変更
-- `Command + Backspace`: ゴミ箱へ移動
-- `Command + C / X / V`: コピー / カット / ペースト。クリップボードにファイルがない場合、⌘V はクリップボードの内容から新しいファイルを作成します (表計算 → `.csv`、画像 → `.png`、URL → `.url`、リッチテキスト → `.rtf`、プレーンテキスト → `.txt`)。作成後はインライン名前編集に入ります
-- `Command + Option + V`: 移動ペースト
-- `Command + Shift + V`: 書式なし貼り付け (書式を破棄して `.txt` を作成)。`config.toml` の `[shortcuts] pasteAsText = "..."` で変更可能
-- `Command + A`: すべて選択
-- `Command + R`: 再読み込み
-- `Command + T`: 現在フォルダでターミナルアプリを開く
-- `Command + P`: プレビューペイン表示切り替え
-- `Command + \`: スプリット表示切り替え
-- `Command + Shift + X`: 左右ペインを入れ替え（スプリット表示時のみ）
-- `Command + Shift + .`: 隠しファイル表示切り替え
-- `Command + Shift + T`: 新規タブ
-- `Command + W`: タブを閉じる
-- `Command + Shift + [` / `Command + Shift + ]`: 前 / 次のタブ
-- `Command + Option + T`: 内蔵ターミナルペイン表示切り替え
-- `Command + Option + Shift + T`: 内蔵ターミナルペインにフォーカス
+公式配布元の Homebrew Tap からインストールします。
+
+```sh
+brew install --cask fukuyori/tap/tfx
+```
+
+`tfx.app` が `/Applications` にインストールされ、`tfx` コマンドも
+`PATH` から実行できるようになります。Homebrew Tap はこのソース
+リポジトリとは別のリポジトリで公開します。
+
+## ビルド
+
+```sh
+xcodebuild -project tfx.xcodeproj -scheme tfx -destination 'platform=macOS' -derivedDataPath /tmp/tfx-derived CODE_SIGNING_ALLOWED=NO build
+```
+
+リリースビルド:
+
+```sh
+xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
+```
 
 ## コマンドラインから起動
 
@@ -140,6 +132,38 @@ open -a /Applications/tfx.app "$PWD"
 ```sh
 tfx .
 ```
+
+## キーボード操作
+
+- `↑ / ↓`: アクティブなファイルビューまたはフォルダツリーの選択移動
+- `Shift + ↑ / ↓`: ファイルビューの範囲選択
+- `← / →`: ファイル一覧を左右にスクロール
+- `Tab` / `Shift + Tab`: 左ファイル一覧 → 右ファイル一覧 → 内蔵ターミナル (表示時) のフォーカス循環。フォルダツリーはクリックでフォーカスできますが Tab 循環には含まれません
+- `Enter`: ファイルを開く、またはフォルダへ移動
+- `Command + O`: 選択項目を開く
+- `Command + [` / `Command + ]`: 戻る / 進む
+- `Command + ↑`: 親フォルダへ移動
+- `Backspace`: 親フォルダへ移動
+- `Command + F`: 検索
+- `Command + N`: 新規フォルダ
+- `Command + Shift + N`: 新規ファイル
+- `Command + Return`: インラインで名前を変更
+- `Command + Backspace`: ゴミ箱へ移動
+- `Command + C / X / V`: コピー / カット / ペースト。クリップボードにファイルがない場合、⌘V はクリップボードの内容から新しいファイルを作成します (表計算 → `.csv`、画像 → `.png`、URL → `.url`、リッチテキスト → `.rtf`、プレーンテキスト → `.txt`)。作成後はインライン名前編集に入ります
+- `Command + Option + V`: 移動ペースト
+- `Command + Shift + V`: 書式なし貼り付け (書式を破棄して `.txt` を作成)。`config.toml` の `[shortcuts] pasteAsText = "..."` で変更可能
+- `Command + A`: すべて選択
+- `Command + R`: 再読み込み
+- `Command + T`: 現在フォルダでターミナルアプリを開く
+- `Command + P`: プレビューペイン表示切り替え
+- `Command + \`: スプリット表示切り替え
+- `Command + Shift + X`: 左右ペインを入れ替え（スプリット表示時のみ）
+- `Command + Shift + .`: 隠しファイル表示切り替え
+- `Command + Shift + T`: 新規タブ
+- `Command + W`: タブを閉じる
+- `Command + Shift + [` / `Command + Shift + ]`: 前 / 次のタブ
+- `Command + Option + T`: 内蔵ターミナルペイン表示切り替え
+- `Command + Option + Shift + T`: 内蔵ターミナルペインにフォーカス
 
 ## 設定
 
@@ -199,30 +223,6 @@ shortcut = "cmd+shift+g"
 ```
 
 対応キー、デザイントークンの適用先、例、エラー時の挙動は [`docs/configuration.ja.md`](docs/configuration.ja.md) を参照してください。
-
-## インストール
-
-公式配布元の Homebrew Tap からインストールします。
-
-```sh
-brew install --cask fukuyori/tap/tfx
-```
-
-`tfx.app` が `/Applications` にインストールされ、`tfx` コマンドも
-`PATH` から実行できるようになります。Homebrew Tap はこのソース
-リポジトリとは別のリポジトリで公開します。
-
-## ビルド
-
-```sh
-xcodebuild -project tfx.xcodeproj -scheme tfx -destination 'platform=macOS' -derivedDataPath /tmp/tfx-derived CODE_SIGNING_ALLOWED=NO build
-```
-
-リリースビルド:
-
-```sh
-xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
-```
 
 ## プロジェクト構成
 

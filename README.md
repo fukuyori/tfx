@@ -56,37 +56,29 @@ English | [日本語](README.ja.md)
 - Resizable file-list columns by dragging column headers. Left-pane column widths are restored; right-pane column widths are temporary.
 - Restores window size, visible panes, pane widths, active pane, and open folders
 
-## Keyboard
+## Installation
 
-- `Up / Down`: Move selection in the active file pane or folder tree
-- `Shift + Up / Down`: Extend the file-pane selection range
-- `Left / Right`: Scroll the file list horizontally
-- `Tab` / `Shift + Tab`: Cycle keyboard focus across left file pane → right file pane → built-in terminal (when visible). The folder tree is reachable by mouse click but does not participate in Tab cycling.
-- `Enter`: Open the selected file or enter the selected folder
-- `Command + O`: Open the selected item
-- `Command + [` / `Command + ]`: Back / Forward
-- `Command + Up`: Parent folder
-- `Backspace`: Parent folder
-- `Command + F`: Search
-- `Command + N`: New folder
-- `Command + Shift + N`: New file
-- `Command + Return`: Rename inline
-- `Command + Backspace`: Move to Trash
-- `Command + C / X / V`: Copy / Cut / Paste. When the clipboard holds no files, Cmd+V creates a new file from the clipboard content (spreadsheet → `.csv`, image → `.png`, URL → `.url`, rich text → `.rtf`, plain text → `.txt`) and opens it in inline rename.
-- `Command + Option + V`: Move-paste
-- `Command + Shift + V`: Paste as plain text (creates a `.txt` file, dropping any formatting). Configurable via `[shortcuts] pasteAsText = "..."` in `config.toml`.
-- `Command + A`: Select all
-- `Command + R`: Reload
-- `Command + T`: Open a terminal app here
-- `Command + P`: Toggle preview pane
-- `Command + \`: Toggle split view
-- `Command + Shift + X`: Swap left and right panes (split view only)
-- `Command + Shift + .`: Toggle hidden files
-- `Command + Shift + T`: New tab
-- `Command + W`: Close tab
-- `Command + Shift + [` / `Command + Shift + ]`: Previous / next tab
-- `Command + Option + T`: Toggle built-in terminal pane
-- `Command + Option + Shift + T`: Focus built-in terminal pane
+Install from the upstream Homebrew tap:
+
+```sh
+brew install --cask fukuyori/tap/tfx
+```
+
+This installs `tfx.app` in `/Applications` and makes the `tfx` command
+available on `PATH`. The Homebrew tap is published separately from this
+source repository.
+
+## Build
+
+```sh
+xcodebuild -project tfx.xcodeproj -scheme tfx -destination 'platform=macOS' -derivedDataPath /tmp/tfx-derived CODE_SIGNING_ALLOWED=NO build
+```
+
+Release build:
+
+```sh
+xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
+```
 
 ## Command Line Launch
 
@@ -140,6 +132,38 @@ If you have a wrapper such as `/usr/local/bin/tfx`, relative paths are supported
 ```sh
 tfx .
 ```
+
+## Keyboard
+
+- `Up / Down`: Move selection in the active file pane or folder tree
+- `Shift + Up / Down`: Extend the file-pane selection range
+- `Left / Right`: Scroll the file list horizontally
+- `Tab` / `Shift + Tab`: Cycle keyboard focus across left file pane → right file pane → built-in terminal (when visible). The folder tree is reachable by mouse click but does not participate in Tab cycling.
+- `Enter`: Open the selected file or enter the selected folder
+- `Command + O`: Open the selected item
+- `Command + [` / `Command + ]`: Back / Forward
+- `Command + Up`: Parent folder
+- `Backspace`: Parent folder
+- `Command + F`: Search
+- `Command + N`: New folder
+- `Command + Shift + N`: New file
+- `Command + Return`: Rename inline
+- `Command + Backspace`: Move to Trash
+- `Command + C / X / V`: Copy / Cut / Paste. When the clipboard holds no files, Cmd+V creates a new file from the clipboard content (spreadsheet → `.csv`, image → `.png`, URL → `.url`, rich text → `.rtf`, plain text → `.txt`) and opens it in inline rename.
+- `Command + Option + V`: Move-paste
+- `Command + Shift + V`: Paste as plain text (creates a `.txt` file, dropping any formatting). Configurable via `[shortcuts] pasteAsText = "..."` in `config.toml`.
+- `Command + A`: Select all
+- `Command + R`: Reload
+- `Command + T`: Open a terminal app here
+- `Command + P`: Toggle preview pane
+- `Command + \`: Toggle split view
+- `Command + Shift + X`: Swap left and right panes (split view only)
+- `Command + Shift + .`: Toggle hidden files
+- `Command + Shift + T`: New tab
+- `Command + W`: Close tab
+- `Command + Shift + [` / `Command + Shift + ]`: Previous / next tab
+- `Command + Option + T`: Toggle built-in terminal pane
+- `Command + Option + Shift + T`: Focus built-in terminal pane
 
 ## Configuration
 
@@ -200,30 +224,6 @@ shortcut = "cmd+shift+g"
 
 See [`docs/configuration.md`](docs/configuration.md) for supported keys, design token mapping, examples, and error handling.
 Japanese documentation is available at [`docs/configuration.ja.md`](docs/configuration.ja.md).
-
-## Installation
-
-Install from the upstream Homebrew tap:
-
-```sh
-brew install --cask fukuyori/tap/tfx
-```
-
-This installs `tfx.app` in `/Applications` and makes the `tfx` command
-available on `PATH`. The Homebrew tap is published separately from this
-source repository.
-
-## Build
-
-```sh
-xcodebuild -project tfx.xcodeproj -scheme tfx -destination 'platform=macOS' -derivedDataPath /tmp/tfx-derived CODE_SIGNING_ALLOWED=NO build
-```
-
-Release build:
-
-```sh
-xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/tfx-release-derived CODE_SIGNING_ALLOWED=NO build
-```
 
 ## Project Structure
 
