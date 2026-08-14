@@ -201,6 +201,18 @@ shortcut = "cmd+shift+g"
 See [`docs/configuration.md`](docs/configuration.md) for supported keys, design token mapping, examples, and error handling.
 Japanese documentation is available at [`docs/configuration.ja.md`](docs/configuration.ja.md).
 
+## Installation
+
+Install from the upstream Homebrew tap:
+
+```sh
+brew install --cask fukuyori/tap/tfx
+```
+
+This installs `tfx.app` in `/Applications` and makes the `tfx` command
+available on `PATH`. The Homebrew tap is published separately from this
+source repository.
+
 ## Build
 
 ```sh
