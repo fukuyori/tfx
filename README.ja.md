@@ -200,6 +200,18 @@ shortcut = "cmd+shift+g"
 
 対応キー、デザイントークンの適用先、例、エラー時の挙動は [`docs/configuration.ja.md`](docs/configuration.ja.md) を参照してください。
 
+## インストール
+
+公式配布元の Homebrew Tap からインストールします。
+
+```sh
+brew install --cask fukuyori/tap/tfx
+```
+
+`tfx.app` が `/Applications` にインストールされ、`tfx` コマンドも
+`PATH` から実行できるようになります。Homebrew Tap はこのソース
+リポジトリとは別のリポジトリで公開します。
+
 ## ビルド
 
 ```sh

@@ -4,8 +4,8 @@ Working notes for anyone changing tfx source. The user-facing documents (`README
 
 ## Requirements
 
-- macOS matching the project deployment target (currently `MACOSX_DEPLOYMENT_TARGET = 26.4`).
-- Xcode that supports macOS 26.4. Earlier Xcode versions cannot build the project.
+- macOS matching the project deployment target (currently `MACOSX_DEPLOYMENT_TARGET = 15.0`).
+- Xcode that supports macOS 15. Earlier Xcode versions cannot build the project.
 - Apple Silicon. The project targets Apple Silicon natively; there is no Intel build path planned at the current deployment target.
 
 ## Local Build
@@ -132,10 +132,55 @@ package, or notarize anything.
 ./scripts/build_release_app.sh
 ```
 
-Unsigned local release app builds remain available for debugging:
+Create the Homebrew distribution archive. The command copies the app to a
+staging directory, signs it with Developer ID, submits it to Apple's notary
+service, staples the ticket, creates `artifacts/tfx-<version>.zip`, and writes
+a ready-to-publish cask to `artifacts/homebrew-tap/Casks/tfx.rb`.
 
 ```sh
-./scripts/build_release_app.sh
+./scripts/package_homebrew_release.sh
+```
+
+The default signing identity and notary keychain profile are:
+
+```text
+Developer ID Application: Noriaki Fukuyori (Q6GG27UYG5)
+notarytool
+```
+
+Override them with `TFX_APP_SIGN_IDENTITY` and `TFX_NOTARY_PROFILE`. Apple ID
+credentials can instead be supplied with `TFX_NOTARY_APPLE_ID`,
+`TFX_NOTARY_TEAM_ID`, and `TFX_NOTARY_PASSWORD`. Never commit those values.
+
+For a local packaging check that does not contact Apple's notary service:
+
+```sh
+TFX_SKIP_NOTARIZATION=1 ./scripts/package_homebrew_release.sh
+```
+
+An archive produced with `TFX_SKIP_NOTARIZATION=1` must not be published.
+
+Upload the notarized ZIP and checksum to the GitHub Release whose tag exactly
+matches the app version. Use `--clobber` when replacing a previously uploaded
+asset for the same release:
+
+```sh
+gh release upload 0.9.10 \
+    artifacts/tfx-0.9.10.zip \
+    artifacts/tfx-0.9.10.zip.sha256 \
+    --repo fukuyori/tfx \
+    --clobber
+```
+
+Copy the generated `Casks/tfx.rb` into `fukuyori/homebrew-tap`, test it, then
+commit and push it:
+
+```sh
+brew style --fix --cask tfx
+brew audit --strict --cask tfx
+brew install --cask fukuyori/tap/tfx
+tfx --version
+brew uninstall --cask tfx
 ```
 
 Sparkle appcast signing and channel layout will be added here when §2.7 lands.
