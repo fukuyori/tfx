@@ -1,17 +1,40 @@
 #if os(macOS)
+import AppKit
 import Foundation
 
 extension FileBrowserModel {
     func copySelectedItems() {
-        clipboard = FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .copy)
+        setInternalClipboard(FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .copy))
     }
 
     func cutSelectedItems() {
         guard !selectedItems.contains(where: { ZipArchiveBrowser.canCopyFromArchive($0.url) }) else {
-            clipboard = FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .copy)
+            setInternalClipboard(FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .copy))
             return
         }
-        clipboard = FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .move)
+        setInternalClipboard(FileBrowserClipboardActions.clipboard(for: selectedItems, operation: .move))
+    }
+
+    /// The pane-local clipboard, or nil when the system pasteboard
+    /// has been written by anyone since this pane's copy/cut. The
+    /// pane-local snapshot exists so zip-archive-internal copies
+    /// survive (their URLs aren't real files the pasteboard round-
+    /// trips), but it must never shadow fresher pasteboard content:
+    /// without this check, "copy in one pane / Finder, paste in a
+    /// pane that had its own older copy" pasted the stale snapshot.
+    /// Detecting staleness drops the snapshot for good.
+    func validatedInternalClipboard() -> FileClipboard? {
+        guard let clipboard else { return nil }
+        guard clipboardPasteboardChangeCount == NSPasteboard.general.changeCount else {
+            setInternalClipboard(nil)
+            return nil
+        }
+        return clipboard
+    }
+
+    private func setInternalClipboard(_ newValue: FileClipboard?) {
+        clipboard = newValue
+        clipboardPasteboardChangeCount = newValue == nil ? nil : NSPasteboard.general.changeCount
     }
 
     func pasteItems() {
@@ -44,7 +67,7 @@ extension FileBrowserModel {
     }
 
     private func pasteItems(into targetDirectory: URL, forcedOperation: FileClipboard.Operation?) {
-        if let fileClipboard = clipboard ?? FileBrowserExternalActions.fileClipboardFromPasteboard(defaultOperation: forcedOperation ?? .copy),
+        if let fileClipboard = validatedInternalClipboard() ?? FileBrowserExternalActions.fileClipboardFromPasteboard(defaultOperation: forcedOperation ?? .copy),
            !fileClipboard.urls.isEmpty {
             pasteFileClipboard(fileClipboard, into: targetDirectory, forcedOperation: forcedOperation)
             return
@@ -83,7 +106,8 @@ extension FileBrowserModel {
             runFileOperation(kind: kind, requests: plan.requests) { [weak self] added, removed in
                 guard let self else { return }
                 if plan.shouldClearClipboard {
-                    self.clipboard = nil
+                    self.setInternalClipboard(nil)
+                    FileBrowserExternalActions.clearPasteboardAfterMovePaste(of: clipboard.urls)
                 }
                 for directory in plan.affectedDirectories {
                     self.refreshFolderChildren(directory)
@@ -106,7 +130,7 @@ extension FileBrowserModel {
             guard let result = try FileBrowserFileOperations.paste(clipboard, into: targetDirectory) else { return }
 
             if result.shouldClearClipboard {
-                self.clipboard = nil
+                setInternalClipboard(nil)
             }
 
             refreshFolderChildren(targetDirectory)

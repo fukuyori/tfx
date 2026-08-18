@@ -4,6 +4,21 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.9.11] - 2026-08-18
+
+Fixes copy/paste intermittently pasting stale content or silently failing.
+
+### Fixed
+
+- Each pane's internal clipboard snapshot could shadow fresher system-pasteboard content indefinitely: copying in one pane (or in Finder) and pasting in a pane that had its own older copy pasted the stale snapshot instead. The snapshot now records the pasteboard's `changeCount` at copy/cut time and is discarded as soon as anything else writes the pasteboard.
+- After a cross-pane cut-and-paste, the source pane kept a "move" clipboard referencing the already-moved files, and the system pasteboard kept the same re-pastable payload — the next paste tried to move files that no longer existed and failed. A completed move-paste now clears the pasteboard when it still holds exactly that payload (someone else's newer cut is left alone), which also invalidates the other pane's snapshot.
+- Pasting a clipboard whose source files have since disappeared now skips the missing sources like Finder (a paste with no surviving sources is a silent no-op) instead of failing the whole operation. Symlinks whose target is gone still count as present and stay copyable.
+- The context menu's Paste enablement uses the same staleness validation as the paste action itself.
+
+### Changed
+
+- Version bumped to `0.9.11`, build `80`.
+
 ## [0.9.10] - 2026-07-26
 
 Type-to-select in the file panes: jump to files and folders by typing their name.

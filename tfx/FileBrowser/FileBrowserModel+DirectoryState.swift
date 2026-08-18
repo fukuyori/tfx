@@ -32,7 +32,7 @@ extension FileBrowserModel {
         // whenever the clipboard exposes anything we can turn
         // into a file (text, image, URL shortcut, etc.) —
         // mirrors the runtime behavior of `pasteItems()`.
-        if clipboard?.urls.isEmpty == false { return true }
+        if validatedInternalClipboard() != nil { return true }
         if FileBrowserExternalActions.fileClipboardFromPasteboard() != nil { return true }
         return FileBrowserClipboardContent.defaultSource() != nil
     }

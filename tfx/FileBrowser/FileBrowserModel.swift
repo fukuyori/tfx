@@ -141,6 +141,11 @@ final class FileBrowserModel: ObservableObject {
     var mouseRangeSelectionState: FileMouseRangeSelectionState?
     var mouseBlankSelectionState: FileMouseBlankSelectionState?
     var clipboard: FileClipboard?
+    /// `NSPasteboard.general.changeCount` at the moment `clipboard`
+    /// was written. When the live changeCount no longer matches,
+    /// someone else has written the pasteboard since (the other
+    /// pane, Finder, copy-path, …) and `clipboard` is stale.
+    var clipboardPasteboardChangeCount: Int?
     var pinnedFolderDrag = FileBrowserPinnedFolderDrag()
     var filterWorkItem: DispatchWorkItem?
     var subfolderSearchWorkItem: DispatchWorkItem?

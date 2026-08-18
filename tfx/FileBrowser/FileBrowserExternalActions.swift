@@ -238,14 +238,39 @@ enum FileBrowserExternalActions {
         NSPasteboard.general.writeObjects(urls as [NSURL])
     }
 
-    static func writeFileURLsToPasteboard(_ urls: [URL], operation: FileClipboard.Operation) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.writeObjects(urls as [NSURL])
-        NSPasteboard.general.setString(operation == .move ? "move" : "copy", forType: tfxClipboardOperationType)
+    static func writeFileURLsToPasteboard(
+        _ urls: [URL],
+        operation: FileClipboard.Operation,
+        pasteboard: NSPasteboard = .general
+    ) {
+        pasteboard.clearContents()
+        pasteboard.writeObjects(urls as [NSURL])
+        pasteboard.setString(operation == .move ? "move" : "copy", forType: tfxClipboardOperationType)
     }
 
-    static func fileClipboardFromPasteboard(defaultOperation: FileClipboard.Operation = .copy) -> FileClipboard? {
-        let pasteboard = NSPasteboard.general
+    /// After a move-paste completes, the pasteboard may still hold
+    /// the moved files as a "move" payload — a second ⌘V (from any
+    /// pane) would try to move files that no longer exist at their
+    /// source. Clear the pasteboard when it still carries exactly
+    /// that payload. The changeCount bump this causes also
+    /// invalidates every pane's internal clipboard snapshot (see
+    /// `FileBrowserModel.validatedInternalClipboard`).
+    static func clearPasteboardAfterMovePaste(
+        of urls: [URL],
+        pasteboard: NSPasteboard = .general
+    ) {
+        guard pasteboard.string(forType: tfxClipboardOperationType) == "move" else { return }
+        guard let current = fileClipboardFromPasteboard(pasteboard: pasteboard)?.urls else { return }
+        let currentPaths = Set(current.map { $0.standardizedFileURL.path })
+        let movedPaths = Set(urls.map { $0.standardizedFileURL.path })
+        guard currentPaths == movedPaths else { return }
+        pasteboard.clearContents()
+    }
+
+    static func fileClipboardFromPasteboard(
+        defaultOperation: FileClipboard.Operation = .copy,
+        pasteboard: NSPasteboard = .general
+    ) -> FileClipboard? {
         let classes = [NSURL.self]
         let options: [NSPasteboard.ReadingOptionKey: Any] = [
             .urlReadingFileURLsOnly: true

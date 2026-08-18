@@ -343,6 +343,14 @@ enum FileBrowserFileOperations {
         var claimedDestinations = Set<String>()
 
         for sourceURL in clipboard.urls {
+            // A stale pasteboard (or a cut whose files another pane
+            // already move-pasted) can reference sources that no
+            // longer exist. Degrade to skipping them like Finder
+            // instead of failing the whole paste. `attributesOfItem`
+            // is lstat-based, so a symlink whose target is gone
+            // still counts as present and stays copyable.
+            guard (try? FileManager.default.attributesOfItem(atPath: sourceURL.path)) != nil else { continue }
+
             let decision = FileConflictResolver.destinationDecision(
                 for: sourceURL,
                 in: targetDirectory,
