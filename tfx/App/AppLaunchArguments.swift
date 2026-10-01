@@ -100,7 +100,7 @@ enum AppLaunchArguments {
         guard !raw.isEmpty else { return nil }
         var geometry = Geometry()
 
-        var rest = raw
+        let rest = raw
         // Size first if it's there. Look for 'x' that doesn't
         // come AFTER a sign character — once we hit +/-, we're
         // in the offset portion.

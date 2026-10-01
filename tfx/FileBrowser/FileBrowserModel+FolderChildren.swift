@@ -161,8 +161,7 @@ extension FileBrowserModel {
             DispatchQueue.global(qos: .utility).async {
                 let children = FileBrowserFolderSupport.loadChildren(for: key, showsHiddenFiles: showsHiddenFiles)
 
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
+                DispatchQueue.main.async {
                     if self.folderChildrenLoadsInFlight.remove(token) != nil {
                         self.activeFolderChildrenLoadCount = max(0, self.activeFolderChildrenLoadCount - 1)
                     }

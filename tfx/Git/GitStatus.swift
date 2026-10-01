@@ -48,9 +48,9 @@ enum GitFileStatus: Int, Comparable {
     /// everything; otherwise the higher raw value wins. Used to fold
     /// an XY pair (staged + worktree) into the single value the badge
     /// column can display.
-    static func combine(_ a: GitFileStatus?, _ b: GitFileStatus?) -> GitFileStatus? {
+    nonisolated static func combine(_ a: GitFileStatus?, _ b: GitFileStatus?) -> GitFileStatus? {
         switch (a, b) {
-        case let (a?, b?): return max(a, b)
+        case let (a?, b?): return a.rawValue >= b.rawValue ? a : b
         case let (a?, nil): return a
         case let (nil, b?): return b
         case (nil, nil): return nil
@@ -80,7 +80,7 @@ struct GitRepositoryStatus {
         fileStatus[Self.normalize(url.path)]
     }
 
-    static func normalize(_ path: String) -> String {
+    nonisolated static func normalize(_ path: String) -> String {
         var trimmed = path
         while trimmed.count > 1 && trimmed.hasSuffix("/") {
             trimmed.removeLast()

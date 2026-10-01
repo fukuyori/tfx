@@ -37,6 +37,7 @@ struct TerminalFileManagerView: View {
     @State var fileSplitDragStart: FileSplitDragStart?
     @State var isFileListSettingsPresented = false
     @State var isEditorSettingsPresented = false
+    @State var isQuickPreviewPresented = false
     @State var hoverHelpText = ""
     @State private var hasAppliedStartupFocus = false
     @FocusState var isSearchFocused: Bool
@@ -300,6 +301,14 @@ struct TerminalFileManagerView: View {
 
             GeometryReader { geometry in
                 mainLayout(in: geometry)
+            }
+        }
+        .overlay {
+            if isQuickPreviewPresented {
+                QuickPreviewOverlay(items: activeModel.selectedItems) {
+                    isQuickPreviewPresented = false
+                }
+                .zIndex(10)
             }
         }
     }

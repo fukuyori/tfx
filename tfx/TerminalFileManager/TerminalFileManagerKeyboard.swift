@@ -7,6 +7,22 @@ extension TerminalFileManagerView {
     private static let horizontalScrollStep: CGFloat = 60
 
     func handleKeyEvent(_ event: NSEvent) -> Bool {
+        if isQuickPreviewPresented {
+            if shortcutStore.info(.quickPreview).matches(event) || event.keyCode == 53 {
+                isQuickPreviewPresented = false
+                return true
+            }
+            if shortcutStore.info(.openItem).matches(event) {
+                isQuickPreviewPresented = false
+            }
+        } else if activeArea == .files,
+                  shortcutStore.info(.quickPreview).matches(event),
+                  let item = activeModel.primarySelectedItem,
+                  item.name != ".." {
+            isQuickPreviewPresented = true
+            return true
+        }
+
         if handleConfiguredShortcut(event) {
             return true
         }

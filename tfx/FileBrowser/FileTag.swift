@@ -8,7 +8,7 @@ import SwiftUI
 /// `"<name>\n<colorID>"` (with color). Color IDs map to the legacy file
 /// label palette exposed by `NSWorkspace.shared.fileLabelColors`, which
 /// Finder also uses for the colored dots in its file list and sidebar.
-struct FileTag: Equatable, Hashable {
+struct FileTag {
     let name: String
     let colorID: Int?
 
@@ -17,7 +17,7 @@ struct FileTag: Equatable, Hashable {
         self.colorID = colorID
     }
 
-    init(rawTagName: String) {
+    nonisolated init(rawTagName: String) {
         let components = rawTagName.split(
             separator: "\n",
             maxSplits: 1,
@@ -42,7 +42,7 @@ struct FileTag: Equatable, Hashable {
     /// Localized system-label name → color ID, built once from
     /// `NSWorkspace.shared.fileLabels`. Index 0 is "no color" and is
     /// excluded so an unmatched lookup correctly returns nil.
-    private static let systemLabelColorMap: [String: Int] = {
+    nonisolated private static let systemLabelColorMap: [String: Int] = {
         var map: [String: Int] = [:]
         let labels = NSWorkspace.shared.fileLabels
         for (index, label) in labels.enumerated() where index > 0 {
@@ -162,6 +162,17 @@ struct FileTag: Equatable, Hashable {
         let labels = NSWorkspace.shared.fileLabels
         guard colorID >= 0, colorID < labels.count else { return "Tag" }
         return labels[colorID]
+    }
+}
+
+nonisolated extension FileTag: Equatable, Hashable {
+    static func == (lhs: FileTag, rhs: FileTag) -> Bool {
+        lhs.name == rhs.name && lhs.colorID == rhs.colorID
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+        hasher.combine(colorID)
     }
 }
 

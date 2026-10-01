@@ -8,7 +8,7 @@ enum PerformanceTrace {
     /// `TFX_PERFORMANCE_LOGS=1` in the environment is honored independently —
     /// it takes precedence for CI / scripted runs so the in-app toggle does
     /// not have to be flipped first.
-    static let userDefaultsKey = "Developer.showsPerformanceLogs"
+    nonisolated static let userDefaultsKey = "Developer.showsPerformanceLogs"
 
     nonisolated static func now() -> UInt64 {
         DispatchTime.now().uptimeNanoseconds

@@ -9,6 +9,7 @@ struct PreviewPane: View {
     }
 
     let urls: [URL]
+    var showsFileInfo = true
     @State private var selectedPreviewURLs: Set<URL> = []
     @State private var visibleMultiPreviewURLs: Set<URL> = []
     @State private var activeMultiPreviewURLs: Set<URL> = []
@@ -45,7 +46,7 @@ struct PreviewPane: View {
                 VStack(spacing: 0) {
                     primaryPreview(for: url)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    if !shouldHideFileInfo(for: url) {
+                    if showsFileInfo && !shouldHideFileInfo(for: url) {
                         PreviewFileInfoView(url: url)
                     }
                 }
@@ -67,7 +68,7 @@ struct PreviewPane: View {
                             ) {
                                 preview(for: url)
                             } info: {
-                                if !shouldHideFileInfo(for: url) {
+                                if showsFileInfo && !shouldHideFileInfo(for: url) {
                                     PreviewFileInfoView(url: url)
                                 }
                             }

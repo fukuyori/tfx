@@ -310,7 +310,7 @@ enum ZipArchiveBrowser {
 /// drain queue — closures can't capture `var Data` inout, and
 /// the `DispatchGroup.wait()` before any read provides the
 /// happens-before edge that makes the single write visible.
-private final class PipeDrainBuffer: @unchecked Sendable {
-    var data = Data()
+nonisolated private final class PipeDrainBuffer: @unchecked Sendable {
+    nonisolated(unsafe) var data = Data()
 }
 #endif

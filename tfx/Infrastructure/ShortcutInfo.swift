@@ -183,6 +183,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case reload
     case openTerminal
     case togglePreview
+    case quickPreview
     case toggleSplit
     case swapPanes
     case focusSearch
@@ -228,6 +229,7 @@ enum Shortcuts {
         .reload: ShortcutInfo(key: "r", modifiers: .command),
         .openTerminal: ShortcutInfo(key: "t", modifiers: .command),
         .togglePreview: ShortcutInfo(key: "p", modifiers: .command),
+        .quickPreview: ShortcutInfo(key: " ", modifiers: []),
         .toggleSplit: ShortcutInfo(key: "\\", modifiers: .command),
         .swapPanes: ShortcutInfo(key: "x", modifiers: [.command, .shift]),
         .focusSearch: ShortcutInfo(key: "f", modifiers: .command),
@@ -534,6 +536,7 @@ enum ShortcutConfigurationLoader {
     reload = "cmd+r"
     openTerminal = "cmd+t"
     togglePreview = "cmd+p"
+    quickPreview = "space"
     toggleSplit = "cmd+backslash"
     swapPanes = "cmd+shift+x"
     focusSearch = "cmd+f"

@@ -272,7 +272,7 @@ enum MarkdownInlineHTML {
     /// The pattern matches the same `![alt](url)` syntax the renderer
     /// rewrites, so it also catches the inner image of a linked-image
     /// badge `[![alt](imgURL)](linkURL)`.
-    static func containsExternalImageReference(in markdown: String) -> Bool {
+    nonisolated static func containsExternalImageReference(in markdown: String) -> Bool {
         guard let regex = try? NSRegularExpression(
             pattern: #"!\[[^\]]*\]\(([^)]+)\)"#
         ) else {
@@ -289,7 +289,7 @@ enum MarkdownInlineHTML {
         return false
     }
 
-    private static func isExternalImageURL(_ rawURL: String) -> Bool {
+    nonisolated private static func isExternalImageURL(_ rawURL: String) -> Bool {
         let trimmed = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let colon = trimmed.firstIndex(of: ":") else {
             return false

@@ -30,7 +30,7 @@ extension FileBrowserModel {
         let key = sortKey
         let ascending = sortAscending
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let filteredItems = FileBrowserFilterSort.filteredAndSortedItems(
                 sourceItems,
                 query: query,
@@ -40,7 +40,7 @@ extension FileBrowserModel {
                 cancellation: cancellation
             )
 
-            DispatchQueue.main.async { [weak self] in
+            DispatchQueue.main.async {
                 guard
                     let self,
                     self.filterGeneration == generation,

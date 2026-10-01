@@ -9,13 +9,13 @@ final class GitStatusCancellation: @unchecked Sendable {
     private let _cancelled = NSLock()
     nonisolated(unsafe) private var _isCancelled = false
 
-    var isCancelled: Bool {
+    nonisolated var isCancelled: Bool {
         _cancelled.lock()
         defer { _cancelled.unlock() }
         return _isCancelled
     }
 
-    func cancel() {
+    nonisolated func cancel() {
         _cancelled.lock()
         _isCancelled = true
         _cancelled.unlock()
@@ -85,7 +85,7 @@ enum GitStatusReader {
     /// entries (prefix `2`) carry an extra NUL-terminated original path
     /// immediately after the main record; the parser reattaches it
     /// while walking the token stream.
-    private static func parsePorcelainV2(data: Data, root: URL) -> GitRepositoryStatus {
+    nonisolated private static func parsePorcelainV2(data: Data, root: URL) -> GitRepositoryStatus {
         // Split on NUL. `Data.split(separator:)` keeps empty trailing
         // chunks; that's fine — we'll skip them during iteration.
         var tokens: [Substring] = []
@@ -158,7 +158,7 @@ enum GitStatusReader {
     /// Parse `1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>`.
     /// `XY` is two chars: index status + worktree status. We collapse
     /// them into the single status displayed in the badge column.
-    private static func parseOrdinaryChange(_ token: Substring, root: URL) -> ParsedEntry? {
+    nonisolated private static func parseOrdinaryChange(_ token: Substring, root: URL) -> ParsedEntry? {
         // Drop the leading "1 " then split off the 7 fixed fields. The
         // path is the remainder and may contain spaces, so we cannot
         // use a plain whitespace split for the whole token.
@@ -185,7 +185,7 @@ enum GitStatusReader {
 
     /// Parse `2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X<score>> <path>`.
     /// One extra field (the rename score, e.g. `R100`) before the path.
-    private static func parseRenameChange(_ token: Substring, root: URL) -> ParsedEntry? {
+    nonisolated private static func parseRenameChange(_ token: Substring, root: URL) -> ParsedEntry? {
         let body = token.dropFirst(2)
         var spacesSeen = 0
         var pathStart: Substring.Index?
@@ -208,7 +208,7 @@ enum GitStatusReader {
 
     /// Parse `u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>`.
     /// All unmerged entries collapse to `.conflicted` regardless of XY.
-    private static func parseUnmerged(_ token: Substring, root: URL) -> ParsedEntry? {
+    nonisolated private static func parseUnmerged(_ token: Substring, root: URL) -> ParsedEntry? {
         let body = token.dropFirst(2)
         var spacesSeen = 0
         var pathStart: Substring.Index?
@@ -230,7 +230,7 @@ enum GitStatusReader {
     /// single status we display. `.` means "no change for this side".
     /// Index changes (X) and worktree changes (Y) both surface; if
     /// both are set we keep the more noteworthy one.
-    private static func statusFromXY(_ xy: String) -> GitFileStatus? {
+    nonisolated private static func statusFromXY(_ xy: String) -> GitFileStatus? {
         guard xy.count == 2 else { return nil }
         let chars = Array(xy)
         let staged = statusFromCode(chars[0])
@@ -238,7 +238,7 @@ enum GitStatusReader {
         return GitFileStatus.combine(staged, worktree)
     }
 
-    private static func statusFromCode(_ char: Character) -> GitFileStatus? {
+    nonisolated private static func statusFromCode(_ char: Character) -> GitFileStatus? {
         switch char {
         case ".":      return nil
         case "M", "T": return .modified  // T = type change, still "modified" to the user
@@ -257,7 +257,7 @@ enum GitStatusReader {
     /// `GitRepositoryStatus.normalize` strips any trailing slash that
     /// Git emits for untracked directories so the same key matches
     /// regardless of whether `FileItem.url` carries a trailing slash.
-    private static func pathKey(root: URL, relative: String) -> String {
+    nonisolated private static func pathKey(root: URL, relative: String) -> String {
         let absolute = root.appendingPathComponent(relative).standardizedFileURL.path
         return GitRepositoryStatus.normalize(absolute)
     }

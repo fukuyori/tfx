@@ -3,6 +3,14 @@ import Combine
 import Darwin
 import Foundation
 
+nonisolated private final class WeakTerminalModelReference: @unchecked Sendable {
+    nonisolated(unsafe) weak var value: BuiltInTerminalModel?
+
+    nonisolated init(_ value: BuiltInTerminalModel) {
+        self.value = value
+    }
+}
+
 @MainActor
 final class BuiltInTerminalModel: ObservableObject {
     enum Tab {
@@ -221,17 +229,18 @@ final class BuiltInTerminalModel: ObservableObject {
 
         do {
             isRunning = true
+            let modelReference = WeakTerminalModelReference(self)
             let terminalSession = try PTYTerminalSession(
                 shellPath: shellPath,
                 currentDirectory: currentDirectory,
                 onOutput: { output in
-                    Task { @MainActor [weak self] in
-                        self?.appendTerminalOutput(output)
+                    Task { @MainActor in
+                        modelReference.value?.appendTerminalOutput(output)
                     }
                 },
                 onExit: {
-                    Task { @MainActor [weak self] in
-                        guard let self else { return }
+                    Task { @MainActor in
+                        guard let self = modelReference.value else { return }
                         self.session = nil
                         self.isRunning = false
                         if self.isClosingSessionExplicitly {

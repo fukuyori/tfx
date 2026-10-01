@@ -2,7 +2,7 @@
 import Foundation
 
 final class FilePermissionCache {
-    static let shared = FilePermissionCache()
+    nonisolated static let shared = FilePermissionCache()
 
     nonisolated(unsafe) private let cache = NSCache<NSString, NSNumber>()
 
@@ -68,7 +68,7 @@ final class FilePermissionCache {
 }
 
 final class FileKindCache {
-    static let shared = FileKindCache()
+    nonisolated static let shared = FileKindCache()
 
     nonisolated(unsafe) private let cache = NSCache<NSString, NSString>()
 

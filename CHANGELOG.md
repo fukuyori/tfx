@@ -4,6 +4,19 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.10.0] - 2026-10-01
+
+Adds a keyboard-driven quick preview over the file panes.
+
+### Added
+
+- Press Space to open a temporary preview for the current selection. The preview follows file-list navigation, shows file and folder contents, and closes with Space or Escape.
+- Quick preview uses the existing Markdown, HTML, image, text, PDF, and Quick Look renderers. Its rendered/source controls remain available while the surrounding file information is hidden.
+
+### Changed
+
+- Version bumped to `0.10.0`, build `81`.
+
 ## [0.9.11] - 2026-08-18
 
 Fixes copy/paste intermittently pasting stale content or silently failing.
