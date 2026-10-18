@@ -4,6 +4,25 @@ This file records notable changes to `tfx`.
 
 Documentation is written in English by default. `README.ja.md` is maintained as the Japanese README.
 
+## [0.10.1] - 2026-10-18
+
+Lets the built-in terminal hand folders back to the tfx that owns it.
+
+### Added
+
+- Running `tfx [folder]` from the built-in terminal no longer starts another instance. Like `open -a`, it shows the folder in the left pane of the tfx that owns the terminal. Without a folder, the shell's current directory is used.
+- `--new` opens a new window from the built-in terminal instead. Layout and geometry options (`-1`, `-2`, `-r`, `-p`, `-P`, `-t`, `-T`, `-g`) also open a new window.
+- The built-in terminal shell now exports `TFX_PID`, the process ID of the tfx that owns it.
+
+### Fixed
+
+- Opening a folder with `open -a tfx <folder>` (or Finder's Open With) while tfx is running no longer animates the window out to the Dock and back. tfx now handles the open-documents event itself instead of letting SwiftUI re-present the window.
+
+### Changed
+
+- The built-in terminal shell is now started with `execve` and an environment prepared before `fork`, instead of calling `setenv` in the forked child.
+- Version bumped to `0.10.1`, build `82`.
+
 ## [0.10.0] - 2026-10-01
 
 Adds a keyboard-driven quick preview over the file panes.

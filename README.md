@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 Pronunciation: **Tafix**<br>
-Version: **0.10.0**
+Version: **0.10.1**
 
 English | [日本語](README.ja.md)
 
@@ -37,7 +37,7 @@ English | [日本語](README.ja.md)
 - Browse zip archives without extracting them
 - Copy files from browsed zip archives
 - Open a terminal app at the current folder
-- Built-in command terminal pane that starts in the active folder and accepts file/folder drops onto the terminal to insert shell-quoted paths. The shell session is kept alive while the pane is hidden — re-opening returns to the same shell with its history and environment intact. `exit` / Ctrl-D ends the session and the next opening starts fresh. A toolbar button syncs the active file pane to the shell's current working directory; when tmux is running, `tmux display-message` is queried so the active tmux pane's cwd is reflected rather than the cwd that tmux was launched from.
+- Built-in command terminal pane that starts in the active folder and accepts file/folder drops onto the terminal to insert shell-quoted paths. The shell session is kept alive while the pane is hidden — re-opening returns to the same shell with its history and environment intact. `exit` / Ctrl-D ends the session and the next opening starts fresh. A toolbar button syncs the active file pane to the shell's current working directory (`open -a tfx .` or `tfx` from the shell shows it in the left pane instead); when tmux is running, `tmux display-message` is queried so the active tmux pane's cwd is reflected rather than the cwd that tmux was launched from. Running `tfx [folder]` in the built-in terminal shows the folder in that same tfx instead of opening another window.
 - New File, New Folder, inline Rename, Move to Trash, and Reveal in Finder
 - "Open With" submenu listing applications that can open the file, with an "Other…" picker
 - Auto-refresh: each file pane updates automatically when its directory changes externally
@@ -82,6 +82,8 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 ## Command Line Launch
 
+### `open -a`
+
 Open the installed app at the current directory:
 
 ```sh
@@ -94,30 +96,7 @@ Open a specific directory:
 open -a tfx /path/to/folder
 ```
 
-Show the installed app version:
-
-```sh
-/Applications/tfx.app/Contents/MacOS/tfx -v
-```
-
-Show command-line help:
-
-```sh
-/Applications/tfx.app/Contents/MacOS/tfx -h
-```
-
-Startup layout and pane visibility can be overridden for one launch:
-
-```sh
-tfx -1                 # --single
-tfx -2                 # --split
-tfx -r                 # --restore
-tfx -p                 # --preview
-tfx -P                 # --no-preview
-tfx -t                 # --terminal
-tfx -T                 # --no-terminal
-tfx -2 -P -t ~/Downloads
-```
+If tfx is already running, `open -a` does not start another instance; the folder is shown in the left pane of the running tfx.
 
 Do not use `-n` or `--args`; pass the folder as the item for `open` instead. `--args` is treated as a launch argument and does not use macOS's normal folder-open path.
 
@@ -127,11 +106,58 @@ If `open -a tfx` cannot find the app, or launches a different build, pass the ap
 open -a /Applications/tfx.app "$PWD"
 ```
 
-If you have a wrapper such as `/usr/local/bin/tfx`, relative paths are supported:
+### `tfx` command
+
+The Homebrew cask installs a `tfx` command that runs the app executable directly, so it accepts launch options and relative paths. Each run normally opens a new tfx process; running several instances is supported.
 
 ```sh
 tfx .
+tfx ~/Downloads
 ```
+
+Show the app version or command-line help:
+
+```sh
+tfx -v                 # --version
+tfx -h                 # --help
+```
+
+Without the Homebrew command, use `/Applications/tfx.app/Contents/MacOS/tfx` in place of `tfx`.
+
+Startup layout, pane visibility, and window geometry can be overridden for one launch:
+
+```sh
+tfx -1                 # --single
+tfx -2                 # --split
+tfx -r                 # --restore
+tfx -p                 # --preview
+tfx -P                 # --no-preview
+tfx -t                 # --terminal
+tfx -T                 # --no-terminal
+tfx -g 1200x800+100+50 # --geometry
+tfx -2 -P -t ~/Downloads
+```
+
+### From the built-in terminal
+
+Run from the tfx built-in terminal, `tfx` does not start another instance: like `open -a`, it shows the folder in the left pane of the tfx that owns the terminal. Without a folder it uses the shell's current directory. Pass `--new`, or any layout / geometry option above, to open a new window instead.
+
+```sh
+tfx ~/Documents        # show in this tfx
+tfx                    # show the shell's current directory
+tfx --new ~/Documents  # open a new window
+```
+
+The built-in terminal tells the command which tfx owns it through the `TFX_PID` environment variable. If that tfx is no longer running (for example, in a tmux session started from an earlier tfx), `tfx` opens a new window as usual.
+
+To show the terminal's current directory in the file list, there are two ways besides the toolbar sync button:
+
+```sh
+open -a tfx .          # show it in the left pane of the running tfx
+tfx                    # same, without needing open
+```
+
+The sync button moves the active file pane, while `open -a tfx .` and `tfx` always use the left pane. When several tfx instances are running, `open -a` may deliver the folder to a different instance; `tfx` always targets the tfx that owns the terminal.
 
 ## Keyboard
 

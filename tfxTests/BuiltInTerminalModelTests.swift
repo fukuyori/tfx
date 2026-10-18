@@ -44,6 +44,26 @@ struct BuiltInTerminalModelTests {
     }
 
     @Test
+    func shellExportsHostPIDForForwarding() async throws {
+        let model = BuiltInTerminalModel(
+            currentDirectory: URL(fileURLWithPath: "/tmp"),
+            shellPath: "/bin/sh"
+        )
+        let expected = "tfx_host_pid=\(ProcessInfo.processInfo.processIdentifier) term=xterm-256color color=truecolor"
+        model.commandText = "printf 'tfx_host_pid=%s term=%s color=%s' \"$TFX_PID\" \"$TERM\" \"$COLORTERM\""
+
+        model.submitCommand()
+
+        for _ in 0..<50 where !model.transcript.contains(expected) {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        #expect(model.transcript.contains(expected))
+        model.commandText = "exit"
+        model.submitCommand()
+    }
+
+    @Test
     func submitCommandHidesANSIControlSequences() async throws {
         let model = BuiltInTerminalModel(
             currentDirectory: URL(fileURLWithPath: "/tmp"),

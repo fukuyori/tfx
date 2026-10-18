@@ -28,6 +28,18 @@ enum AppLaunchArguments {
         var geometry: Geometry?
         var shouldPrintHelp = false
         var shouldPrintVersion = false
+        var shouldOpenNewWindow = false
+
+        /// Layout / geometry options only make sense for a new
+        /// window, so their presence also opts out of handing the
+        /// folder to the tfx that owns the built-in terminal.
+        var requestsNewWindow: Bool {
+            shouldOpenNewWindow ||
+                startupLayout != nil ||
+                previewVisible != nil ||
+                terminalVisible != nil ||
+                geometry != nil
+        }
     }
 
     static func parse(
@@ -59,6 +71,8 @@ enum AppLaunchArguments {
                 parsed.terminalVisible = true
             case "--no-terminal", "-T":
                 parsed.terminalVisible = false
+            case "--new":
+                parsed.shouldOpenNewWindow = true
             case "--geometry", "-g":
                 // Geometry spec is the following argument.
                 if index + 1 < rest.count,
@@ -197,6 +211,9 @@ enum AppLaunchArguments {
       -P, --no-preview    Hide the preview pane.
       -t, --terminal      Show the built-in terminal pane.
       -T, --no-terminal   Hide the built-in terminal pane.
+          --new           From the built-in terminal, open a new
+                          window instead of showing folder in the tfx
+                          that owns the terminal.
       -g, --geometry SPEC
                           Set initial window geometry, X11 style
                           (e.g. 1200x800+100+50, or -10-10 to
@@ -204,6 +221,9 @@ enum AppLaunchArguments {
                           dimension is optional.
 
     folder may be an absolute path, a relative path, or a path beginning with ~.
+
+    Run from the tfx built-in terminal without --new or layout options, the
+    folder (or the current directory) is shown in the left pane of that tfx.
     """
 
     private static func resolvedPath(for rawPath: String, currentDirectoryPath: String) -> String {

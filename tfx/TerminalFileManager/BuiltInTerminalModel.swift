@@ -689,6 +689,27 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
     func start() {
         let directoryPath = currentDirectory.path
         let shellName = URL(fileURLWithPath: shellPath).lastPathComponent
+        // Everything the child needs is built as C memory before
+        // `forkpty`: after fork in a multithreaded process only
+        // async-signal-safe calls are allowed until exec, so the
+        // child must not allocate, take locks, or call `setenv`.
+        let shellPathCString = strdup(shellPath)
+        let directoryCString = strdup(directoryPath)
+        let arguments = Self.makeCStringArray([shellName, "-l"])
+        let environment = Self.makeCStringArray(
+            Self.shellEnvironment(
+                base: ProcessInfo.processInfo.environment,
+                directoryPath: directoryPath,
+                hostPID: ProcessInfo.processInfo.processIdentifier
+            )
+        )
+        defer {
+            free(shellPathCString)
+            free(directoryCString)
+            Self.freeCStringArray(arguments)
+            Self.freeCStringArray(environment)
+        }
+
         var master: Int32 = -1
         var size = winsize(ws_row: 24, ws_col: 100, ws_xpixel: 0, ws_ypixel: 0)
         let pid = forkpty(&master, nil, nil, &size)
@@ -700,7 +721,12 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         }
 
         if pid == 0 {
-            childExecuteShell(shellPath: shellPath, shellName: shellName, directoryPath: directoryPath)
+            Self.childExecuteShell(
+                shellPath: shellPathCString,
+                directoryPath: directoryCString,
+                arguments: arguments,
+                environment: environment
+            )
         }
 
         lock.lock()
@@ -878,23 +904,50 @@ nonisolated private final class PTYTerminalSession: @unchecked Sendable {
         return String(data: data, encoding: .utf8)
     }
 
-    private func childExecuteShell(shellPath: String, shellName: String, directoryPath: String) -> Never {
-        _ = chdir(directoryPath)
-        setenv("TERM", "xterm-256color", 1)
+    /// Environment for the terminal shell: the app's environment
+    /// plus terminal settings and `TFX_PID`.
+    static func shellEnvironment(base: [String: String], directoryPath: String, hostPID: Int32) -> [String] {
+        var environment = base
+        environment["TERM"] = "xterm-256color"
         // Advertise truecolor support so CLI tools (delta, bat,
         // fzf, etc.) emit 24-bit RGB escapes instead of falling
         // back to the 256-color palette.
-        setenv("COLORTERM", "truecolor", 1)
-        setenv("PWD", directoryPath, 1)
+        environment["COLORTERM"] = "truecolor"
+        environment["PWD"] = directoryPath
+        // Lets `tfx` started from this shell hand its folder back
+        // to the tfx instance that owns the terminal.
+        environment[AppOpenDirectoryForwarding.hostPIDEnvironmentKey] = String(hostPID)
+        return environment.map { "\($0.key)=\($0.value)" }
+    }
 
-        shellPath.withCString { shellCString in
-            shellName.withCString { shellNameCString in
-                let arg0 = strdup(shellNameCString)
-                let arg1 = strdup("-l")
-                var arguments: [UnsafeMutablePointer<CChar>?] = [arg0, arg1, nil]
-                execv(shellCString, &arguments)
-            }
+    /// NULL-terminated `char *[]` for `execve`, owned by the caller.
+    private static func makeCStringArray(_ strings: [String]) -> UnsafeMutablePointer<UnsafeMutablePointer<CChar>?> {
+        let array = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: strings.count + 1)
+        for (index, string) in strings.enumerated() {
+            array[index] = strdup(string)
         }
+        array[strings.count] = nil
+        return array
+    }
+
+    private static func freeCStringArray(_ array: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>) {
+        var index = 0
+        while let string = array[index] {
+            free(string)
+            index += 1
+        }
+        array.deallocate()
+    }
+
+    /// Runs in the forked child: only async-signal-safe calls.
+    private static func childExecuteShell(
+        shellPath: UnsafeMutablePointer<CChar>?,
+        directoryPath: UnsafeMutablePointer<CChar>?,
+        arguments: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>,
+        environment: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>
+    ) -> Never {
+        _ = chdir(directoryPath)
+        execve(shellPath, arguments, environment)
         _exit(127)
     }
 

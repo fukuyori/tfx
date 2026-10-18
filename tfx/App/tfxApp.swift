@@ -35,6 +35,16 @@ struct tfxApp: App {
             print(AppLaunchArguments.versionString())
             Darwin.exit(0)
         }
+        if !launchArguments.requestsNewWindow {
+            let directory = launchArguments.initialDirectory
+                ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true).standardizedFileURL
+            // Inside a tfx built-in terminal: reuse that tfx, like
+            // `open -a` does. Anywhere else this returns false and
+            // a window opens as usual.
+            if AppOpenDirectoryForwarding.forwardToHost(directory) {
+                Darwin.exit(0)
+            }
+        }
 #endif
     }
 
@@ -44,7 +54,7 @@ struct tfxApp: App {
         // file URL as a candidate document and can spawn a
         // brand-new window for it, racing the existing window
         // that's about to receive the URL through
-        // `AppOpenDirectoryDelegate.application(_:open:)`. With
+        // `AppOpenDirectoryDelegate.handleOpenDocumentsEvent`. With
         // a zsh alias `alias tfx='open -a tfx "$PWD"'` the user
         // could end up with two windows after a single `tfx`
         // invocation. `Window` guarantees one scene and routes
@@ -57,7 +67,7 @@ struct tfxApp: App {
                 .environmentObject(userCommandStore)
                 .environmentObject(previewConfigurationStore)
                 // File URLs are delivered through
-                // `AppOpenDirectoryDelegate.application(_:open:)`
+                // `AppOpenDirectoryDelegate.handleOpenDocumentsEvent`
                 // (the AppKit application-delegate path). SwiftUI's
                 // `.onOpenURL` modifier ALSO fires for file URLs on
                 // macOS, which used to invoke

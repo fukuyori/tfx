@@ -2,7 +2,7 @@
 
 **Terminal-inspired interface File eXplorer**<br>
 読み方: **タフィックス**<br>
-Version: **0.10.0**
+Version: **0.10.1**
 
 [English](README.md) | 日本語
 
@@ -37,7 +37,7 @@ Version: **0.10.0**
 - zip ファイルを展開せずに閲覧
 - 閲覧中の zip ファイルからファイルをコピー
 - ターミナルアプリを現在フォルダで開く
-- アクティブフォルダから開始し、ターミナルへのファイル/フォルダのドロップで shell quote 済みパスを挿入できる内蔵コマンドターミナルペイン。ペインを隠してもシェルセッションは生存し続け、再度開くと同じシェル (履歴・環境変数を保持) に戻ります。`exit` / Ctrl-D で終了した場合は次回開いたときに新規シェルが起動します。ツールバーの cwd 同期ボタンはシェルの現在ディレクトリにファイル一覧を移動させます。tmux 起動時は `tmux display-message` を内部で呼び、tmux 起動時のディレクトリではなく **active な tmux pane の cwd** が反映されます。
+- アクティブフォルダから開始し、ターミナルへのファイル/フォルダのドロップで shell quote 済みパスを挿入できる内蔵コマンドターミナルペイン。ペインを隠してもシェルセッションは生存し続け、再度開くと同じシェル (履歴・環境変数を保持) に戻ります。`exit` / Ctrl-D で終了した場合は次回開いたときに新規シェルが起動します。ツールバーの cwd 同期ボタンはシェルの現在ディレクトリにファイル一覧を移動させます（シェルで `open -a tfx .` や `tfx` を実行すると、左ペインに表示されます）。tmux 起動時は `tmux display-message` を内部で呼び、tmux 起動時のディレクトリではなく **active な tmux pane の cwd** が反映されます。内蔵ターミナルで `tfx [フォルダ]` を実行すると、別のウィンドウを開かずに同じ tfx にフォルダを表示します。
 - New File / New Folder / インライン Rename / Move to Trash / Reveal in Finder
 - 「このアプリケーションで開く」サブメニュー（候補アプリ一覧と「その他…」ピッカー）
 - 自動更新: 外部からのディレクトリ変更を検知してファイル一覧を自動リフレッシュ
@@ -82,6 +82,8 @@ xcodebuild -project tfx.xcodeproj -scheme tfx -configuration Release -destinatio
 
 ## コマンドラインから起動
 
+### `open -a`
+
 インストール済みアプリを現在のディレクトリで開く:
 
 ```sh
@@ -94,30 +96,7 @@ open -a tfx "$PWD"
 open -a tfx /path/to/folder
 ```
 
-インストール済みアプリのバージョンを表示:
-
-```sh
-/Applications/tfx.app/Contents/MacOS/tfx -v
-```
-
-コマンドラインヘルプを表示:
-
-```sh
-/Applications/tfx.app/Contents/MacOS/tfx -h
-```
-
-起動時のレイアウトやペイン表示は、1回の起動だけ上書きできます。
-
-```sh
-tfx -1                 # --single
-tfx -2                 # --split
-tfx -r                 # --restore
-tfx -p                 # --preview
-tfx -P                 # --no-preview
-tfx -t                 # --terminal
-tfx -T                 # --no-terminal
-tfx -2 -P -t ~/Downloads
-```
+tfx がすでに起動している場合、`open -a` は別の tfx を起動せず、起動中の tfx の左ペインにフォルダを表示します。
 
 `-n` や `--args` は使わず、フォルダを `open` の対象として渡してください。`--args` は起動引数扱いになり、macOS の通常のフォルダオープン経路を通りません。
 
@@ -127,11 +106,58 @@ tfx -2 -P -t ~/Downloads
 open -a /Applications/tfx.app "$PWD"
 ```
 
-`/usr/local/bin/tfx` などにラッパーを用意している場合は、次のように相対パスも指定できます。
+### `tfx` コマンド
+
+Homebrew の cask でインストールされる `tfx` コマンドはアプリの実行ファイルを直接起動するため、起動オプションや相対パスを指定できます。通常は実行するたびに新しい tfx が起動します。複数の tfx を同時に起動しても問題ありません。
 
 ```sh
 tfx .
+tfx ~/Downloads
 ```
+
+バージョンやコマンドラインヘルプを表示:
+
+```sh
+tfx -v                 # --version
+tfx -h                 # --help
+```
+
+Homebrew の `tfx` コマンドがない場合は、`tfx` の代わりに `/Applications/tfx.app/Contents/MacOS/tfx` を使います。
+
+起動時のレイアウト、ペイン表示、ウィンドウのジオメトリは、1回の起動だけ上書きできます。
+
+```sh
+tfx -1                 # --single
+tfx -2                 # --split
+tfx -r                 # --restore
+tfx -p                 # --preview
+tfx -P                 # --no-preview
+tfx -t                 # --terminal
+tfx -T                 # --no-terminal
+tfx -g 1200x800+100+50 # --geometry
+tfx -2 -P -t ~/Downloads
+```
+
+### 内蔵ターミナルから実行する場合
+
+tfx の内蔵ターミナルで `tfx` を実行すると、別の tfx は起動せず、`open -a` と同じようにそのターミナルを持つ tfx の左ペインにフォルダを表示します。フォルダを省略するとシェルのカレントディレクトリを表示します。新しいウィンドウで開きたいときは、`--new` か上記のレイアウト・ジオメトリ指定を付けます。
+
+```sh
+tfx ~/Documents        # この tfx に表示
+tfx                    # シェルのカレントディレクトリを表示
+tfx --new ~/Documents  # 新しいウィンドウで開く
+```
+
+どの tfx のターミナルかは、内蔵ターミナルが設定する環境変数 `TFX_PID` で判断します。その tfx がすでに終了している場合（以前の tfx から起動した tmux セッション内など）は、通常どおり新しいウィンドウで開きます。
+
+ターミナルのカレントディレクトリをファイル一覧に反映させるには、ツールバーの同期ボタンのほかに、次の方法もあります。
+
+```sh
+open -a tfx .          # 起動中の tfx の左ペインに表示
+tfx                    # 同じ動作（open を使わない場合）
+```
+
+同期ボタンはアクティブなファイルペインを移動させますが、`open -a tfx .` と `tfx` は常に左ペインに表示します。tfx を複数起動している場合、`open -a` は別の tfx に届くことがあります。`tfx` は常にそのターミナルを持つ tfx に表示します。
 
 ## キーボード操作
 
